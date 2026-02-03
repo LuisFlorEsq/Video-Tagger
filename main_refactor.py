@@ -1,0 +1,49 @@
+import sys
+from pathlib import Path
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.core.container import get_container
+from src.application.services.project_service import ProjectService
+from src.application.services.export_service import ExportService
+from src.application.services.labeling_service import LabelingService
+from src.presentation.main_window import create_main_window
+
+
+def main():
+    """Initialize application with dependency injection."""
+    
+    # Enable high DPI scaling
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
+    
+    app = QApplication(sys.argv)
+    app.setApplicationName("Video Fragment Tagger")
+    app.setOrganizationName("YourOrg")
+    
+    # Get dependency container
+    container = get_container()
+    
+    # Resolve services from container
+    project_service = container.resolve(ProjectService)
+    labeling_service = container.resolve(LabelingService)
+    export_service = container.resolve(ExportService)
+    
+    # Create main window with injected dependencies
+    window = create_main_window(
+        project_service=project_service,
+        labeling_service=labeling_service,
+        export_service=export_service
+    )
+    
+    window.show()
+    
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,75 @@
+from pathlib import Path
+
+from src.domain.models.project import Project
+from src.domain.models.fragment import Fragment
+from src.domain.interfaces import (
+    IProjectRepository, IVideoSource, 
+    IFragmentScanner
+)
+
+
+class ProjectService:
+    """Service for project-related operations (SRP)."""
+    
+    def __init__(
+        self, 
+        repository: IProjectRepository,
+        scanner: IFragmentScanner,
+        video_source: IVideoSource
+    ):
+        self._repository = repository
+        self._scanner = scanner
+        self._video_source = video_source
+    
+    def create_project_from_folder(self, folder_path: Path) -> Project:
+        """Create a new project by scanning a folder for video fragments."""
+        if not folder_path.exists():
+            raise ValueError(f"Folder does not exist: {folder_path}")
+        
+        # Scan for video files
+        video_files = self._scanner.scan_folder(folder_path)
+        
+        if not video_files:
+            raise ValueError("No video files found in the selected folder")
+        
+        # Create project
+        project = Project(
+            name=folder_path.name,
+            folder_path=str(folder_path)
+        )
+        
+        # Create fragments from video files
+        for i, video_file in enumerate(sorted(video_files)):
+            duration = self._video_source.get_duration(video_file)
+            
+            fragment = Fragment(
+                fragment_id=f"fragment_{i+1:03d}",
+                video_path=str(video_file),
+                start_time=0.0,
+                duration=min(1.0, duration)
+            )
+            project.add_fragment(fragment)
+        
+        return project
+    
+    def save_project(self, project: Project, file_path: Path) -> None:
+        """Save a project to file."""
+        self._repository.save(project, file_path)
+    
+    def load_project(self, file_path: Path) -> Project:
+        """Load a project from file."""
+        if not self._repository.exists(file_path):
+            raise ValueError(f"Project file does not exist: {file_path}")
+        
+        return self._repository.load(file_path)
+    
+    def get_project_summary(self, project: Project) -> dict:
+        """Get a summary of project statistics."""
+        return {
+            'name': project.name,
+            'total_fragments': project.get_total_count(),
+            'labeled': project.get_labeled_count(),
+            'unlabeled': project.get_unlabeled_count(),
+            'progress_percentage': project.get_progress_percentage(),
+            'label_statistics': project.get_label_statistics()
+        }

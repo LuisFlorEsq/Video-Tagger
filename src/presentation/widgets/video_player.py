@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtCore import Qt, Signal, QUrl
-import cv2
 
+from src.core.video_loader import VideoLoadManager
 
 class VideoPlayer(QWidget):
     """Custom video player widget with frame-by-frame controls."""
@@ -22,10 +22,17 @@ class VideoPlayer(QWidget):
         self.video_path = None
         self.fps = 30.0  # Default FPS, will be updated when video loads
         self.total_frames = 0
+        self._has_hard_stopped = False
+
         
         self._init_player()
         self._init_ui()
         self._connect_signals()
+        
+        # Initialize threaded video loader
+        self.video_loader = VideoLoadManager(self.media_player)
+        self.video_loader.on_loaded_callback = self._on_video_loaded_async
+        self.video_loader.on_failed_callback = self._on_video_load_failed
     
     def _init_player(self):
         """Initialize media player components."""
@@ -93,24 +100,31 @@ class VideoPlayer(QWidget):
         # Timeline slider
         self.timeline_slider.sliderMoved.connect(self.seek_position)
         
+        
     def load_video(self, video_path: str) -> bool:
-        """Load a video file."""
+        """Load a video file asynchronously using thread."""
         path = Path(video_path)
         if not path.exists():
             return False
         
         self.video_path = video_path
         
-        # Get video properties using OpenCV
-        cap = cv2.VideoCapture(video_path)
-        self.fps = cap.get(cv2.CAP_PROP_FPS)
-        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        cap.release()
-        
-        # Load video in media player
-        self.media_player.setSource(QUrl.fromLocalFile(str(path.absolute())))
+        # Load video asynchronously
+        self.video_loader.load_video_async(video_path)
         
         return True
+    
+    def _on_video_loaded_async(self, video_path: str, fps: float, total_frames: int):
+        """Callback when video is loaded in thread (runs in main thread)."""
+        self.fps = fps
+        self.total_frames = total_frames
+        print(f"Video loaded: {video_path}, FPS: {fps}, Frames: {total_frames}")
+    
+    def _on_video_load_failed(self, video_path: str, error_message: str):
+        """Callback when video loading fails."""
+        print(f"Failed to load video {video_path}: {error_message}")
+        self.fps = 30.0
+        self.total_frames = 0  
     
     def toggle_playback(self):
         """Toggle between play and pause."""
@@ -154,6 +168,9 @@ class VideoPlayer(QWidget):
         """Handle duration changes."""
         self.timeline_slider.setRange(0, duration)
         self.duration_changed.emit(duration)
+        
+    def _on_media_error(self, error, error_string):
+        print(f"Media error: {error} - {error_string}")
     
     @staticmethod
     def _format_time(ms: int) -> str:
@@ -170,3 +187,11 @@ class VideoPlayer(QWidget):
     def is_playing(self) -> bool:
         """Check if video is currently playing."""
         return self.media_player.playbackState() == QMediaPlayer.PlayingState
+
+
+    def force_stop(self):
+        self.media_player.stop()
+        self.media_player.setSource(QUrl())
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay)
+        )
