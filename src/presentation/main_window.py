@@ -86,51 +86,43 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         
         # File menu
-        file_menu = menubar.addMenu("&File")
+        file_menu = menubar.addMenu("&Archivo")
         
-        new_action = QAction("&New Project from Folder", self)
+        new_action = QAction("&Nuevo proyecto desde carpeta", self)
         new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self._project_browser._on_new_project_clicked)
         file_menu.addAction(new_action)
         
-        load_action = QAction("&Load Project", self)
+        load_action = QAction("&Cargar proyecto", self)
         load_action.setShortcut("Ctrl+O")
         load_action.triggered.connect(self._project_browser._on_load_project_clicked)
         file_menu.addAction(load_action)
         
         file_menu.addSeparator()
         
-        save_action = QAction("&Save Project", self)
+        save_action = QAction("&Guardar proyecto", self)
         save_action.setShortcut("Ctrl+S")
         save_action.triggered.connect(self._on_save_project)
         file_menu.addAction(save_action)
         
         file_menu.addSeparator()
         
-        export_action = QAction("&Export to CSV", self)
+        export_action = QAction("&Exportar a formato CSV", self)
         export_action.setShortcut("Ctrl+E")
         export_action.triggered.connect(self._on_export)
         file_menu.addAction(export_action)
         
         file_menu.addSeparator()
         
-        exit_action = QAction("E&xit", self)
+        exit_action = QAction("Salir", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
-        # View menu
-        view_menu = menubar.addMenu("&View")
-        
-        browser_action = QAction("Show &Fragment Browser", self)
-        browser_action.setShortcut("Ctrl+B")
-        browser_action.triggered.connect(self._show_browser)
-        view_menu.addAction(browser_action)
-        
         # Help menu
-        help_menu = menubar.addMenu("&Help")
+        help_menu = menubar.addMenu("&Ayuda")
         
-        about_action = QAction("&About", self)
+        about_action = QAction("&Acerca de", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
 
@@ -138,7 +130,7 @@ class MainWindow(QMainWindow):
         """Create status bar."""
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self._update_status("Ready - Select a folder to begin")
+        self._update_status("Todo listo, selecciona una carpeta para iniciar.")
 
     def _connect_signals(self):
         """Connect widget signals."""
@@ -166,7 +158,7 @@ class MainWindow(QMainWindow):
         # Update status
         summary = self._project_service.get_project_summary(project)
         self._update_status(
-            f"Project loaded: {project.name} "
+            f"Proyecto cargado: {project.name} "
             f"({summary['labeled']}/{summary['total_fragments']} labeled)"
         )
 
@@ -186,7 +178,7 @@ class MainWindow(QMainWindow):
         
         # Update status
         current, total = self._navigation_service.get_position()
-        self._update_status(f"Viewing: {fragment.fragment_id} ({current}/{total})")
+        self._update_status(f"Visualizando: {fragment.fragment_id} ({current}/{total})")
 
     def _on_fragment_labeled(self, fragment: Fragment):
         """Handle fragment labeled event."""
@@ -194,7 +186,7 @@ class MainWindow(QMainWindow):
         self._project_browser.refresh()
         
         # Update status
-        self._update_status(f"✓ Fragment {fragment.fragment_id} labeled as '{fragment.label}'")
+        self._update_status(f"Fragmento {fragment.fragment_id} etiquetado como: '{fragment.label}'")
 
     def _on_next_requested(self):
         """Handle next fragment request."""
@@ -210,15 +202,15 @@ class MainWindow(QMainWindow):
             
             # Update status
             current, total = self._navigation_service.get_position()
-            self._update_status(f"Viewing: {next_fragment.fragment_id} ({current}/{total})")
+            self._update_status(f"Visualizando: {next_fragment.fragment_id} ({current}/{total})")
         else:
             # End of list
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
                 self,
-                "All Done!",
-                f"You've reached the end of the fragment list.\n\n"
-                f"Progress: {summary['labeled']}/{summary['total_fragments']} "
+                "¡Todo listo!",
+                f"Haz alcanzado el final del proyecto.\n\n"
+                f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
                 f"({summary['progress_percentage']:.1f}%)"
             )
             self._show_browser()
@@ -228,8 +220,8 @@ class MainWindow(QMainWindow):
         if not self._current_project:
             QMessageBox.information(
                 self,
-                "No Project",
-                "No project is currently loaded."
+                "Sin proyecto",
+                "No hay ningun proyecto seleccionado."
             )
             return
         
@@ -241,16 +233,16 @@ class MainWindow(QMainWindow):
         if not self._current_project:
             QMessageBox.information(
                 self,
-                "No Project",
-                "No project is currently loaded."
+                "Sin proyecto",
+                "No hay ningun proyecto seleccionado."
             )
             return
         
         if self._current_project.get_total_count() == 0:
             QMessageBox.information(
                 self,
-                "No Data",
-                "No fragments to export."
+                "Sin datos",
+                "No hay fragmentos que exportar."
             )
             return
         
@@ -269,16 +261,16 @@ class MainWindow(QMainWindow):
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
                 self,
-                "Export Successful",
-                f"✓ Exported {summary['total_fragments']} fragments to CSV!\n\n"
-                f"Labeled: {summary['labeled']}/{summary['total_fragments']}"
+                "Exportación exitosa",
+                f"¡Se exportaron {summary['total_fragments']} fragmentos a CSV!\n\n"
+                f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}"
             )
-            self._update_status(f"✓ Exported: {file_path.name}")
+            self._update_status(f"Exportados en: {file_path.name}")
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Export Failed",
-                f"Failed to export:\n{str(e)}"
+                "Error",
+                f"Ocurrió un error al exportar:\n{str(e)}"
             )
 
     def _show_browser(self):
@@ -288,25 +280,36 @@ class MainWindow(QMainWindow):
         
         # Switch to browser
         self._safe_switch_view(0)
-        self._update_status("Back to fragment browser")
+        self._update_status("Regresar al explorador de fragmentos")
+    
+    def _safe_switch_view(self, index: int):
+        """
+        Safely switch stacked widget views.
+        Ensures video playback is fully stopped before hiding FragmentViewer.
+        """
+
+        if self._fragment_viewer:
+            player = self._fragment_viewer.video_player
+            if player:
+                player.force_stop()
+
+        self.stacked_widget.setCurrentIndex(index)
 
     def _show_about(self):
         """Show about dialog."""
         QMessageBox.about(
             self,
-            "About Video Fragment Tagger",
-            "<h2>Video Fragment Tagger v2.0</h2>"
-            "<p>A tool for labeling video fragments.</p>"
-            "<p><b>Architecture:</b> SOLID principles with dependency injection</p>"
-            "<p><b>Workflow:</b></p>"
+            "Acerca de la herramienta de etiquetado",
+            "<h2>Herramienta de etiquetado v1.0</h2>"
+            "<p>Una herramienta para etiquetar fragmentos de video.</p>"
+            "<p><b>Instrucciones:</b></p>"
             "<ol>"
-            "<li>Select a folder containing 1-second video fragments</li>"
-            "<li>Click on a fragment to view it</li>"
-            "<li>Click on a label to assign it</li>"
-            "<li>Navigate to the next fragment</li>"
-            "<li>Export all labels to CSV when done</li>"
+            "<li>Selecciona la carpeta que contenga los fragmentos a etiquetar</li>"
+            "<li>Da click en un fragmento para iniciar</li>"
+            "<li>Asigna una etiqueta al fragmento seleccionado desde el panel de etiquetas (doble click)</li>"
+            "<li>Exporta todas las etiquetas a un archivo CSV cuando finalices</li>"
             "</ol>"
-            "<p>Built with PySide6, OpenCV, and clean architecture</p>"
+            "<p>Centro de Investigación en Computación - IPN</p>"
         )
 
     # === Helper Methods ===
@@ -315,7 +318,7 @@ class MainWindow(QMainWindow):
         """Show save file dialog."""
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Save",
+            "Guardar",
             default_name,
             filter
         )
@@ -333,9 +336,9 @@ class MainWindow(QMainWindow):
             if unlabeled > 0:
                 reply = QMessageBox.question(
                     self,
-                    "Incomplete Work",
-                    f"You have {unlabeled} unlabeled fragments.\n\n"
-                    f"Save before exiting?",
+                    "Trabajo incompleto",
+                    f"Tienes {unlabeled} fragmentos sin etiquetar.\n\n"
+                    f"¿Deseas guardar tu progreso antes de salir?",
                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
                 )
                 
@@ -349,21 +352,6 @@ class MainWindow(QMainWindow):
                 return
         
         event.accept()
-        
-    def _safe_switch_view(self, index: int):
-        """
-        Safely switch stacked widget views.
-        Ensures video playback is fully stopped before hiding FragmentViewer.
-        """
-
-        if self._fragment_viewer:
-            player = self._fragment_viewer.video_player
-            if player:
-                player.force_stop()
-
-        self.stacked_widget.setCurrentIndex(index)
-
-
 
 # Factory function for creating MainWindow
 def create_main_window(

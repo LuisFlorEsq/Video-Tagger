@@ -74,7 +74,7 @@ class FragmentViewer(QWidget):
         # Header with navigation
         header_layout = QHBoxLayout()
         
-        self.back_btn = QPushButton("← Back to Fragments")
+        self.back_btn = QPushButton("← Regresar a la lista de fragmentos")
         self.back_btn.setMaximumWidth(150)
         self.back_btn.setStyleSheet("""
             QPushButton {
@@ -92,7 +92,7 @@ class FragmentViewer(QWidget):
         
         header_layout.addStretch()
         
-        self.fragment_info_label = QLabel("No fragment loaded")
+        self.fragment_info_label = QLabel("No se ha cargado ningun fragmento")
         self.fragment_info_label.setStyleSheet("font-size: 13px; font-weight: bold;")
         header_layout.addWidget(self.fragment_info_label)
         
@@ -109,14 +109,14 @@ class FragmentViewer(QWidget):
         content_layout = QHBoxLayout()
         
         # Left: Video player
-        video_group = QGroupBox("Video Fragment (1 second)")
+        video_group = QGroupBox("Fragmento de video (1 segundo)")
         video_layout = QVBoxLayout()
         
         self.video_player = VideoPlayer()
         video_layout.addWidget(self.video_player)
         
         # Playback info
-        playback_info = QLabel("The fragment will loop automatically")
+        playback_info = QLabel("Da click al botón > para iniciar")
         playback_info.setStyleSheet("font-size: 10px; color: #666; padding: 5px;")
         playback_info.setAlignment(Qt.AlignCenter)
         video_layout.addWidget(playback_info)
@@ -130,7 +130,7 @@ class FragmentViewer(QWidget):
         controls_layout.setContentsMargins(0, 0, 0, 0)
         
         # Fragment details
-        details_group = QGroupBox("Fragment Details")
+        details_group = QGroupBox("Detalles")
         details_layout = QVBoxLayout()
         
         self.video_name_label = QLabel("Video: -")
@@ -138,11 +138,11 @@ class FragmentViewer(QWidget):
         self.video_name_label.setStyleSheet("font-size: 11px; padding: 3px;")
         details_layout.addWidget(self.video_name_label)
         
-        self.duration_label = QLabel("Duration: -")
+        self.duration_label = QLabel("Duración: -")
         self.duration_label.setStyleSheet("font-size: 11px; padding: 3px;")
         details_layout.addWidget(self.duration_label)
         
-        self.status_label = QLabel("Status: Not labeled")
+        self.status_label = QLabel("Estatus: No etiquetado")
         self.status_label.setStyleSheet("font-size: 11px; padding: 3px;")
         details_layout.addWidget(self.status_label)
         
@@ -150,7 +150,7 @@ class FragmentViewer(QWidget):
         controls_layout.addWidget(details_group)
         
         # Label panel
-        label_group = QGroupBox("Assign Label")
+        label_group = QGroupBox("Asignar etiqueta")
         label_layout = QVBoxLayout()
         
         self.label_panel = LabelPanel(self.available_labels)
@@ -160,10 +160,10 @@ class FragmentViewer(QWidget):
         controls_layout.addWidget(label_group)
         
         # Action buttons
-        actions_group = QGroupBox("Actions")
+        actions_group = QGroupBox("Acciones")
         actions_layout = QVBoxLayout()
         
-        self.next_btn = QPushButton("Next Fragment →")
+        self.next_btn = QPushButton("Siguiente fragmento →")
         self.next_btn.setMinimumHeight(45)
         self.next_btn.setEnabled(False)
         self.next_btn.setStyleSheet("""
@@ -218,7 +218,7 @@ class FragmentViewer(QWidget):
             self.fragment_labeled.emit(self._current_fragment)
             
         except ValueError as e:
-            self._show_error("Labeling Failed", str(e))
+            self._show_error("No se pudo etiquetar", str(e))
     
     def _on_next_clicked(self):
         """Handle next button click."""
@@ -229,8 +229,8 @@ class FragmentViewer(QWidget):
         if not self._current_fragment.is_labeled():
             reply = QMessageBox.question(
                 self,
-                "Skip Fragment",
-                "This fragment is not labeled. Do you want to skip it?",
+                "Fragmento saltado",
+                "Este fragmento aun no ha sido etiquetado. ¿Desea saltarlo?",
                 QMessageBox.Yes | QMessageBox.No
             )
             
@@ -250,8 +250,8 @@ class FragmentViewer(QWidget):
         if self._current_fragment and not self._current_fragment.is_labeled():
             reply = QMessageBox.question(
                 self,
-                "Unsaved Changes",
-                "This fragment is not labeled. Are you sure you want to go back?",
+                "Cambios sin guardar",
+                "Este fragmento no ha sido etiquetado. ¿Estas seguro de regresar?",
                 QMessageBox.Yes | QMessageBox.No
             )
             
@@ -277,8 +277,8 @@ class FragmentViewer(QWidget):
         # Check if video exists
         if not Path(fragment.video_path).exists():
             self._show_error(
-                "File Not Found",
-                f"Video file not found:\n{fragment.video_path}"
+                "Archivo no encontrado",
+                f"No se encontro el archivo de video:\n{fragment.video_path}"
             )
             return
         
@@ -332,13 +332,13 @@ class FragmentViewer(QWidget):
             return
         
         self.fragment_info_label.setText(
-            f"Fragment: {self._current_fragment.fragment_id}"
+            f"Fragmento: {self._current_fragment.fragment_id}"
         )
         
         video_name = self._current_fragment.get_video_name()
         self.video_name_label.setText(f"Video: {video_name}")
         self.duration_label.setText(
-            f"Duration: {self._current_fragment.duration:.1f} seconds"
+            f"Duración: {self._current_fragment.duration:.1f} segundos"
         )
     
     def _update_fragment_status(self):
@@ -348,14 +348,14 @@ class FragmentViewer(QWidget):
         
         if self._current_fragment.is_labeled():
             self.status_label.setText(
-                f"Status: ✓ Labeled as '{self._current_fragment.label}'"
+                f"Estatus: ✓ Etiquetado como '{self._current_fragment.label}'"
             )
             self.status_label.setStyleSheet(
                 "font-size: 11px; padding: 3px; color: #10893E; font-weight: bold;"
             )
             self.label_panel.set_current_label(self._current_fragment.label)
         else:
-            self.status_label.setText("Status: Not labeled")
+            self.status_label.setText("Estatus: No etiquetado")
             self.status_label.setStyleSheet(
                 "font-size: 11px; padding: 3px; color: #856404; font-weight: bold;"
             )

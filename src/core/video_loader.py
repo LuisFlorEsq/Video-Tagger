@@ -21,12 +21,12 @@ class VideoLoaderThread(QThread):
         try:
             path = Path(self._video_path)
             if not path.exists():
-                self.loading_failed.emit(self._video_path, "File not found")
+                self.loading_failed.emit(self._video_path, "Archivo no encontrado")
                 return
 
             cap = cv2.VideoCapture(str(path))
             if not cap.isOpened():
-                self.loading_failed.emit(self._video_path, "Cannot open video")
+                self.loading_failed.emit(self._video_path, "No se puede abrir el video")
                 return
 
             fps = cap.get(cv2.CAP_PROP_FPS)

@@ -18,7 +18,7 @@ class LabelingService:
         """Assign a label to a fragment with validation."""
         if self._validator and not self._validator.validate(label):
             error = self._validator.get_validation_error(label)
-            raise ValueError(error or "Invalid label")
+            raise ValueError(error or "Etiqueta no valida")
         
         fragment.assign_label(label)
     

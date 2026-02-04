@@ -24,13 +24,13 @@ class ProjectService:
     def create_project_from_folder(self, folder_path: Path) -> Project:
         """Create a new project by scanning a folder for video fragments."""
         if not folder_path.exists():
-            raise ValueError(f"Folder does not exist: {folder_path}")
+            raise ValueError(f"La carpeta no existe: {folder_path}")
         
         # Scan for video files
         video_files = self._scanner.scan_folder(folder_path)
         
         if not video_files:
-            raise ValueError("No video files found in the selected folder")
+            raise ValueError("No se encontraron archivos de video")
         
         # Create project
         project = Project(
@@ -59,7 +59,7 @@ class ProjectService:
     def load_project(self, file_path: Path) -> Project:
         """Load a project from file."""
         if not self._repository.exists(file_path):
-            raise ValueError(f"Project file does not exist: {file_path}")
+            raise ValueError(f"El proyecto no existe: {file_path}")
         
         return self._repository.load(file_path)
     

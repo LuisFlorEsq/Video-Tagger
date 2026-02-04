@@ -50,7 +50,7 @@ class ProjectBrowser(QWidget):
         layout.setSpacing(15)
         
         # Title
-        self.title_label = QLabel("Video Fragment Tagger")
+        self.title_label = QLabel("Herramienta de etiquetado de vídeos")
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
@@ -59,7 +59,7 @@ class ProjectBrowser(QWidget):
         layout.addWidget(self.title_label)
         
         # Subtitle
-        self.subtitle_label = QLabel("Select a folder with video fragments to begin")
+        self.subtitle_label = QLabel("Selecciona una carpeta con fragmentos de video para continuar")
         subtitle_font = QFont()
         subtitle_font.setPointSize(11)
         self.subtitle_label.setFont(subtitle_font)
@@ -70,7 +70,7 @@ class ProjectBrowser(QWidget):
         # Action buttons
         button_layout = QHBoxLayout()
         
-        self.new_project_btn = QPushButton("📁 Select Video Folder")
+        self.new_project_btn = QPushButton("📁 Nuevo proyecto")
         self.new_project_btn.setMinimumHeight(50)
         self.new_project_btn.setStyleSheet("""
             QPushButton {
@@ -86,7 +86,7 @@ class ProjectBrowser(QWidget):
         """)
         button_layout.addWidget(self.new_project_btn)
         
-        self.load_project_btn = QPushButton("📂 Load Existing Project")
+        self.load_project_btn = QPushButton("📂 Abrir proyecto existente")
         self.load_project_btn.setMinimumHeight(50)
         self.load_project_btn.setStyleSheet("""
             QPushButton {
@@ -105,7 +105,7 @@ class ProjectBrowser(QWidget):
         layout.addLayout(button_layout)
         
         # Project info group
-        self.project_info_group = QGroupBox("Current Project")
+        self.project_info_group = QGroupBox("Proyecto actual")
         self.project_info_group.setVisible(False)
         info_layout = QVBoxLayout()
         
@@ -120,7 +120,7 @@ class ProjectBrowser(QWidget):
         # Navigation buttons
         nav_layout = QHBoxLayout()
         
-        self.back_btn = QPushButton("← Back to Menu")
+        self.back_btn = QPushButton("← Regresar al menu principal")
         self.back_btn.setStyleSheet("""
             QPushButton {
                 background-color: #6C757D;
@@ -134,7 +134,7 @@ class ProjectBrowser(QWidget):
         """)
         nav_layout.addWidget(self.back_btn)
         
-        self.save_project_btn = QPushButton("💾 Save Project")
+        self.save_project_btn = QPushButton("💾 Guardar proyecto")
         self.save_project_btn.setStyleSheet("""
             QPushButton {
                 background-color: #0078D4;
@@ -154,11 +154,11 @@ class ProjectBrowser(QWidget):
         layout.addWidget(self.project_info_group)
         
         # Fragment list
-        self.fragment_list_group = QGroupBox("Video Fragments")
+        self.fragment_list_group = QGroupBox("Fragmentos de video")
         self.fragment_list_group.setVisible(False)
         fragment_list_layout = QVBoxLayout()
         
-        search_label = QLabel("Select a fragment to label:")
+        search_label = QLabel("Selecciona un fragmento para etiquetar:")
         search_label.setStyleSheet("font-size: 11px; color: #666;")
         fragment_list_layout.addWidget(search_label)
         
@@ -208,10 +208,13 @@ class ProjectBrowser(QWidget):
     
     def _connect_signals(self):
         """Connect widget signals to handlers."""
+        # Project options
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
-        self.back_btn.clicked.connect(self._on_back_clicked)
         self.save_project_btn.clicked.connect(self._on_save_clicked)
+
+        # Fragment and back to menu options
+        self.back_btn.clicked.connect(self._on_back_clicked)
         self.fragment_list.itemDoubleClicked.connect(self._on_fragment_double_clicked)
     
     # === Command Handlers (UI Logic Only) ===
@@ -228,9 +231,9 @@ class ProjectBrowser(QWidget):
             self._load_project(project)
             self.project_loaded.emit(project)
         except ValueError as e:
-            self._show_error("Project Creation Failed", str(e))
+            self._show_error("Error al crear proyecto", str(e))
         except Exception as e:
-            self._show_error("Unexpected Error", f"Failed to create project: {str(e)}")
+            self._show_error("Error inesperado", f"No se pudo crear el proyecto: {str(e)}")
     
     def _on_load_project_clicked(self):
         """Handle load project button click."""
@@ -244,9 +247,9 @@ class ProjectBrowser(QWidget):
             self._load_project(project)
             self.project_loaded.emit(project)
         except ValueError as e:
-            self._show_error("Load Failed", str(e))
+            self._show_error("No se pudo cargar el proyecto", str(e))
         except Exception as e:
-            self._show_error("Unexpected Error", f"Failed to load project: {str(e)}")
+            self._show_error("Error inesperado", f"No se pudo cargar el proyecto: {str(e)}")
     
     def _on_back_clicked(self):
         """Handle back button click."""
@@ -273,13 +276,13 @@ class ProjectBrowser(QWidget):
             summary = self._project_service.get_project_summary(self._current_project)
             
             self._show_info(
-                "Success",
-                f"Project saved successfully!\n\n"
-                f"Progress: {summary['labeled']}/{summary['total_fragments']} "
+                "Éxito",
+                f"¡El proyecto se guardo correctamente!\n\n"
+                f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
                 f"({summary['progress_percentage']:.1f}%)"
             )
         except Exception as e:
-            self._show_error("Save Failed", str(e))
+            self._show_error("Error al guardar", str(e))
     
     def _on_fragment_double_clicked(self, item):
         """Handle fragment double-click."""
@@ -327,17 +330,18 @@ class ProjectBrowser(QWidget):
         # Toggle visibility
         self.project_info_group.setVisible(has_project)
         self.fragment_list_group.setVisible(has_project)
+        
         self.new_project_btn.setVisible(not has_project)
         self.load_project_btn.setVisible(not has_project)
         self.instructions_group.setVisible(not has_project)
         
         if has_project:
-            self.subtitle_label.setText(f"Project: {self._current_project.name}")
+            self.subtitle_label.setText(f"Proyecto: {self._current_project.name}")
             self.project_name_label.setText(f"📁 {self._current_project.name}")
             self._populate_fragment_list()
             self._update_project_stats()
         else:
-            self.subtitle_label.setText("Select a folder with video fragments to begin")
+            self.subtitle_label.setText("Selecciona una carpeta con fragmentos de video para continuar")
     
     def _populate_fragment_list(self):
         """Populate the fragment list from current project."""
@@ -370,15 +374,15 @@ class ProjectBrowser(QWidget):
         summary = self._project_service.get_project_summary(self._current_project)
         
         self.project_stats_label.setText(
-            f"Progress: {summary['labeled']}/{summary['total_fragments']} "
-            f"fragments labeled ({summary['progress_percentage']:.1f}%)"
+            f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
+            f"fragmentos etiquetados ({summary['progress_percentage']:.1f}%)"
         )
     
     def _select_folder(self) -> Path:
         """Show folder selection dialog."""
         folder = QFileDialog.getExistingDirectory(
             self,
-            "Select Folder with Video Fragments",
+            "Seleciona la carpeta con los fragmentos",
             "",
             QFileDialog.ShowDirsOnly
         )
@@ -388,7 +392,7 @@ class ProjectBrowser(QWidget):
         """Show project file selection dialog."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Load Project",
+            "Cargar proyecto",
             "",
             "JSON Files (*.json);;All Files (*)"
         )
@@ -398,7 +402,7 @@ class ProjectBrowser(QWidget):
         """Show save file dialog."""
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Save Project",
+            "Guardar proyecto",
             default_name,
             filter
         )

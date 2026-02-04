@@ -22,8 +22,8 @@ def main():
     )
     
     app = QApplication(sys.argv)
-    app.setApplicationName("Video Fragment Tagger")
-    app.setOrganizationName("YourOrg")
+    app.setApplicationName("Herramienta de etiquetado")
+    app.setOrganizationName("Centro de Investigación en Computación")
     
     # Get dependency container
     container = get_container()

@@ -13,7 +13,7 @@ class NavigationService:
     def set_current_fragment(self, fragment_id: str) -> None:
         """Set the current fragment."""
         if not self._project.get_fragment(fragment_id):
-            raise ValueError(f"Fragment not found: {fragment_id}")
+            raise ValueError(f"Fragmento no encontrado: {fragment_id}")
         self._current_fragment_id = fragment_id
     
     def get_current_fragment(self) -> Optional[Fragment]:

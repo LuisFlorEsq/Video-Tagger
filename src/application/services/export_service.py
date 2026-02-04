@@ -20,7 +20,7 @@ class ExportService:
         format_key = format_name.lower()
         
         if format_key not in self._exporters:
-            raise ValueError(f"Unsupported export format: {format_name}")
+            raise ValueError(f"Formato no válido: {format_name}")
         
         exporter = self._exporters[format_key]
         exporter.export(project, output_path)
@@ -33,6 +33,6 @@ class ExportService:
         """Get file extension for a format."""
         format_key = format_name.lower()
         if format_key not in self._exporters:
-            raise ValueError(f"Unsupported export format: {format_name}")
+            raise ValueError(f"Formato no válido: {format_name}")
         
         return self._exporters[format_key].get_file_extension()
