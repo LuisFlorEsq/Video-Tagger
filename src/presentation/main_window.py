@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         summary = self._project_service.get_project_summary(project)
         self._update_status(
             f"Proyecto cargado: {project.name} "
-            f"({summary['labeled']}/{summary['total_fragments']} labeled)"
+            f"({summary['labeled']}/{summary['total_fragments']} etiquetados)"
         )
 
     def _on_fragment_selected(self, fragment: Fragment):

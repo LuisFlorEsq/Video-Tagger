@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QSizePolicy
+
 
 from src.application.services.project_service import ProjectService
 from src.domain.models.project import Project
@@ -68,7 +70,7 @@ class ProjectBrowser(QWidget):
         layout.addWidget(self.subtitle_label)
         
         # Action buttons
-        button_layout = QHBoxLayout()
+        button_layout = QVBoxLayout()
         
         self.new_project_btn = QPushButton("📁 Nuevo proyecto")
         self.new_project_btn.setMinimumHeight(50)
@@ -79,14 +81,15 @@ class ProjectBrowser(QWidget):
                 background-color: #0078D4;
                 color: white;
                 border-radius: 5px;
+                padding: 8px 18px;
             }
             QPushButton:hover {
                 background-color: #106EBE;
             }
         """)
-        button_layout.addWidget(self.new_project_btn)
+        # button_layout.addWidget(self.new_project_btn)
         
-        self.load_project_btn = QPushButton("📂 Abrir proyecto existente")
+        self.load_project_btn = QPushButton("💾 Abrir proyecto existente")
         self.load_project_btn.setMinimumHeight(50)
         self.load_project_btn.setStyleSheet("""
             QPushButton {
@@ -95,12 +98,23 @@ class ProjectBrowser(QWidget):
                 background-color: #10893E;
                 color: white;
                 border-radius: 5px;
+                padding: 8px 18px;
+
             }
             QPushButton:hover {
                 background-color: #0E7B38;
             }
         """)
-        button_layout.addWidget(self.load_project_btn)
+        # button_layout.addWidget(self.load_project_btn)
+        
+        for btn in (self.new_project_btn, self.load_project_btn):
+            btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            btn.setFixedHeight(60)
+            btn.adjustSize()
+            
+        button_layout.addWidget(self.new_project_btn, alignment=Qt.AlignHCenter)
+        button_layout.addWidget(self.load_project_btn, alignment=Qt.AlignHCenter)
+
         
         layout.addLayout(button_layout)
         
@@ -185,25 +199,7 @@ class ProjectBrowser(QWidget):
         
         self.fragment_list_group.setLayout(fragment_list_layout)
         layout.addWidget(self.fragment_list_group)
-        
-        # Instructions
-        self.instructions_group = QGroupBox("Instructions")
-        instructions_layout = QVBoxLayout()
-        
-        instructions_text = QLabel(
-            "1. Select a folder containing video fragments (1-second clips)\n"
-            "2. Each fragment will appear in the list\n"
-            "3. Click on a fragment to view and label it\n"
-            "4. Assign a label and save your changes\n"
-            "5. Navigate to the next fragment or return to the menu"
-        )
-        instructions_text.setWordWrap(True)
-        instructions_text.setStyleSheet("font-size: 11px; line-height: 1.5; padding: 10px;")
-        instructions_layout.addWidget(instructions_text)
-        
-        self.instructions_group.setLayout(instructions_layout)
-        layout.addWidget(self.instructions_group)
-        
+            
         layout.addStretch()
     
     def _connect_signals(self):
@@ -333,7 +329,6 @@ class ProjectBrowser(QWidget):
         
         self.new_project_btn.setVisible(not has_project)
         self.load_project_btn.setVisible(not has_project)
-        self.instructions_group.setVisible(not has_project)
         
         if has_project:
             self.subtitle_label.setText(f"Proyecto: {self._current_project.name}")

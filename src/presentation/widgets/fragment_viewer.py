@@ -74,8 +74,8 @@ class FragmentViewer(QWidget):
         # Header with navigation
         header_layout = QHBoxLayout()
         
-        self.back_btn = QPushButton("← Regresar a la lista de fragmentos")
-        self.back_btn.setMaximumWidth(150)
+        self.back_btn = QPushButton("← Regresar")
+        self.back_btn.setMaximumWidth(200)
         self.back_btn.setStyleSheet("""
             QPushButton {
                 background-color: #6C757D;
@@ -133,7 +133,7 @@ class FragmentViewer(QWidget):
         details_group = QGroupBox("Detalles")
         details_layout = QVBoxLayout()
         
-        self.video_name_label = QLabel("Video: -")
+        self.video_name_label = QLabel("Fuente(video): -")
         self.video_name_label.setWordWrap(True)
         self.video_name_label.setStyleSheet("font-size: 11px; padding: 3px;")
         details_layout.addWidget(self.video_name_label)
@@ -161,9 +161,30 @@ class FragmentViewer(QWidget):
         
         # Action buttons
         actions_group = QGroupBox("Acciones")
-        actions_layout = QVBoxLayout()
+        actions_layout = QHBoxLayout()
         
-        self.next_btn = QPushButton("Siguiente fragmento →")
+        self.prev_btn = QPushButton("← Atras")
+        self.prev_btn.setMinimumHeight(45)
+        self.prev_btn.setEnabled(False)
+        self.prev_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 13px;
+                font-weight: bold;
+                background-color: #0078D4;
+                color: white;
+                border-radius: 5px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #106EBE;
+            }
+            QPushButton:disabled {
+                background-color: #CCC;
+                color: #888;
+            }
+        """)
+        actions_layout.addWidget(self.prev_btn)
+        
+        self.next_btn = QPushButton("Siguiente →")
         self.next_btn.setMinimumHeight(45)
         self.next_btn.setEnabled(False)
         self.next_btn.setStyleSheet("""
@@ -183,7 +204,7 @@ class FragmentViewer(QWidget):
             }
         """)
         actions_layout.addWidget(self.next_btn)
-        
+                
         actions_group.setLayout(actions_layout)
         controls_layout.addWidget(actions_group)
         
@@ -196,6 +217,7 @@ class FragmentViewer(QWidget):
     def _connect_signals(self):
         """Connect widget signals to handlers."""
         self.back_btn.clicked.connect(self._on_back_clicked)
+        # self.prev_btn.clicked.connect(self._on)
         self.next_btn.clicked.connect(self._on_next_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
     
@@ -213,6 +235,7 @@ class FragmentViewer(QWidget):
             # Update UI
             self._update_fragment_status()
             self.next_btn.setEnabled(True)
+            self.prev_btn.setEnabled(True)
             
             # Emit signal
             self.fragment_labeled.emit(self._current_fragment)
@@ -301,6 +324,8 @@ class FragmentViewer(QWidget):
         # Enable controls
         self.label_panel.set_enabled(True)
         self.next_btn.setEnabled(fragment.is_labeled())
+        self.prev_btn.setEnabled(fragment.is_labeled())
+
     
     def _on_video_loaded_for_fragment(self, video_path: str, fps: float, total_frames: int):
         """Callback when video finishes loading."""
@@ -336,7 +361,7 @@ class FragmentViewer(QWidget):
         )
         
         video_name = self._current_fragment.get_video_name()
-        self.video_name_label.setText(f"Video: {video_name}")
+        self.video_name_label.setText(f"Fuente(video): {video_name}")
         self.duration_label.setText(
             f"Duración: {self._current_fragment.duration:.1f} segundos"
         )
