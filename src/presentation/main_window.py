@@ -141,6 +141,7 @@ class MainWindow(QMainWindow):
         
         # Fragment viewer signals
         self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
+        self._fragment_viewer.prev_requested.connect(self._on_prev_requested)
         self._fragment_viewer.next_requested.connect(self._on_next_requested)
         self._fragment_viewer.back_requested.connect(self._show_browser)
 
@@ -188,6 +189,35 @@ class MainWindow(QMainWindow):
         
         # Update status
         self._update_status(f"Fragmento {fragment.fragment_id} etiquetado como: '{fragment.label}'")
+    
+    def _on_prev_requested(self):
+        """Handle previous fragment request."""
+        if not self._navigation_service:
+            return
+        
+        self._fragment_viewer.video_player.force_stop()
+        prev_fragment = self._navigation_service.move_to_previous()
+                
+        if prev_fragment:
+            # Load previous fragment
+            self._fragment_viewer.load_fragment(prev_fragment, self._current_project)
+            
+            # Update status
+            current, total = self._navigation_service.get_position()
+            self._update_status(f"Visualizando: {prev_fragment.fragment_id} ({current}/{total})")
+        
+        else:
+            # Start of list
+            summary = self._project_service.get_project_summary(self._current_project)
+            QMessageBox.information(
+                self,
+                "¡Todo listo!",
+                f"Haz alcanzado el final del proyecto.\n\n"
+                f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
+                f"({summary['progress_percentage']:.1f}%)"
+            )
+            self._show_browser()
+            
 
     def _on_next_requested(self):
         """Handle next fragment request."""

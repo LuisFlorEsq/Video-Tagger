@@ -23,6 +23,7 @@ class FragmentViewer(QWidget):
     
     # Signals
     fragment_labeled = Signal(Fragment)  # Emits when fragment is labeled
+    prev_requested = Signal()  # Emits when user wants previous fragment
     next_requested = Signal()  # Emits when user wants next fragment
     back_requested = Signal()  # Emits when user wants to go back
     
@@ -217,7 +218,7 @@ class FragmentViewer(QWidget):
     def _connect_signals(self):
         """Connect widget signals to handlers."""
         self.back_btn.clicked.connect(self._on_back_clicked)
-        # self.prev_btn.clicked.connect(self._on)
+        self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
     
@@ -242,6 +243,31 @@ class FragmentViewer(QWidget):
             
         except ValueError as e:
             self._show_error("No se pudo etiquetar", str(e))
+    
+    def _on_prev_clicked(self):
+        """Handle previous button click."""
+        if not self._current_fragment:
+            return
+        
+        # Check if current fragment is labeled
+        if not self._current_fragment.is_labeled():
+            reply = QMessageBox.question(
+                self,
+                "Fragmento saltado",
+                "Este fragmento aun no ha sido etiquetado ¿Desea saltarlo?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            
+            if reply == QMessageBox.No:
+                return
+            
+        # Check if we can navigate (avoid out of bonds)
+        if self._navigation_service and self._navigation_service.has_previous():
+            # Let the parent handle navigation
+            self.prev_requested.emit()
+        else:
+            self.prev_requested.emit()
+            
     
     def _on_next_clicked(self):
         """Handle next button click."""
