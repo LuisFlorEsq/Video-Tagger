@@ -76,12 +76,6 @@ class VideoPlayer(QWidget):
         )
         controls_layout.addWidget(self.play_button)
         
-        self.stop_button = QPushButton()
-        self.stop_button.setIcon(
-            self.style().standardIcon(QStyle.SP_MediaStop)
-        )
-        controls_layout.addWidget(self.stop_button)
-        
         controls_layout.addSpacing(20)
         
         controls_layout.addStretch()
@@ -95,7 +89,6 @@ class VideoPlayer(QWidget):
         
         # Control button signals
         self.play_button.clicked.connect(self.toggle_playback)
-        self.stop_button.clicked.connect(self.stop)
         
         # Timeline slider
         self.timeline_slider.sliderMoved.connect(self.seek_position)
@@ -127,17 +120,30 @@ class VideoPlayer(QWidget):
         self.total_frames = 0  
     
     def toggle_playback(self):
-        """Toggle between play and pause."""
-        if self.media_player.playbackState() == QMediaPlayer.PlayingState:
-            self.media_player.pause()
-            self.play_button.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaPlay)
-            )
-        else:
+        """
+        Play / Stop toggle.
+        Pause is NOT used because it breaks QVideoWidget on Windows.
+        """
+
+        state = self.media_player.playbackState()
+
+        # PLAY
+        if state != QMediaPlayer.PlayingState:
             self.media_player.play()
             self.play_button.setIcon(
                 self.style().standardIcon(QStyle.SP_MediaPause)
             )
+            return
+
+        # "PAUSE" → HARD STOP (safe)
+        self._paused_position = self.media_player.position()
+        self.media_player.stop()
+        self.media_player.setPosition(self._paused_position)
+
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay)
+        )
+
     
     def stop(self):
         """Stop playback."""

@@ -7,10 +7,10 @@
       "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-08-22.mkv",
       "start_time": 0.0,
       "duration": 1.0,
-      "label": "Etiqueta 1",
+      "label": "Etiqueta 3",
       "notes": "",
       "created_at": "2025-12-27T19:57:13.459903",
-      "modified_at": "2026-02-03T02:38:17.375120"
+      "modified_at": "2026-02-03T18:55:24.989114"
     },
     {
       "fragment_id": "fragment_002",
@@ -20,19 +20,19 @@
       "label": "Etiqueta 2",
       "notes": "",
       "created_at": "2025-12-27T19:57:13.486500",
-      "modified_at": "2026-02-03T02:38:20.029418"
+      "modified_at": "2026-02-03T18:55:33.502368"
     },
     {
       "fragment_id": "fragment_003",
       "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-26-20.mkv",
       "start_time": 0.0,
       "duration": 1.0,
-      "label": "Etiqueta 3",
+      "label": "Etiqueta 1",
       "notes": "",
       "created_at": "2025-12-27T19:57:13.510504",
-      "modified_at": "2026-02-03T02:38:22.278871"
+      "modified_at": "2026-02-03T18:55:38.979840"
     }
   ],
   "created_at": "2025-12-27T19:57:13.281080",
-  "modified_at": "2026-02-03T02:38:13.641946"
+  "modified_at": "2026-02-03T18:55:15.883648"
 }
