@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QSizePolicy
 
 
 from src.application.services.project_service import ProjectService
+from src.application.services.export_service import ExportService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
@@ -24,18 +25,21 @@ class ProjectBrowser(QWidget):
     project_loaded = Signal(Project)  # Emits when project is loaded
     fragment_selected = Signal(Fragment)  # Emits when fragment is selected
     
-    def __init__(self, project_service: ProjectService, parent=None):
+    def __init__(self, project_service: ProjectService, export_service: ExportService, parent=None):
         """
         Initialize with injected dependencies (DIP).
         
         Args:
             project_service: Service for project operations
+            export_service: Service for export operations
             parent: Parent widget
         """
         super().__init__(parent)
         
         # Inject dependency
         self._project_service = project_service
+        self._export_service = export_service
+
         
         # State
         self._current_project: Project = None
@@ -162,6 +166,20 @@ class ProjectBrowser(QWidget):
         """)
         nav_layout.addWidget(self.save_project_btn)
         
+        self.export_csv_btn = QPushButton("📊 Exportar a CSV")
+        self.export_csv_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #10893E;
+                color: white;
+                border-radius: 3px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background-color: #0E7B38;
+            }
+        """)
+        nav_layout.addWidget(self.export_csv_btn)
+        
         info_layout.addLayout(nav_layout)
         
         self.project_info_group.setLayout(info_layout)
@@ -208,6 +226,7 @@ class ProjectBrowser(QWidget):
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
         self.save_project_btn.clicked.connect(self._on_save_clicked)
+        self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
 
         # Fragment and back to menu options
         self.back_btn.clicked.connect(self._on_back_clicked)
@@ -279,6 +298,39 @@ class ProjectBrowser(QWidget):
             )
         except Exception as e:
             self._show_error("Error al guardar", str(e))
+    
+    def _on_export_csv_clicked(self):
+        """Handle export to CSV button click."""
+        if not self._current_project:
+            self._show_error("Sin proyecto", "No hay proyecto cargado para exportar.")
+            return
+        
+        if self._current_project.get_total_count() == 0:
+            self._show_error("Sin datos", "No hay fragmentos para exportar.")
+            return
+        
+        file_path = self._select_save_path(
+            f"{self._current_project.name}_export.csv",
+            "CSV Files (*.csv);;All Files (*)"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            # Delegate to export service (SOLID principle)
+            self._export_service.export(self._current_project, file_path, 'csv')
+            
+            summary = self._project_service.get_project_summary(self._current_project)
+            
+            self._show_info(
+                "Exportación exitosa",
+                f"✓ Se exportaron {summary['total_fragments']} fragmentos a CSV!\n\n"
+                f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}\n"
+                f"Archivo: {file_path.name}"
+            )
+        except Exception as e:
+            self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(e)}")
     
     def _on_fragment_double_clicked(self, item):
         """Handle fragment double-click."""

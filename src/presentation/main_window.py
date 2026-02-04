@@ -65,7 +65,8 @@ class MainWindow(QMainWindow):
         
         # Create widgets with injected services
         self._project_browser = ProjectBrowser(
-            project_service=self._project_service
+            project_service=self._project_service,
+            export_service=self._export_service
         )
         
         self._fragment_viewer = FragmentViewer(
