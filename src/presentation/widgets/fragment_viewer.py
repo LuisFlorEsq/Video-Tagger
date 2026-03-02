@@ -331,14 +331,11 @@ class FragmentViewer(QWidget):
             )
             return
         
-        # Stop current video (non-blocking with threaded loader)
-        # self.video_player.cleanup()
+        # Set callback for when media is ready and first frame is visible — safe to seek
+        self.video_player.on_ready_callback = self._on_video_ready_for_fragment
         
         # Load video asynchronously
         self.video_player.load_video(fragment.video_path)
-        
-        # Set callback for when video is loaded
-        self.video_player.video_loader.on_loaded_callback = self._on_video_loaded_for_fragment
         
         # Update UI
         self._update_fragment_info()
@@ -353,9 +350,8 @@ class FragmentViewer(QWidget):
         self.prev_btn.setEnabled(fragment.is_labeled())
 
     
-    def _on_video_loaded_for_fragment(self, video_path: str, fps: float, total_frames: int):
-        """Callback when video finishes loading."""
-        # Seek to start time
+    def _on_video_ready_for_fragment(self):
+        """Callback when media is ready and first frame is rendered — safe to seek."""
         if self._current_fragment:
             start_ms = int(self._current_fragment.start_time * 1000)
             self.video_player.seek_position(start_ms)

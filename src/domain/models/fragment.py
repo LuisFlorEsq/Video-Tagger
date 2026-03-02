@@ -51,4 +51,3 @@ class Fragment:
     def get_video_name(self) -> str:
         """Get just the video filename."""
         return Path(self.video_path).name
-

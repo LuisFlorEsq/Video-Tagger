@@ -1,10 +1,13 @@
 from pathlib import Path
-from PySide6.QtCore import QThread, Signal, QUrl, QMutex, QMutexLocker
-from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtCore import QThread, Signal
 import cv2
 
 
 class VideoLoaderThread(QThread):
+    """
+    Reads video metadata (fps, frame count) in a background thread.
+    Does NOT touch QMediaPlayer — that stays on the main thread in VideoPlayer.
+    """
     video_loaded = Signal(str, float, int)
     loading_failed = Signal(str, str)
 
@@ -14,8 +17,13 @@ class VideoLoaderThread(QThread):
 
     def load_video(self, video_path: str):
         self._video_path = video_path
-        if not self.isRunning():
-            self.start()
+
+        # On Windows, restarting a finished QThread without waiting causes freezes.
+        if self.isRunning():
+            self.quit()
+            self.wait()
+
+        self.start()
 
     def run(self):
         try:
@@ -38,34 +46,34 @@ class VideoLoaderThread(QThread):
         except Exception as e:
             self.loading_failed.emit(self._video_path, str(e))
 
-class VideoLoadManager:
-    def __init__(self, media_player: QMediaPlayer):
-        self.media_player = media_player
-        self.loader_thread = VideoLoaderThread()
 
+class VideoLoadManager:
+    """
+    Manages the metadata loader thread.
+    Media player source setting is handled externally by VideoPlayer.
+    """
+    def __init__(self):
+        self.loader_thread = VideoLoaderThread()
         self.loader_thread.video_loaded.connect(self._on_video_loaded)
         self.loader_thread.loading_failed.connect(self._on_video_failed)
 
         self.on_loaded_callback = None
         self.on_failed_callback = None
 
-    def load_video_async(self, video_path: str):
-        # MAIN THREAD cleanup
-        self.media_player.stop()
-        self.media_player.setSource(QUrl())
+        self._pending_path = None
 
-        # Start metadata loading
+    def load_video_async(self, video_path: str):
+        self._pending_path = video_path
         self.loader_thread.load_video(video_path)
 
     def _on_video_loaded(self, video_path: str, fps: float, total_frames: int):
-        # MAIN THREAD media loading
-        self.media_player.setSource(
-            QUrl.fromLocalFile(str(Path(video_path).absolute()))
-        )
-
+        if video_path != self._pending_path:
+            return  # Stale result from a previous request, discard it
         if self.on_loaded_callback:
             self.on_loaded_callback(video_path, fps, total_frames)
 
     def _on_video_failed(self, video_path: str, error: str):
+        if video_path != self._pending_path:
+            return
         if self.on_failed_callback:
             self.on_failed_callback(video_path, error)

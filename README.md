@@ -11,3 +11,4 @@
 * Change the current logic so that the **Details (Status)** panel is updated only after pressing **“Save and Continue”**, or update it on view entry while updating only the tag panel when a tag is selected.
 * Add synchronized file updates linked to the project (partial progress saving).
 * Add functionality to check the project status when resuming (reload the project’s saved state).
+* Update the current logic to deactivate buttons when we are in the first and last fragment of the project.

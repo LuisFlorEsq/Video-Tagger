@@ -71,12 +71,13 @@ class LabelPanel(QWidget):
             }
             QListWidget::item:hover:enabled {
                 background-color: #E8F4FD;
-                cursor: pointer;
             }
             QListWidget:disabled {
                 background-color: #F5F5F5;
             }
         """)
+        self.label_list.setMouseTracking(True)
+        self.label_list.viewport().setCursor(Qt.PointingHandCursor)
         layout.addWidget(self.label_list)
         
         # Current label display

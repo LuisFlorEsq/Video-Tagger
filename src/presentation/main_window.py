@@ -321,7 +321,7 @@ class MainWindow(QMainWindow):
 
         if self._fragment_viewer:
             player = self._fragment_viewer.video_player
-            if player:
+            if player and index != 1:
                 player.force_stop()
 
         self.stacked_widget.setCurrentIndex(index)
