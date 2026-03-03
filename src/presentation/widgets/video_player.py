@@ -75,6 +75,7 @@ class VideoPlayer(QWidget):
     def _connect_signals(self):
         self.media_player.positionChanged.connect(self._on_position_changed)
         self.media_player.durationChanged.connect(self._on_duration_changed)
+        self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
         self.play_button.clicked.connect(self.toggle_playback)
         self.timeline_slider.sliderMoved.connect(self.seek_position)
 
@@ -123,6 +124,8 @@ class VideoPlayer(QWidget):
         if video_path != self._pending_video_path:
             return  # A newer request superseded this one
 
+        # Only clear the source if there actually is one — avoids confusing
+        # the Windows backend by calling setSource(QUrl()) on an empty player
         if self.media_player.source().isValid():
             self.media_player.setSource(QUrl())
 
@@ -141,13 +144,17 @@ class VideoPlayer(QWidget):
 
     def _on_media_status_changed(self, status):
         """
-        Wait for LoadedMedia, then pause() to:
+        Wait for LoadedMedia, then briefly play()->pause() to:
+          - force the Windows pipeline to fully initialize
+          - trigger durationChanged reliably (pause() alone is not enough on Windows)
           - render the first frame (no black screen)
-          - trigger durationChanged reliably on Windows
         """
         if status == QMediaPlayer.LoadedMedia:
             self._disconnect_media_ready()
 
+            # play() then immediately pause() forces the demuxer to run on Windows,
+            # which is what reliably triggers durationChanged and renders the first frame.
+            self.media_player.play()
             self.media_player.pause()
             self.media_player.setPosition(0)
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
@@ -198,6 +205,13 @@ class VideoPlayer(QWidget):
     # ------------------------------------------------------------------
     # Playback controls
     # ------------------------------------------------------------------
+
+    def _on_playback_state_changed(self, state):
+        """Reset play button and seek to start when video finishes playing naturally."""
+        if state == QMediaPlayer.StoppedState:
+            if not self._stop_listener_connected:
+                self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+                self.media_player.setPosition(0)
 
     def toggle_playback(self):
         if self.media_player.playbackState() != QMediaPlayer.PlayingState:

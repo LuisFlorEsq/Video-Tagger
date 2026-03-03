@@ -1,6 +1,14 @@
 from pathlib import Path
 from PySide6.QtCore import QThread, Signal
 import cv2
+import os
+import logging
+
+os.environ['QT_LOGGING_RULES'] = 'qt.multimedia.ffmpeg*=false'
+os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'loglevel;quiet'
+os.environ['OPENCV_LOG_LEVEL'] = 'SILENT'
+
+logging.getLogger('qt.multimedia').setLevel(logging.ERROR)
 
 
 class VideoLoaderThread(QThread):

@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
+from src.core.qt_config import setup_quiet_mode, setup_verbose_mode
 
 from src.core.container import get_container
 from src.application.services.project_service import ProjectService
@@ -15,6 +16,8 @@ from src.presentation.main_window import create_main_window
 
 def main():
     """Initialize application with dependency injection."""
+    
+    setup_verbose_mode()
     
     # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
