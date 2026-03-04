@@ -39,7 +39,6 @@ class ProjectBrowser(QWidget):
         # Inject dependency
         self._project_service = project_service
         self._export_service = export_service
-
         
         # State
         self._current_project: Project = None
@@ -91,7 +90,6 @@ class ProjectBrowser(QWidget):
                 background-color: #106EBE;
             }
         """)
-        # button_layout.addWidget(self.new_project_btn)
         
         self.load_project_btn = QPushButton("💾 Abrir proyecto existente")
         self.load_project_btn.setMinimumHeight(50)
@@ -109,7 +107,6 @@ class ProjectBrowser(QWidget):
                 background-color: #0E7B38;
             }
         """)
-        # button_layout.addWidget(self.load_project_btn)
         
         for btn in (self.new_project_btn, self.load_project_btn):
             btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
@@ -180,6 +177,26 @@ class ProjectBrowser(QWidget):
         """)
         nav_layout.addWidget(self.export_csv_btn)
         
+        self.sync_btn = QPushButton("🔄 Sincronizar videos")
+        self.sync_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #FFA500;
+                color: white;
+                border-radius: 4px;
+                padding: 8px 12px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #FF8C00;
+            }
+            QPushButton:disabled {
+                background-color: #E6B566;
+                color: #F2F2F2;
+                border: 1px solid #D4A24F;
+            }
+        """)
+        self.sync_btn.setEnabled(False)
+        nav_layout.addWidget(self.sync_btn)
+        
         info_layout.addLayout(nav_layout)
         
         self.project_info_group.setLayout(info_layout)
@@ -227,6 +244,7 @@ class ProjectBrowser(QWidget):
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
         self.save_project_btn.clicked.connect(self._on_save_clicked)
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
+        self.sync_btn.clicked.connect(self._on_sync_clicked)
 
         # Fragment and back to menu options
         self.back_btn.clicked.connect(self._on_back_clicked)
@@ -332,6 +350,35 @@ class ProjectBrowser(QWidget):
         except Exception as e:
             self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(e)}")
     
+    def _on_sync_clicked(self):
+        """Handle sync button click."""
+        if not self._current_project:
+            return
+        
+        new_videos = self._project_service.get_new_videos(self._current_project)
+        
+        if not new_videos:
+            self._show_info("Sin cambios", "No hay videos nuevos para sincronizar")
+            
+        reply = QMessageBox.question(
+            self,
+            "Sincronizar videos",
+            f"Se encontraron {len(new_videos)} videos nuevos. \n\n¿Deseas agregarlos al proyecto?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try: 
+                count = self._project_service.sync_new_videos(self._current_project, new_videos)
+                
+                self.refresh()
+                self._show_info(
+                "Sincronización exitosa",
+                f"Se agregaron {count} videos nuevos al proyecto."
+                )
+            except Exception as e:
+                self._show_error("Error al sincronizar", str(e))
+    
     def _on_fragment_double_clicked(self, item):
         """Handle fragment double-click."""
         if not self._current_project:
@@ -359,6 +406,7 @@ class ProjectBrowser(QWidget):
         if self._current_project:
             self._populate_fragment_list()
             self._update_project_stats()
+            self._check_for_new_videos()
     
     def get_current_project(self) -> Project:
         """Get the currently loaded project."""
@@ -387,8 +435,24 @@ class ProjectBrowser(QWidget):
             self.project_name_label.setText(f"📁 {self._current_project.name}")
             self._populate_fragment_list()
             self._update_project_stats()
+            self._check_for_new_videos()
+
         else:
             self.subtitle_label.setText("Selecciona una carpeta con fragmentos de video para continuar")
+    
+    def _check_for_new_videos(self):
+        """Check if there are new videos in the project folder."""
+        if not self._current_project:
+            return
+        
+        new_videos = self._project_service.get_new_videos(self._current_project)
+        
+        if new_videos:
+            self.sync_btn.setEnabled(True)
+            self.sync_btn.setText(f"🔄 Sincronizar ({len(new_videos)} videos nuevos)")
+        else:
+            self.sync_btn.setEnabled(False)
+            self.sync_btn.setText(f"🔄 Sincronizar videos")
     
     def _populate_fragment_list(self):
         """Populate the fragment list from current project."""

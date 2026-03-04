@@ -63,6 +63,59 @@ class ProjectService:
         
         return self._repository.load(file_path)
     
+    def get_new_videos(self, project: Project) -> set[Path]:
+        """Get the count of new videos in a project folder
+
+        Args:
+            project (Project): Projec to check
+
+        Returns:
+            int: Number of new videos not in project
+        """
+        folder_path = Path(project.folder_path)
+        if not folder_path.exists():
+            return 0
+        
+        all_videos = self._scanner.scan_folder(folder_path=folder_path)
+        
+        existing_paths = {Path(f.video_path) for f in project.fragments}
+        
+        new_videos = set(all_videos) - existing_paths
+        return new_videos
+        
+    def sync_new_videos(self, project: Project, new_videos: set[Path]) -> int:
+        """
+        Add new_videos detected as fragments for the current project
+        Args:
+            project (Project): Project to sync
+            new_videos (set[Path]): The Paths of the detected new videos
+
+        Returns:
+            int: Number of new fragments added
+        """
+        if not new_videos:
+            return 0
+        
+        next_id = project.get_total_count() + 1
+        
+        for video_path in new_videos:
+            try:
+                duration = self._video_source.get_duration(video_path)
+                fragment = Fragment(
+                    fragment_id=f"fragment_{next_id:03d}",
+                    video_path=str(video_path),
+                    start_time=0.0,
+                    duration=min(1.0, duration)
+                )
+                project.add_fragment(fragment)
+                next_id += 1
+            except Exception as e:
+                print(f"Failed to add {video_path}: {e}")
+                continue
+            
+        return len(new_videos)
+        
+    
     def get_project_summary(self, project: Project) -> dict:
         """Get a summary of project statistics."""
         return {

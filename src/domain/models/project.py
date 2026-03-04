@@ -6,7 +6,7 @@ from pathlib import Path
 from src.domain.models.fragment import Fragment
 
 class Project:
-    """Represents a video annotation project - Aggregate root."""
+    """Represents a video annotation project"""
     
     def __init__(
         self, 

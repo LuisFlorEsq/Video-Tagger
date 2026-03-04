@@ -10,6 +10,7 @@ from src.presentation.widgets.video_player import VideoPlayer
 from src.presentation.widgets.label_panel import LabelPanel
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
+from src.application.services.project_service import ProjectService
 
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
@@ -30,6 +31,7 @@ class FragmentViewer(QWidget):
     def __init__(
         self, 
         labeling_service: LabelingService,
+        project_service: ProjectService,
         navigation_service: NavigationService = None,
         available_labels: list = None,
         parent=None
@@ -48,6 +50,7 @@ class FragmentViewer(QWidget):
         # Inject dependencies
         self._labeling_service = labeling_service
         self._navigation_service = navigation_service
+        self._project_service = project_service
         
         # State
         self._current_fragment: Fragment = None
@@ -235,8 +238,8 @@ class FragmentViewer(QWidget):
             
             # Update UI
             self._update_fragment_status()
-            self.next_btn.setEnabled(True)
             self.prev_btn.setEnabled(True)
+            self.next_btn.setEnabled(True)
             
             # Emit signal
             self.fragment_labeled.emit(self._current_fragment)
