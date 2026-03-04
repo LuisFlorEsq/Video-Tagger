@@ -70,7 +70,8 @@ class MainWindow(QMainWindow):
         )
         
         self._fragment_viewer = FragmentViewer(
-            labeling_service=self._labeling_service
+            labeling_service=self._labeling_service,
+            project_service=self._project_service
         )
         
         # Add to stacked widget

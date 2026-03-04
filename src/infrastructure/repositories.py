@@ -13,9 +13,12 @@ class JsonProjectRepository(IProjectRepository):
     
     def save(self, project: Project, file_path: Path) -> None:
         """Save project to JSON file."""
+        project.set_save_path(file_path)
+        
         data = {
             'name': project.name,
             'folder_path': project.folder_path,
+            'save_path': project.save_path,
             'fragments': [self._fragment_to_dict(f) for f in project.fragments],
             'created_at': project.created_at.isoformat(),
             'modified_at': project.modified_at.isoformat()
@@ -32,6 +35,7 @@ class JsonProjectRepository(IProjectRepository):
         project = Project(
             name=data['name'],
             folder_path=data['folder_path'],
+            save_path=data['save_path'],
             created_at=datetime.fromisoformat(data['created_at']),
             modified_at=datetime.fromisoformat(data['modified_at'])
         )

@@ -3,8 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QGroupBox, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QUrl
-from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtCore import Qt, Signal, QTimer
 
 from src.presentation.widgets.video_player import VideoPlayer
 from src.presentation.widgets.label_panel import LabelPanel
@@ -49,8 +48,8 @@ class FragmentViewer(QWidget):
         
         # Inject dependencies
         self._labeling_service = labeling_service
-        self._navigation_service = navigation_service
         self._project_service = project_service
+        self._navigation_service = navigation_service
         
         # State
         self._current_fragment: Fragment = None
@@ -64,6 +63,13 @@ class FragmentViewer(QWidget):
             ]
         else:
             self.available_labels = available_labels
+            
+        # Auto-save configuration
+        self._auto_save_timer = QTimer()
+        self._auto_save_timer.setSingleShot(True)
+        self._auto_save_timer.timeout.connect(self._auto_save_project)
+        self._auto_save_delay_ms = 3000  # 3 seconds
+        self._has_unsaved_changes = False
         
         # UI
         self._init_ui()
@@ -236,6 +242,9 @@ class FragmentViewer(QWidget):
             # Delegate to service (business logic)
             self._labeling_service.assign_label(self._current_fragment, label)
             
+            self._has_unsaved_changes = True
+            self._schedule_auto_save()
+            
             # Update UI
             self._update_fragment_status()
             self.prev_btn.setEnabled(True)
@@ -247,10 +256,36 @@ class FragmentViewer(QWidget):
         except ValueError as e:
             self._show_error("No se pudo etiquetar", str(e))
     
+    def _schedule_auto_save(self):
+        """Schedule auto-save with debouncing."""
+        if self._current_project and self._current_project.get_save_path():
+            self._auto_save_timer.stop()
+            self._auto_save_timer.start(self._auto_save_delay_ms)
+
+    def _auto_save_project(self):
+        """Auto-save project silently using project's save_path."""
+        if not self._current_project:
+            return
+        
+        try:
+            success = self._project_service.auto_save_project(self._current_project)
+            if success:
+                self._has_unsaved_changes = False
+        except Exception as e:
+            print(f"Auto-save failed: {e}")
+            
+    def _force_save(self):
+        """Force immediate save (bypass timer)."""
+        if self._has_unsaved_changes and self._current_project:
+            self._auto_save_timer.stop()
+            self._auto_save_project()
+        
     def _on_prev_clicked(self):
         """Handle previous button click."""
         if not self._current_fragment:
             return
+        
+        self._force_save()
         
         # Check if current fragment is labeled
         if not self._current_fragment.is_labeled():
@@ -277,6 +312,8 @@ class FragmentViewer(QWidget):
         if not self._current_fragment:
             return
         
+        self._force_save()
+        
         # Check if current fragment is labeled
         if not self._current_fragment.is_labeled():
             reply = QMessageBox.question(
@@ -299,6 +336,8 @@ class FragmentViewer(QWidget):
     
     def _on_back_clicked(self):
         """Handle back button click."""
+        self._force_save()
+        
         if self._current_fragment and not self._current_fragment.is_labeled():
             reply = QMessageBox.question(
                 self,
@@ -352,6 +391,28 @@ class FragmentViewer(QWidget):
         self.next_btn.setEnabled(fragment.is_labeled())
         self.prev_btn.setEnabled(fragment.is_labeled())
 
+    def set_current_project(self, project: Project):
+        """Set the current project for auto-save."""
+        self._current_project = project
+        
+        # Use project's save path if available
+        if project.get_save_path():
+            self._last_save_path = project.get_save_path()
+        
+    # def _auto_save_project(self):
+    #     """Auto-save project silently."""
+    #     try:
+    #         if hasattr(self, '_last_save_path') and self._current_project:
+    #             self.status_label.setText("💾 Guardando...")
+    #             self._project_service.save_project(
+    #                 self._current_project, 
+    #                 self._last_save_path
+    #             )
+    #             self._has_unsaved_changes = False
+                
+    #             QTimer.singleShot(1000, lambda: self._update_fragment_status())
+    #     except Exception as e:
+    #         print(f"Auto-save failed: {e}")
     
     def _on_video_ready_for_fragment(self):
         """Callback when media is ready and first frame is rendered — safe to seek."""

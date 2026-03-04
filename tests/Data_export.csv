@@ -1,4 +1,0 @@
-fragment_id,video_name,video_path,start_time,duration,label,is_labeled,notes,created_at,modified_at
-fragment_001,v3tapps_2025-03-25 22-08-22.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-08-22.mkv,0.0,1.0,Etiqueta 1,True,,2025-12-27T19:57:13.459903,2026-02-04T11:27:57.767844
-fragment_002,v3tapps_2025-03-25 22-19-29.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-19-29.mkv,0.0,1.0,Etiqueta 2,True,,2025-12-27T19:57:13.486500,2026-02-04T11:28:08.004777
-fragment_003,v3tapps_2025-03-25 22-26-20.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-26-20.mkv,0.0,1.0,Etiqueta 3,True,,2025-12-27T19:57:13.510504,2026-02-04T11:28:10.299460

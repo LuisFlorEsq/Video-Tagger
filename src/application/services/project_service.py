@@ -56,6 +56,28 @@ class ProjectService:
         """Save a project to file."""
         self._repository.save(project, file_path)
     
+    def auto_save_project(self, project: Project) -> bool:
+        """
+        Auto-save project to its saved location.
+        
+        Args:
+            project: Project to save
+            
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        save_path = project.get_save_path()
+        
+        if not save_path:
+            return False
+        
+        try:
+            self._repository.save(project, save_path)
+            return True
+        except Exception as e:
+            print(f"Auto-save failed: {e}")
+            return False
+    
     def load_project(self, file_path: Path) -> Project:
         """Load a project from file."""
         if not self._repository.exists(file_path):

@@ -1,0 +1,6 @@
+fragment_id,video_name,video_path,start_time,duration,label,is_labeled,notes,created_at,modified_at
+fragment_001,Daft Punk - Infinity Repeating.mp4,C:\Users\luis-\Videos\HD Movie Maker\Data\Daft Punk - Infinity Repeating.mp4,0.0,1.0,Etiqueta 1,True,,2026-03-04T06:25:56.956152,2026-03-04T06:28:54.181787
+fragment_002,v3tapps_2025-03-25 22-08-22.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-08-22.mkv,0.0,1.0,Etiqueta 2,True,,2026-03-04T06:25:56.985147,2026-03-04T06:29:04.865076
+fragment_003,v3tapps_2025-03-25 22-19-29.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-19-29.mkv,0.0,1.0,Etiqueta 3,True,,2026-03-04T06:25:57.017721,2026-03-04T06:29:08.303317
+fragment_004,v3tapps_2025-03-25 22-26-20.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\v3tapps_2025-03-25 22-26-20.mkv,0.0,1.0,Etiqueta 4,True,,2026-03-04T06:25:57.046959,2026-03-04T06:29:18.879405
+fragment_005,video_test.mkv,C:\Users\luis-\Videos\HD Movie Maker\Data\video_test.mkv,0.0,1.0,Otro,True,,2026-03-04T06:25:57.075699,2026-03-04T06:29:23.053134

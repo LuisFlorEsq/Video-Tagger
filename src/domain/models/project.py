@@ -12,6 +12,7 @@ class Project:
         self, 
         name: str, 
         folder_path: str,
+        save_path: Optional[str] = None,
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None
     ):
@@ -20,6 +21,7 @@ class Project:
         
         self.name = name.strip()
         self.folder_path = folder_path
+        self.save_path = save_path
         self._fragments: List[Fragment] = []
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
@@ -123,3 +125,12 @@ class Project:
         except StopIteration:
             pass
         return None
+    
+    def set_save_path(self, save_path: Path) -> None:
+        """Set the save path for this project."""
+        self.save_path = str(save_path)
+        self.modified_at = datetime.now()
+    
+    def get_save_path(self) -> Optional[Path]:
+        """Get the save path if set."""
+        return Path(self.save_path) if self.save_path else None
