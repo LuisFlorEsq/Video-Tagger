@@ -1,0 +1,58 @@
+{
+  "name": "Data",
+  "folder_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data",
+  "fragments": [
+    {
+      "fragment_id": "fragment_001",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-08-22.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 3",
+      "notes": "",
+      "created_at": "2025-12-27T19:57:13.459903",
+      "modified_at": "2026-03-02T13:46:18.987476"
+    },
+    {
+      "fragment_id": "fragment_002",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-19-29.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 2",
+      "notes": "",
+      "created_at": "2025-12-27T19:57:13.486500",
+      "modified_at": "2026-03-02T13:46:20.993668"
+    },
+    {
+      "fragment_id": "fragment_003",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-26-20.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 1",
+      "notes": "",
+      "created_at": "2025-12-27T19:57:13.510504",
+      "modified_at": "2026-03-02T13:46:22.882596"
+    },
+    {
+      "fragment_id": "fragment_004",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\video_test.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 4",
+      "notes": "",
+      "created_at": "2026-03-04T04:40:33.182826",
+      "modified_at": "2026-03-04T04:40:52.518380"
+    },
+    {
+      "fragment_id": "fragment_005",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\Daft Punk - Infinity Repeating.mp4",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Otro",
+      "notes": "",
+      "created_at": "2026-03-04T04:40:33.218250",
+      "modified_at": "2026-03-04T04:41:02.107482"
+    }
+  ],
+  "created_at": "2025-12-27T19:57:13.281080",
+  "modified_at": "2026-03-04T04:40:33.218250"
+}

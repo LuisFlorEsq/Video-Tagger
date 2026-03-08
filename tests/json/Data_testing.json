@@ -1,0 +1,59 @@
+{
+  "name": "Data",
+  "folder_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data",
+  "save_path": "C:\\Users\\luis-\\OneDrive\\Escritorio\\Carpetas\\ESCOM\\Repositorios\\Video-Tagger\\tests\\Data_testing.json",
+  "fragments": [
+    {
+      "fragment_id": "fragment_001",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\Daft Punk - Infinity Repeating.mp4",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 1",
+      "notes": "",
+      "created_at": "2026-03-04T06:25:56.956152",
+      "modified_at": "2026-03-04T06:28:54.181787"
+    },
+    {
+      "fragment_id": "fragment_002",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-08-22.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 2",
+      "notes": "",
+      "created_at": "2026-03-04T06:25:56.985147",
+      "modified_at": "2026-03-04T06:29:04.865076"
+    },
+    {
+      "fragment_id": "fragment_003",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-19-29.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 3",
+      "notes": "",
+      "created_at": "2026-03-04T06:25:57.017721",
+      "modified_at": "2026-03-04T06:29:08.303317"
+    },
+    {
+      "fragment_id": "fragment_004",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\v3tapps_2025-03-25 22-26-20.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Etiqueta 4",
+      "notes": "",
+      "created_at": "2026-03-04T06:25:57.046959",
+      "modified_at": "2026-03-04T06:29:18.879405"
+    },
+    {
+      "fragment_id": "fragment_005",
+      "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\video_test.mkv",
+      "start_time": 0.0,
+      "duration": 1.0,
+      "label": "Otro",
+      "notes": "",
+      "created_at": "2026-03-04T06:25:57.075699",
+      "modified_at": "2026-03-04T06:29:23.053134"
+    }
+  ],
+  "created_at": "2026-03-04T06:25:56.918643",
+  "modified_at": "2026-03-04T06:29:25.290941"
+}
