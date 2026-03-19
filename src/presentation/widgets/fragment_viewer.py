@@ -214,14 +214,32 @@ class FragmentViewer(QWidget):
             }
         """)
         actions_layout.addWidget(self.next_btn)
+        
+        self.delete_label_btn = QPushButton("Eliminar etiqueta")
+        self.delete_label_btn.setEnabled(False)
+        self.delete_label_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 12px;
+                background-color: #D13438;
+                color: white;
+                border-radius: 5px;
+                padding: 8px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #B02A2E;
+            }
+            QPushButton:disabled {
+                background-color: #CCC;
+                color: #888;
+            }
+        """)
+        actions_layout.addWidget(self.delete_label_btn)
                 
         actions_group.setLayout(actions_layout)
         controls_layout.addWidget(actions_group)
-        
         controls_layout.addStretch()
         
         content_layout.addWidget(controls_widget, 1)  # 1/3 of space
-        
         layout.addLayout(content_layout)
     
     def _connect_signals(self):
@@ -229,6 +247,7 @@ class FragmentViewer(QWidget):
         self.back_btn.clicked.connect(self._on_back_clicked)
         self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
+        self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
     
     # === Command Handlers (UI Logic Only) ===
@@ -333,6 +352,36 @@ class FragmentViewer(QWidget):
         else:
             # Just emit the signal, parent will handle
             self.next_requested.emit()
+            
+    def _on_delete_clicked(self):
+        """
+        Handle delete label button click.
+        """
+        if not self._current_fragment or not self._current_fragment.is_labeled():
+            return
+        
+        reply = QMessageBox.question(
+            self,
+            "Borrar etiqueta",
+            f"¿Está seguro de borrar la etiqueta '{self._current_fragment.label}'?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try:
+                self._labeling_service.clear_label(self._current_fragment)
+                
+                self._has_unsaved_changes = True
+                self._schedule_auto_save()
+                
+                # Update UI
+                self._update_fragment_status()
+                self.delete_label_btn.setEnabled(False)
+                
+                self.fragment_labeled.emit(self._current_fragment)
+            except Exception as e:
+                self._show_error("Error", str(e))
+           
     
     def _on_back_clicked(self):
         """Handle back button click."""
@@ -398,21 +447,6 @@ class FragmentViewer(QWidget):
         # Use project's save path if available
         if project.get_save_path():
             self._last_save_path = project.get_save_path()
-        
-    # def _auto_save_project(self):
-    #     """Auto-save project silently."""
-    #     try:
-    #         if hasattr(self, '_last_save_path') and self._current_project:
-    #             self.status_label.setText("💾 Guardando...")
-    #             self._project_service.save_project(
-    #                 self._current_project, 
-    #                 self._last_save_path
-    #             )
-    #             self._has_unsaved_changes = False
-                
-    #             QTimer.singleShot(1000, lambda: self._update_fragment_status())
-    #     except Exception as e:
-    #         print(f"Auto-save failed: {e}")
     
     def _on_video_ready_for_fragment(self):
         """Callback when media is ready and first frame is rendered — safe to seek."""
@@ -465,12 +499,14 @@ class FragmentViewer(QWidget):
                 "font-size: 11px; padding: 3px; color: #10893E; font-weight: bold;"
             )
             self.label_panel.set_current_label(self._current_fragment.label)
+            self.delete_label_btn.setEnabled(True)
         else:
             self.status_label.setText("Estatus: No etiquetado")
             self.status_label.setStyleSheet(
                 "font-size: 11px; padding: 3px; color: #856404; font-weight: bold;"
             )
             self.label_panel.set_current_label(None)
+            self.delete_label_btn.setEnabled(False)
     
     def _update_position_display(self):
         """Update position indicator."""
