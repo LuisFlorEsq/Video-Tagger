@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +22,7 @@ class Project:
         self.folder_path = folder_path
         self.save_path = save_path
         self._fragments: List[Fragment] = []
+        self._fragment_index: Dict[str, int] = {}
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
     
@@ -33,27 +33,38 @@ class Project:
     
     def add_fragment(self, fragment: Fragment) -> None:
         """Add a fragment to the project."""
-        if self.get_fragment(fragment.fragment_id):
+        if fragment.fragment_id in self._fragment_index:  # O(1) instead of O(n)
             raise ValueError(f"Fragment with ID '{fragment.fragment_id}' already exists")
         
+        self._fragment_index[fragment.fragment_id] = len(self._fragments)
         self._fragments.append(fragment)
         self.modified_at = datetime.now()
     
     def remove_fragment(self, fragment_id: str) -> bool:
-        """Remove a fragment from the project."""
-        fragment = self.get_fragment(fragment_id)
-        if fragment:
-            self._fragments.remove(fragment)
-            self.modified_at = datetime.now()
-            return True
-        return False
+        """Remove a fragment from the project"""
+        if fragment_id not in self._fragment_index:
+            return False
+        
+        idx = self._fragment_index[fragment_id]
+        self._fragments.pop(idx)
+        
+        # Rebuild index — indices after the removed position shifted by -1
+        self._fragment_index = {
+            f.fragment_id: i for i, f in enumerate(self._fragments)
+        }
+        self.modified_at = datetime.now()
+        return True
     
     def get_fragment(self, fragment_id: str) -> Optional[Fragment]:
         """Get a fragment by ID."""
-        for fragment in self._fragments:
-            if fragment.fragment_id == fragment_id:
-                return fragment
-        return None
+        idx = self._fragment_index.get(fragment_id)
+        if idx is None:
+            return None
+        return self._fragments[idx]
+    
+    def get_fragment_index(self, fragment_id: str) -> Optional[int]:
+        """Get the 0-based position of a fragment by ID."""
+        return self._fragment_index.get(fragment_id)
     
     def get_fragments_by_label(self, label: str) -> List[Fragment]:
         """Get all fragments with a specific label."""
@@ -102,29 +113,17 @@ class Project:
     
     def get_next_fragment(self, current_fragment_id: str) -> Optional[Fragment]:
         """Get the next fragment after the given one."""
-        try:
-            current_index = next(
-                i for i, f in enumerate(self._fragments) 
-                if f.fragment_id == current_fragment_id
-            )
-            if current_index < len(self._fragments) - 1:
-                return self._fragments[current_index + 1]
-        except StopIteration:
-            pass
-        return None
+        idx = self._fragment_index.get(current_fragment_id)
+        if idx is None or idx >= len(self._fragments) - 1:
+            return None
+        return self._fragments[idx + 1]
     
     def get_previous_fragment(self, current_fragment_id: str) -> Optional[Fragment]:
         """Get the previous fragment before the given one."""
-        try:
-            current_index = next(
-                i for i, f in enumerate(self._fragments) 
-                if f.fragment_id == current_fragment_id
-            )
-            if current_index > 0:
-                return self._fragments[current_index - 1]
-        except StopIteration:
-            pass
-        return None
+        idx = self._fragment_index.get(current_fragment_id)
+        if idx is None or idx == 0:
+            return None
+        return self._fragments[idx - 1]
     
     def set_save_path(self, save_path: Path) -> None:
         """Set the save path for this project."""

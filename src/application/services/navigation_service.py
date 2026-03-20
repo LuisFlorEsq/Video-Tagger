@@ -80,8 +80,7 @@ class NavigationService:
         if not self._current_fragment_id:
             return (0, self._project.get_total_count())
         
-        for i, fragment in enumerate(self._project.fragments):
-            if fragment.fragment_id == self._current_fragment_id:
-                return (i + 1, self._project.get_total_count())
-        
-        return (0, self._project.get_total_count())
+        idx = self._project.get_fragment_index(self._current_fragment_id)
+        if idx is None:
+            return (0, self._project.get_total_count())
+        return (idx + 1, self._project.get_total_count())
