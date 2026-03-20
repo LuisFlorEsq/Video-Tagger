@@ -18,6 +18,10 @@ class Fragment:
     
     def __post_init__(self):
         """Validate fragment data."""
+        if not self.fragment_id or not self.fragment_id.strip():
+            raise ValueError("fragment_id cannot be empty")
+        if not self.video_path or not self.video_path.strip():
+            raise ValueError("video_path cannot be empty")
         if self.start_time < 0:
             raise ValueError("Start time must be non-negative")
         if self.duration <= 0:

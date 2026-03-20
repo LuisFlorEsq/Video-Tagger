@@ -243,6 +243,7 @@ class ProjectBrowser(QWidget):
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
         self.save_project_btn.clicked.connect(self._on_save_clicked)
+        # Export and sync contents
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
         self.sync_btn.clicked.connect(self._on_sync_clicked)
 
@@ -359,6 +360,7 @@ class ProjectBrowser(QWidget):
         
         if not new_videos:
             self._show_info("Sin cambios", "No hay videos nuevos para sincronizar")
+            return
             
         reply = QMessageBox.question(
             self,
@@ -449,10 +451,10 @@ class ProjectBrowser(QWidget):
         
         if new_videos:
             self.sync_btn.setEnabled(True)
-            self.sync_btn.setText(f"🔄 Sincronizar ({len(new_videos)} videos nuevos)")
+            self.sync_btn.setText(f"Sincronizar ({len(new_videos)} videos nuevos)")
         else:
             self.sync_btn.setEnabled(False)
-            self.sync_btn.setText(f"🔄 Sincronizar videos")
+            self.sync_btn.setText(f"Sincronizar videos")
     
     def _populate_fragment_list(self):
         """Populate the fragment list from current project."""

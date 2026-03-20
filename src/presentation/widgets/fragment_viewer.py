@@ -262,7 +262,7 @@ class FragmentViewer(QWidget):
         
         try:
             # Delegate to service (business logic)
-            self._labeling_service.assign_label(self._current_fragment, label)
+            self._labeling_service.assign_label(self._current_fragment, self._current_project, label)
             
             self._has_unsaved_changes = True
             self._schedule_auto_save()
@@ -321,12 +321,7 @@ class FragmentViewer(QWidget):
             if reply == QMessageBox.No:
                 return
             
-        # Check if we can navigate (avoid out of bonds)
-        if self._navigation_service and self._navigation_service.has_previous():
-            # Let the parent handle navigation
-            self.prev_requested.emit()
-        else:
-            self.prev_requested.emit()
+        self.prev_requested.emit()
             
     
     def _on_next_clicked(self):
@@ -347,14 +342,8 @@ class FragmentViewer(QWidget):
             
             if reply == QMessageBox.No:
                 return
-        
-        # Check if we can navigate
-        if self._navigation_service and self._navigation_service.has_next():
-            # Let the parent handle navigation
-            self.next_requested.emit()
-        else:
-            # Just emit the signal, parent will handle
-            self.next_requested.emit()
+            
+        self.next_requested.emit()
             
     def _on_delete_clicked(self):
         """
@@ -364,7 +353,7 @@ class FragmentViewer(QWidget):
             return
         
         try:
-            self._labeling_service.clear_label(self._current_fragment)
+            self._labeling_service.clear_label(self._current_fragment, self._current_project)
             
             self._has_unsaved_changes = True
             self._schedule_auto_save()

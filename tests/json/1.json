@@ -8,10 +8,10 @@
       "video_path": "C:\\Users\\luis-\\Videos\\HD Movie Maker\\Data\\Daft Punk - Infinity Repeating.mp4",
       "start_time": 0.0,
       "duration": 1.0,
-      "label": "",
+      "label": "Etiqueta 1",
       "notes": "",
       "created_at": "2026-03-04T11:12:38.179012",
-      "modified_at": "2026-03-19T17:44:20.037315"
+      "modified_at": "2026-03-19T23:27:31.517823"
     },
     {
       "fragment_id": "fragment_002",
@@ -65,5 +65,5 @@
     }
   ],
   "created_at": "2026-03-04T11:12:37.961415",
-  "modified_at": "2026-03-19T17:44:22.055030"
+  "modified_at": "2026-03-19T23:27:32.919563"
 }

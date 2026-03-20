@@ -158,6 +158,12 @@ class MainWindow(QMainWindow):
         # Inject navigation service into fragment viewer
         self._fragment_viewer.set_navigation_service(self._navigation_service)
         
+        # Clear any fragment state from a previous  project
+        self._fragment_viewer._current_fragment = None
+        self._fragment_viewer._current_project = project
+        
+        self._safe_switch_view(0)
+        
         # Update status
         summary = self._project_service.get_project_summary(project)
         self._update_status(
@@ -188,8 +194,15 @@ class MainWindow(QMainWindow):
         # Refresh browser to show updated status
         self._project_browser.refresh()
         
-        # Update status
-        self._update_status(f"Fragmento {fragment.fragment_id} etiquetado como: '{fragment.label}'")
+        if fragment.is_labeled():
+            self._update_status(
+            f"Fragmento {fragment.fragment_id} etiquetado como: '{fragment.label}'"
+            )
+            
+        else:
+            self._update_status(
+                f"Etiqueta eliminada del fragmento {fragment.fragment_id}"
+            )
     
     def _on_prev_requested(self):
         """Handle previous fragment request."""
@@ -212,8 +225,8 @@ class MainWindow(QMainWindow):
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
                 self,
-                "¡Todo listo!",
-                f"Haz alcanzado el final del proyecto.\n\n"
+                "Inicio del proyecto",
+                f"Haz alcanzado el inicio del proyecto.\n\n"
                 f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
                 f"({summary['progress_percentage']:.1f}%)"
             )

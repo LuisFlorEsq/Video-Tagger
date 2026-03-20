@@ -29,7 +29,7 @@ class Project:
     @property
     def fragments(self) -> List[Fragment]:
         """Get read-only access to fragments."""
-        return self._fragments.copy()
+        return self._fragments
     
     def add_fragment(self, fragment: Fragment) -> None:
         """Add a fragment to the project."""
