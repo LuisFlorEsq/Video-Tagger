@@ -378,6 +378,8 @@ class ProjectBrowser(QWidget):
                 "Sincronización exitosa",
                 f"Se agregaron {count} videos nuevos al proyecto."
                 )
+                self.sync_btn.setEnabled(False)
+                self.sync_btn.setText('Sincronizar videos')
             except Exception as e:
                 self._show_error("Error al sincronizar", str(e))
     
@@ -408,7 +410,6 @@ class ProjectBrowser(QWidget):
         if self._current_project:
             self._populate_fragment_list()
             self._update_project_stats()
-            self._check_for_new_videos()
     
     def get_current_project(self) -> Project:
         """Get the currently loaded project."""
@@ -420,6 +421,7 @@ class ProjectBrowser(QWidget):
         """Load a project into the UI."""
         self._current_project = project
         self._update_view()
+        self._check_for_new_videos()
     
     def _update_view(self):
         """Update the view based on current state."""
@@ -437,7 +439,6 @@ class ProjectBrowser(QWidget):
             self.project_name_label.setText(f"📁 {self._current_project.name}")
             self._populate_fragment_list()
             self._update_project_stats()
-            self._check_for_new_videos()
 
         else:
             self.subtitle_label.setText("Selecciona una carpeta con fragmentos de video para continuar")

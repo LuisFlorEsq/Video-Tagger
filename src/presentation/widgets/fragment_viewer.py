@@ -54,6 +54,7 @@ class FragmentViewer(QWidget):
         # State
         self._current_fragment: Fragment = None
         self._current_project: Project = None
+        self._last_save_path = None
         
         # Default labels
         if available_labels is None:
