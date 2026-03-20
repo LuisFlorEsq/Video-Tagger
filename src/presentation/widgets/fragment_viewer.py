@@ -244,9 +244,12 @@ class FragmentViewer(QWidget):
     
     def _connect_signals(self):
         """Connect widget signals to handlers."""
+        # Back button (return to project view)
         self.back_btn.clicked.connect(self._on_back_clicked)
+        # Navigation fragment buttons
         self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
+        # Label changes
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
     
@@ -360,27 +363,19 @@ class FragmentViewer(QWidget):
         if not self._current_fragment or not self._current_fragment.is_labeled():
             return
         
-        reply = QMessageBox.question(
-            self,
-            "Borrar etiqueta",
-            f"¿Está seguro de borrar la etiqueta '{self._current_fragment.label}'?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            try:
-                self._labeling_service.clear_label(self._current_fragment)
-                
-                self._has_unsaved_changes = True
-                self._schedule_auto_save()
-                
-                # Update UI
-                self._update_fragment_status()
-                self.delete_label_btn.setEnabled(False)
-                
-                self.fragment_labeled.emit(self._current_fragment)
-            except Exception as e:
-                self._show_error("Error", str(e))
+        try:
+            self._labeling_service.clear_label(self._current_fragment)
+            
+            self._has_unsaved_changes = True
+            self._schedule_auto_save()
+            
+            # Update UI
+            self._update_fragment_status()
+            self.delete_label_btn.setEnabled(False)
+            
+            self.fragment_labeled.emit(self._current_fragment)
+        except Exception as e:
+            self._show_error("Error", str(e))
            
     
     def _on_back_clicked(self):
@@ -507,6 +502,10 @@ class FragmentViewer(QWidget):
             )
             self.label_panel.set_current_label(None)
             self.delete_label_btn.setEnabled(False)
+            
+            # Disable navigation buttons
+            self.next_btn.setEnabled(False)
+            self.prev_btn.setEnabled(False)
     
     def _update_position_display(self):
         """Update position indicator."""
