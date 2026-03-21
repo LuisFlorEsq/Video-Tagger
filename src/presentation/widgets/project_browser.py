@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QSizePolicy
 
-
+from src.presentation.styles import btn_primary
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 from src.domain.models.project import Project
@@ -77,36 +77,11 @@ class ProjectBrowser(QWidget):
         
         self.new_project_btn = QPushButton("📁 Nuevo proyecto")
         self.new_project_btn.setMinimumHeight(50)
-        self.new_project_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                background-color: #0078D4;
-                color: white;
-                border-radius: 5px;
-                padding: 8px 18px;
-            }
-            QPushButton:hover {
-                background-color: #106EBE;
-            }
-        """)
+        self.new_project_btn.setStyleSheet(btn_primary())
         
         self.load_project_btn = QPushButton("💾 Abrir proyecto existente")
         self.load_project_btn.setMinimumHeight(50)
-        self.load_project_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 14px;
-                font-weight: bold;
-                background-color: #10893E;
-                color: white;
-                border-radius: 5px;
-                padding: 8px 18px;
-
-            }
-            QPushButton:hover {
-                background-color: #0E7B38;
-            }
-        """)
+        self.load_project_btn.setStyleSheet(btn_primary())
         
         for btn in (self.new_project_btn, self.load_project_btn):
             btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
@@ -136,64 +111,19 @@ class ProjectBrowser(QWidget):
         nav_layout = QHBoxLayout()
         
         self.back_btn = QPushButton("← Regresar al menu principal")
-        self.back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #6C757D;
-                color: white;
-                border-radius: 3px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background-color: #5A6268;
-            }
-        """)
+        self.back_btn.setStyleSheet(btn_primary())
         nav_layout.addWidget(self.back_btn)
         
         self.save_project_btn = QPushButton("💾 Guardar proyecto")
-        self.save_project_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #0078D4;
-                color: white;
-                border-radius: 3px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background-color: #106EBE;
-            }
-        """)
+        self.save_project_btn.setStyleSheet(btn_primary())
         nav_layout.addWidget(self.save_project_btn)
         
         self.export_csv_btn = QPushButton("📊 Exportar a CSV")
-        self.export_csv_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #10893E;
-                color: white;
-                border-radius: 3px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background-color: #0E7B38;
-            }
-        """)
+        self.export_csv_btn.setStyleSheet(btn_primary())
         nav_layout.addWidget(self.export_csv_btn)
         
         self.sync_btn = QPushButton("🔄 Sincronizar videos")
-        self.sync_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #FFA500;
-                color: white;
-                border-radius: 4px;
-                padding: 8px 12px;
-            }
-            QPushButton:hover:enabled {
-                background-color: #FF8C00;
-            }
-            QPushButton:disabled {
-                background-color: #E6B566;
-                color: #F2F2F2;
-                border: 1px solid #D4A24F;
-            }
-        """)
+        self.sync_btn.setStyleSheet(btn_primary())
         self.sync_btn.setEnabled(False)
         nav_layout.addWidget(self.sync_btn)
         

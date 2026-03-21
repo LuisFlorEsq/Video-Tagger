@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 
+from src.presentation.styles import btn_primary, btn_danger
 from src.presentation.widgets.video_player import VideoPlayer
 from src.presentation.widgets.label_panel import LabelPanel
 from src.application.services.labeling_service import LabelingService
@@ -87,18 +88,7 @@ class FragmentViewer(QWidget):
         
         self.back_btn = QPushButton("← Regresar")
         self.back_btn.setMaximumWidth(200)
-        self.back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #6C757D;
-                color: white;
-                border-radius: 3px;
-                padding: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #5A6268;
-            }
-        """)
+        self.back_btn.setStyleSheet(btn_primary())
         header_layout.addWidget(self.back_btn)
         
         header_layout.addStretch()
@@ -175,65 +165,18 @@ class FragmentViewer(QWidget):
         actions_layout = QHBoxLayout()
         
         self.prev_btn = QPushButton("← Atras")
-        self.prev_btn.setMinimumHeight(45)
         self.prev_btn.setEnabled(False)
-        self.prev_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 13px;
-                font-weight: bold;
-                background-color: #0078D4;
-                color: white;
-                border-radius: 5px;
-            }
-            QPushButton:hover:enabled {
-                background-color: #106EBE;
-            }
-            QPushButton:disabled {
-                background-color: #CCC;
-                color: #888;
-            }
-        """)
+        self.prev_btn.setStyleSheet(btn_primary())
         actions_layout.addWidget(self.prev_btn)
         
         self.next_btn = QPushButton("Siguiente →")
-        self.next_btn.setMinimumHeight(45)
         self.next_btn.setEnabled(False)
-        self.next_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 13px;
-                font-weight: bold;
-                background-color: #0078D4;
-                color: white;
-                border-radius: 5px;
-            }
-            QPushButton:hover:enabled {
-                background-color: #106EBE;
-            }
-            QPushButton:disabled {
-                background-color: #CCC;
-                color: #888;
-            }
-        """)
+        self.next_btn.setStyleSheet(btn_primary())
         actions_layout.addWidget(self.next_btn)
         
         self.delete_label_btn = QPushButton("Eliminar etiqueta")
         self.delete_label_btn.setEnabled(False)
-        self.delete_label_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 12px;
-                background-color: #D13438;
-                color: white;
-                border-radius: 5px;
-                padding: 8px;
-            }
-            QPushButton:hover:enabled {
-                background-color: #B02A2E;
-            }
-            QPushButton:disabled {
-                background-color: #CCC;
-                color: #888;
-            }
-        """)
+        self.delete_label_btn.setStyleSheet(btn_danger())
         actions_layout.addWidget(self.delete_label_btn)
                 
         actions_group.setLayout(actions_layout)
