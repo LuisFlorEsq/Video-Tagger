@@ -11,7 +11,9 @@ from src.core.container import get_container
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 from src.application.services.labeling_service import LabelingService
+
 from src.presentation.main_window import create_main_window
+from src.presentation.styles import app_stylesheet
 
 
 def main():
@@ -27,6 +29,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Herramienta de etiquetado")
     app.setOrganizationName("Centro de Investigación en Computación")
+    app.setStyleSheet(app_stylesheet())
     
     # Get dependency container
     container = get_container()

@@ -16,7 +16,6 @@ from src.presentation.widgets.fragment_viewer import FragmentViewer
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
-
 class MainWindow(QMainWindow):
     """
     Main window - Only responsible for UI coordination.
