@@ -1,457 +1,437 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QGroupBox, QMessageBox
+    QLabel, QFrame, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 
-from src.presentation.styles import btn_primary, btn_danger
 from src.presentation.widgets.video_player import VideoPlayer
 from src.presentation.widgets.label_panel import LabelPanel
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
-
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
+from src.presentation.styles import (
+    AppTheme,
+    topbar_panel, sidebar_panel,
+    btn_primary_sm, btn_ghost, btn_danger_link,
+    chip_labeled, chip_unlabeled,
+    text_breadcrumb, text_section_header, text_muted, text_secondary,
+)
 
 
 class FragmentViewer(QWidget):
     """
-    Fragment viewer widget - Only handles UI presentation.
+    Fragment viewer — UI presentation only.
     Business logic delegated to services (SRP + DIP).
     """
-    
-    # Signals
-    fragment_labeled = Signal(Fragment)  # Emits when fragment is labeled
-    prev_requested = Signal()  # Emits when user wants previous fragment
-    next_requested = Signal()  # Emits when user wants next fragment
-    back_requested = Signal()  # Emits when user wants to go back
-    
+
+    fragment_labeled = Signal(Fragment)
+    prev_requested   = Signal()
+    next_requested   = Signal()
+    back_requested   = Signal()
+
     def __init__(
-        self, 
+        self,
         labeling_service: LabelingService,
         project_service: ProjectService,
         navigation_service: NavigationService = None,
         available_labels: list = None,
         parent=None
     ):
-        """
-        Initialize with injected dependencies (DIP).
-        
-        Args:
-            labeling_service: Service for labeling operations
-            navigation_service: Service for navigation (optional, can be set later)
-            available_labels: List of available labels
-            parent: Parent widget
-        """
         super().__init__(parent)
-        
-        # Inject dependencies
-        self._labeling_service = labeling_service
-        self._project_service = project_service
-        self._navigation_service = navigation_service
-        
-        # State
+
+        self._labeling_service    = labeling_service
+        self._project_service     = project_service
+        self._navigation_service  = navigation_service
+
         self._current_fragment: Fragment = None
-        self._current_project: Project = None
-        self._last_save_path = None
-        
-        # Default labels
-        if available_labels is None:
-            self.available_labels = [
-                "Etiqueta 1", "Etiqueta 2", "Etiqueta 3", 
-                "Etiqueta 4", "Otro"
-            ]
-        else:
-            self.available_labels = available_labels
-            
-        # Auto-save configuration
+        self._current_project:  Project  = None
+
+        from src.presentation.widgets.label_panel import DEFAULT_LABELS
+        self.available_labels = (available_labels or DEFAULT_LABELS).copy()
+
+        # Auto-save
         self._auto_save_timer = QTimer()
         self._auto_save_timer.setSingleShot(True)
         self._auto_save_timer.timeout.connect(self._auto_save_project)
-        self._auto_save_delay_ms = 3000  # 3 seconds
+        self._auto_save_delay_ms  = 3000
         self._has_unsaved_changes = False
-        
-        # UI
+
         self._init_ui()
         self._connect_signals()
-    
+
+    # ─────────────────────────────────────────────
+    # UI construction
+    # ─────────────────────────────────────────────
+
     def _init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
-        
-        # Header with navigation
-        header_layout = QHBoxLayout()
-        
-        self.back_btn = QPushButton("← Regresar")
-        self.back_btn.setMaximumWidth(200)
-        self.back_btn.setStyleSheet(btn_primary())
-        header_layout.addWidget(self.back_btn)
-        
-        header_layout.addStretch()
-        
-        self.fragment_info_label = QLabel("No se ha cargado ningun fragmento")
-        self.fragment_info_label.setStyleSheet("font-size: 13px; font-weight: bold;")
-        header_layout.addWidget(self.fragment_info_label)
-        
-        header_layout.addStretch()
-        
-        # Position indicator
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # ── Top bar ───────────────────────────────
+        topbar = QWidget()
+        topbar.setFixedHeight(48)
+        topbar.setStyleSheet(topbar_panel())
+        topbar_layout = QHBoxLayout(topbar)
+        topbar_layout.setContentsMargins(12, 0, 16, 0)
+        topbar_layout.setSpacing(10)
+
+        self.back_btn = QPushButton("← Volver")
+        self.back_btn.setStyleSheet(btn_ghost())
+        self.back_btn.setFixedHeight(30)
+        topbar_layout.addWidget(self.back_btn)
+
+        topbar_layout.addWidget(self._make_vline())
+
+        # Breadcrumb: "project / filename"
+        self.breadcrumb_label = QLabel("")
+        self.breadcrumb_label.setStyleSheet(text_breadcrumb())
+        topbar_layout.addWidget(self.breadcrumb_label)
+
+        topbar_layout.addStretch()
+
         self.position_label = QLabel("")
-        self.position_label.setStyleSheet("font-size: 11px; color: #666;")
-        header_layout.addWidget(self.position_label)
-        
-        layout.addLayout(header_layout)
-        
-        # Main content area - split into video and controls
-        content_layout = QHBoxLayout()
-        
-        # Left: Video player
-        video_group = QGroupBox("Fragmento de video (1 segundo)")
-        video_layout = QVBoxLayout()
-        
-        self.video_player = VideoPlayer()
-        video_layout.addWidget(self.video_player)
-        
-        # Playback info
-        playback_info = QLabel("Da click al botón > para iniciar")
-        playback_info.setStyleSheet("font-size: 10px; color: #666; padding: 5px;")
-        playback_info.setAlignment(Qt.AlignCenter)
-        video_layout.addWidget(playback_info)
-        
-        video_group.setLayout(video_layout)
-        content_layout.addWidget(video_group, 2)  # 2/3 of space
-        
-        # Right: Labeling controls
-        controls_widget = QWidget()
-        controls_layout = QVBoxLayout(controls_widget)
-        controls_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Fragment details
-        details_group = QGroupBox("Detalles")
-        details_layout = QVBoxLayout()
-        
-        self.video_name_label = QLabel("Fuente(video): -")
-        self.video_name_label.setWordWrap(True)
-        self.video_name_label.setStyleSheet("font-size: 11px; padding: 3px;")
-        details_layout.addWidget(self.video_name_label)
-        
-        self.duration_label = QLabel("Duración: -")
-        self.duration_label.setStyleSheet("font-size: 11px; padding: 3px;")
-        details_layout.addWidget(self.duration_label)
-        
-        self.status_label = QLabel("Estatus: No etiquetado")
-        self.status_label.setStyleSheet("font-size: 11px; padding: 3px;")
-        details_layout.addWidget(self.status_label)
-        
-        details_group.setLayout(details_layout)
-        controls_layout.addWidget(details_group)
-        
-        # Label panel
-        label_group = QGroupBox("Asignar etiqueta")
-        label_layout = QVBoxLayout()
-        
-        self.label_panel = LabelPanel(self.available_labels)
-        label_layout.addWidget(self.label_panel)
-        
-        label_group.setLayout(label_layout)
-        controls_layout.addWidget(label_group)
-        
-        # Action buttons
-        actions_group = QGroupBox("Acciones")
-        actions_layout = QHBoxLayout()
-        
-        self.prev_btn = QPushButton("← Atras")
+        self.position_label.setStyleSheet(
+            f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY}; "
+            f"background-color: {AppTheme.BG_APP}; padding: 2px 10px; "
+            f"border-radius: 10px;"
+        )
+        topbar_layout.addWidget(self.position_label)
+
+        topbar_layout.addSpacing(4)
+
+        self.prev_btn = QPushButton("←")
+        self.prev_btn.setStyleSheet(btn_ghost())
+        self.prev_btn.setFixedSize(32, 30)
         self.prev_btn.setEnabled(False)
-        self.prev_btn.setStyleSheet(btn_primary())
-        actions_layout.addWidget(self.prev_btn)
-        
-        self.next_btn = QPushButton("Siguiente →")
+        topbar_layout.addWidget(self.prev_btn)
+
+        self.next_btn = QPushButton("→")
+        self.next_btn.setStyleSheet(btn_primary_sm())
+        self.next_btn.setFixedSize(32, 30)
         self.next_btn.setEnabled(False)
-        self.next_btn.setStyleSheet(btn_primary())
-        actions_layout.addWidget(self.next_btn)
-        
-        self.delete_label_btn = QPushButton("Eliminar etiqueta")
+        topbar_layout.addWidget(self.next_btn)
+
+        root.addWidget(topbar)
+        root.addWidget(self._make_hline())
+
+        # ── Body ──────────────────────────────────
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(0)
+
+        # ── Video area ────────────────────────────
+        video_area = QWidget()
+        video_area.setStyleSheet(f"background-color: {AppTheme.BG_APP};")
+        video_layout = QVBoxLayout(video_area)
+        video_layout.setContentsMargins(12, 12, 12, 12)
+        video_layout.setSpacing(8)
+
+        self.video_player = VideoPlayer()
+        video_layout.addWidget(self.video_player, stretch=1)
+
+        body_layout.addWidget(video_area, stretch=1)
+        body_layout.addWidget(self._make_vline())
+
+        # ── Right panel ───────────────────────────
+        right_panel = QWidget()
+        right_panel.setFixedWidth(230)
+        right_panel.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(0)
+
+        # Info strip
+        info_strip = QWidget()
+        info_strip.setStyleSheet(
+            f"background-color: {AppTheme.BG_PANEL}; "
+            f"border-bottom: 1px solid {AppTheme.BG_APP};"
+        )
+        info_layout = QVBoxLayout(info_strip)
+        info_layout.setContentsMargins(14, 10, 14, 10)
+        info_layout.setSpacing(6)
+
+        # Status row
+        status_row = QHBoxLayout()
+        status_lbl = QLabel("ESTADO")
+        status_lbl.setStyleSheet(text_section_header())
+        self.status_chip = QLabel("Sin etiquetar")
+        self.status_chip.setStyleSheet(chip_unlabeled())
+        self.status_chip.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        status_row.addWidget(status_lbl)
+        status_row.addStretch()
+        status_row.addWidget(self.status_chip)
+        info_layout.addLayout(status_row)
+
+        # ID row
+        id_row = QHBoxLayout()
+        id_key = QLabel("ID")
+        id_key.setStyleSheet(text_section_header())
+        self.id_label = QLabel("—")
+        self.id_label.setStyleSheet(
+            f"font-size: {AppTheme.FONT_SM}; font-weight: bold; "
+            f"color: {AppTheme.TEXT_PRIMARY};"
+        )
+        self.id_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        id_row.addWidget(id_key)
+        id_row.addStretch()
+        id_row.addWidget(self.id_label)
+        info_layout.addLayout(id_row)
+
+        right_layout.addWidget(info_strip)
+        right_layout.addWidget(self._make_hline())
+
+        # Label picker — fills remaining space
+        label_area = QWidget()
+        label_area.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+        label_layout = QVBoxLayout(label_area)
+        label_layout.setContentsMargins(14, 10, 14, 0)
+        label_layout.setSpacing(0)
+
+        self.label_panel = LabelPanel(self.available_labels)
+        label_layout.addWidget(self.label_panel, stretch=1)
+
+        right_layout.addWidget(label_area, stretch=1)
+
+        # Delete action strip — bottom, understated
+        right_layout.addWidget(self._make_hline())
+        action_strip = QWidget()
+        action_strip.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+        action_layout = QVBoxLayout(action_strip)
+        action_layout.setContentsMargins(14, 8, 14, 10)
+
+        self.delete_label_btn = QPushButton("Eliminar etiqueta actual")
+        self.delete_label_btn.setStyleSheet(btn_danger_link())
         self.delete_label_btn.setEnabled(False)
-        self.delete_label_btn.setStyleSheet(btn_danger())
-        actions_layout.addWidget(self.delete_label_btn)
-                
-        actions_group.setLayout(actions_layout)
-        controls_layout.addWidget(actions_group)
-        controls_layout.addStretch()
-        
-        content_layout.addWidget(controls_widget, 1)  # 1/3 of space
-        layout.addLayout(content_layout)
-    
+        action_layout.addWidget(self.delete_label_btn)
+
+        right_layout.addWidget(action_strip)
+
+        body_layout.addWidget(right_panel)
+        root.addWidget(body, stretch=1)
+
+    # ─────────────────────────────────────────────
+    # Signal wiring
+    # ─────────────────────────────────────────────
+
     def _connect_signals(self):
-        """Connect widget signals to handlers."""
-        # Back button (return to project view)
         self.back_btn.clicked.connect(self._on_back_clicked)
-        # Navigation fragment buttons
         self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
-        # Label changes
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
-    
-    # === Command Handlers (UI Logic Only) ===
-    
+
+    # ─────────────────────────────────────────────
+    # Command handlers
+    # ─────────────────────────────────────────────
+
     def _on_label_assigned(self, label: str):
-        """Handle label assignment from label panel."""
         if not self._current_fragment:
             return
-        
         try:
-            # Delegate to service (business logic)
-            self._labeling_service.assign_label(self._current_fragment, self._current_project, label)
-            
+            self._labeling_service.assign_label(self._current_fragment, label)
             self._has_unsaved_changes = True
             self._schedule_auto_save()
-            
-            # Update UI
             self._update_fragment_status()
-            self.prev_btn.setEnabled(True)
-            self.next_btn.setEnabled(True)
-            
-            # Emit signal
             self.fragment_labeled.emit(self._current_fragment)
-            
         except ValueError as e:
             self._show_error("No se pudo etiquetar", str(e))
-    
+
+    def _on_prev_clicked(self):
+        if not self._current_fragment:
+            return
+        self._force_save()
+        if not self._current_fragment.is_labeled():
+            reply = QMessageBox.question(
+                self, "Fragmento sin etiquetar",
+                "Este fragmento aún no tiene etiqueta. ¿Deseas saltarlo?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        self.prev_requested.emit()
+
+    def _on_next_clicked(self):
+        if not self._current_fragment:
+            return
+        self._force_save()
+        if not self._current_fragment.is_labeled():
+            reply = QMessageBox.question(
+                self, "Fragmento sin etiquetar",
+                "Este fragmento aún no tiene etiqueta. ¿Deseas saltarlo?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        self.next_requested.emit()
+
+    def _on_delete_clicked(self):
+        if not self._current_fragment or not self._current_fragment.is_labeled():
+            return
+        try:
+            self._labeling_service.clear_label(self._current_fragment)
+            self._has_unsaved_changes = True
+            self._schedule_auto_save()
+            self._update_fragment_status()
+            self.fragment_labeled.emit(self._current_fragment)
+        except Exception as e:
+            self._show_error("Error", str(e))
+
+    def _on_back_clicked(self):
+        self._force_save()
+        if self._current_fragment and not self._current_fragment.is_labeled():
+            reply = QMessageBox.question(
+                self, "Fragmento sin etiquetar",
+                "Este fragmento no tiene etiqueta. ¿Seguro que deseas regresar?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        self.back_requested.emit()
+
+    # ─────────────────────────────────────────────
+    # Auto-save
+    # ─────────────────────────────────────────────
+
     def _schedule_auto_save(self):
-        """Schedule auto-save with debouncing."""
         if self._current_project and self._current_project.get_save_path():
             self._auto_save_timer.stop()
             self._auto_save_timer.start(self._auto_save_delay_ms)
 
     def _auto_save_project(self):
-        """Auto-save project silently using project's save_path."""
         if not self._current_project:
             return
-        
         try:
             success = self._project_service.auto_save_project(self._current_project)
             if success:
                 self._has_unsaved_changes = False
         except Exception as e:
             print(f"Auto-save failed: {e}")
-            
+
     def _force_save(self):
-        """Force immediate save (bypass timer)."""
         if self._has_unsaved_changes and self._current_project:
             self._auto_save_timer.stop()
             self._auto_save_project()
-        
-    def _on_prev_clicked(self):
-        """Handle previous button click."""
-        if not self._current_fragment:
-            return
-        
-        self._force_save()
-        
-        # Check if current fragment is labeled
-        if not self._current_fragment.is_labeled():
-            reply = QMessageBox.question(
-                self,
-                "Fragmento saltado",
-                "Este fragmento aun no ha sido etiquetado ¿Desea saltarlo?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            
-            if reply == QMessageBox.No:
-                return
-            
-        self.prev_requested.emit()
-            
-    
-    def _on_next_clicked(self):
-        """Handle next button click."""
-        if not self._current_fragment:
-            return
-        
-        self._force_save()
-        
-        # Check if current fragment is labeled
-        if not self._current_fragment.is_labeled():
-            reply = QMessageBox.question(
-                self,
-                "Fragmento saltado",
-                "Este fragmento aun no ha sido etiquetado. ¿Desea saltarlo?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            
-            if reply == QMessageBox.No:
-                return
-            
-        self.next_requested.emit()
-            
-    def _on_delete_clicked(self):
-        """
-        Handle delete label button click.
-        """
-        if not self._current_fragment or not self._current_fragment.is_labeled():
-            return
-        
-        try:
-            self._labeling_service.clear_label(self._current_fragment, self._current_project)
-            
-            self._has_unsaved_changes = True
-            self._schedule_auto_save()
-            
-            # Update UI
-            self._update_fragment_status()
-            self.delete_label_btn.setEnabled(False)
-            
-            self.fragment_labeled.emit(self._current_fragment)
-        except Exception as e:
-            self._show_error("Error", str(e))
-           
-    
-    def _on_back_clicked(self):
-        """Handle back button click."""
-        self._force_save()
-        
-        if self._current_fragment and not self._current_fragment.is_labeled():
-            reply = QMessageBox.question(
-                self,
-                "Cambios sin guardar",
-                "Este fragmento no ha sido etiquetado. ¿Estas seguro de regresar?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            
-            if reply == QMessageBox.No:
-                return
-        
-        # Stop video using threaded cleanup
-        self.back_requested.emit()
-    
-    # === Public Methods ===
-    
+
+    # ─────────────────────────────────────────────
+    # Public API
+    # ─────────────────────────────────────────────
+
     def load_fragment(self, fragment: Fragment, project: Project = None):
-        """
-        Load a fragment for viewing and labeling.
-        
-        Args:
-            fragment: Fragment to load
-            project: Parent project (optional, for context)
-        """        
         self._current_fragment = fragment
-        self._current_project = project
-        
-        # Check if video exists
+        self._current_project  = project
+
         if not Path(fragment.video_path).exists():
             self._show_error(
                 "Archivo no encontrado",
-                f"No se encontro el archivo de video:\n{fragment.video_path}"
+                f"No se encontró el archivo de video:\n{fragment.video_path}"
             )
             return
-        
-        # Set callback for when media is ready and first frame is visible — safe to seek
-        self.video_player.on_ready_callback = self._on_video_ready_for_fragment
-        
-        # Load video asynchronously
-        self.video_player.load_video(fragment.video_path)
-        
-        # Update UI
-        self._update_fragment_info()
-        self._update_fragment_status()
-        
-        # Update position if navigation service is available
-        self._update_position_display()
-        
-        # Enable controls
-        self.label_panel.set_enabled(True)
-        self.next_btn.setEnabled(fragment.is_labeled())
-        self.prev_btn.setEnabled(fragment.is_labeled())
 
-    def set_current_project(self, project: Project):
-        """Set the current project for auto-save."""
-        self._current_project = project
-        
-        # Use project's save path if available
-        if project.get_save_path():
-            self._last_save_path = project.get_save_path()
-    
-    def _on_video_ready_for_fragment(self):
-        """Callback when media is ready and first frame is rendered — safe to seek."""
-        if self._current_fragment:
-            start_ms = int(self._current_fragment.start_time * 1000)
-            self.video_player.seek_position(start_ms)
-        
-    
+        self.video_player.on_ready_callback = self._on_video_ready_for_fragment
+        self.video_player.load_video(fragment.video_path)
+
+        self._update_breadcrumb()
+        self._update_fragment_status()
+        self._update_position_display()
+        self.label_panel.set_enabled(True)
+
     def set_navigation_service(self, navigation_service: NavigationService):
-        """
-        Set the navigation service.
-        
-        Args:
-            navigation_service: Navigation service to use
-        """
         self._navigation_service = navigation_service
         self._update_position_display()
-    
+
     def get_current_fragment(self) -> Fragment:
-        """Get the currently loaded fragment."""
         return self._current_fragment
-    
-    # === Private Helper Methods (UI Only) ===
-    
-    def _update_fragment_info(self):
-        """Update fragment information display."""
+
+    # ─────────────────────────────────────────────
+    # Private UI updaters
+    # ─────────────────────────────────────────────
+
+    def _on_video_ready_for_fragment(self):
+        if self._current_fragment:
+            self.video_player.seek_position(
+                int(self._current_fragment.start_time * 1000)
+            )
+
+    def _update_breadcrumb(self):
+        """Show  project / filename  in the top bar — single source for both."""
         if not self._current_fragment:
+            self.breadcrumb_label.setText("")
+            self.id_label.setText("—")
             return
-        
-        self.fragment_info_label.setText(
-            f"Fragmento: {self._current_fragment.fragment_id}"
-        )
-        
+
         video_name = self._current_fragment.get_video_name()
-        self.video_name_label.setText(f"Fuente(video): {video_name}")
-        self.duration_label.setText(
-            f"Duración: {self._current_fragment.duration:.1f} segundos"
-        )
-    
+        project_name = self._current_project.name if self._current_project else ""
+
+        if project_name:
+            # Use HTML to style the separator and filename differently
+            self.breadcrumb_label.setText(
+                f'<span style="color:{AppTheme.TEXT_MUTED}">{project_name} /</span> '
+                f'<span style="color:{AppTheme.TEXT_PRIMARY}; font-weight:600">{video_name}</span>'
+            )
+        else:
+            self.breadcrumb_label.setText(video_name)
+
+        self.id_label.setText(self._current_fragment.fragment_id)
+
     def _update_fragment_status(self):
-        """Update fragment status display."""
+        """Single source of truth for all status-dependent UI state."""
         if not self._current_fragment:
             return
-        
-        if self._current_fragment.is_labeled():
-            self.status_label.setText(
-                f"Estatus: ✓ Etiquetado como '{self._current_fragment.label}'"
-            )
-            self.status_label.setStyleSheet(
-                "font-size: 11px; padding: 3px; color: #10893E; font-weight: bold;"
-            )
-            self.label_panel.set_current_label(self._current_fragment.label)
-            self.delete_label_btn.setEnabled(True)
+
+        labeled = self._current_fragment.is_labeled()
+
+        # Status chip
+        if labeled:
+            self.status_chip.setText(f"✓  {self._current_fragment.label}")
+            self.status_chip.setStyleSheet(chip_labeled())
         else:
-            self.status_label.setText("Estatus: No etiquetado")
-            self.status_label.setStyleSheet(
-                "font-size: 11px; padding: 3px; color: #856404; font-weight: bold;"
-            )
-            self.label_panel.set_current_label(None)
-            self.delete_label_btn.setEnabled(False)
-            
-            # Disable navigation buttons
-            self.next_btn.setEnabled(False)
-            self.prev_btn.setEnabled(False)
-    
+            self.status_chip.setText("Sin etiquetar")
+            self.status_chip.setStyleSheet(chip_unlabeled())
+
+        # Label panel reflection
+        self.label_panel.set_current_label(
+            self._current_fragment.label if labeled else None
+        )
+
+        # Navigation buttons
+        self.prev_btn.setEnabled(labeled)
+        self.next_btn.setEnabled(labeled)
+
+        # Delete link
+        self.delete_label_btn.setEnabled(labeled)
+
     def _update_position_display(self):
-        """Update position indicator."""
         if self._navigation_service:
             current, total = self._navigation_service.get_position()
-            self.position_label.setText(f"{current}/{total}")
+            self.position_label.setText(f"{current} / {total}")
+            self.position_label.setVisible(True)
         else:
-            self.position_label.setText("")
-    
+            self.position_label.setVisible(False)
+
     def _show_error(self, title: str, message: str):
-        """Show error message dialog."""
         QMessageBox.critical(self, title, message)
-    
-    def _show_info(self, title: str, message: str):
-        """Show info message dialog."""
-        QMessageBox.information(self, title, message)
+
+    # ─────────────────────────────────────────────
+    # Layout helpers
+    # ─────────────────────────────────────────────
+
+    @staticmethod
+    def _make_hline() -> QFrame:
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFixedHeight(1)
+        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        return line
+
+    @staticmethod
+    def _make_vline() -> QFrame:
+        line = QFrame()
+        line.setFrameShape(QFrame.VLine)
+        line.setFixedWidth(1)
+        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        return line
