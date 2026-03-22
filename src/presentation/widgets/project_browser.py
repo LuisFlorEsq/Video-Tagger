@@ -1,461 +1,550 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QListWidget, QLabel, QGroupBox, QListWidgetItem,
-    QFileDialog, QMessageBox
+    QListWidget, QLabel, QListWidgetItem,
+    QFileDialog, QMessageBox, QFrame, QSizePolicy,
+    QScrollArea
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QSizePolicy
 
-from src.presentation.styles import btn_primary
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
+from src.presentation.styles import (
+    AppTheme,
+    sidebar_panel, sidebar_btn, sidebar_btn_active, sidebar_btn_warning,
+    sidebar_section_label, topbar_panel, btn_primary, btn_success,
+    fragment_list, chip_labeled, chip_unlabeled, chip_warning, chip_info,
+    text_title, text_secondary, text_muted, text_breadcrumb, divider,
+    text_section_header,
+)
 
 
 class ProjectBrowser(QWidget):
     """
-    Project browser widget - Only handles UI presentation.
+    Project browser widget — UI presentation only.
     Business logic delegated to ProjectService (SRP + DIP).
     """
-    
-    # Signals
-    project_loaded = Signal(Project)  # Emits when project is loaded
-    fragment_selected = Signal(Fragment)  # Emits when fragment is selected
-    
-    def __init__(self, project_service: ProjectService, export_service: ExportService, parent=None):
-        """
-        Initialize with injected dependencies (DIP).
-        
-        Args:
-            project_service: Service for project operations
-            export_service: Service for export operations
-            parent: Parent widget
-        """
+
+    project_loaded = Signal(Project)
+    fragment_selected = Signal(Fragment)
+
+    def __init__(
+        self,
+        project_service: ProjectService,
+        export_service: ExportService,
+        parent=None
+    ):
         super().__init__(parent)
-        
-        # Inject dependency
         self._project_service = project_service
         self._export_service = export_service
-        
-        # State
         self._current_project: Project = None
-        
-        # UI
+
         self._init_ui()
         self._connect_signals()
         self._update_view()
-    
-    def _init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(15)
-        
-        # Title
-        self.title_label = QLabel("Herramienta de etiquetado de vídeos")
-        title_font = QFont()
-        title_font.setPointSize(18)
-        title_font.setBold(True)
-        self.title_label.setFont(title_font)
-        self.title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.title_label)
-        
-        # Subtitle
-        self.subtitle_label = QLabel("Selecciona una carpeta con fragmentos de video para continuar")
-        subtitle_font = QFont()
-        subtitle_font.setPointSize(11)
-        self.subtitle_label.setFont(subtitle_font)
-        self.subtitle_label.setAlignment(Qt.AlignCenter)
-        self.subtitle_label.setStyleSheet("color: #666; margin-bottom: 10px;")
-        layout.addWidget(self.subtitle_label)
-        
-        # Action buttons
-        button_layout = QVBoxLayout()
-        
-        self.new_project_btn = QPushButton("📁 Nuevo proyecto")
-        self.new_project_btn.setMinimumHeight(50)
-        self.new_project_btn.setStyleSheet(btn_primary())
-        
-        self.load_project_btn = QPushButton("💾 Abrir proyecto existente")
-        self.load_project_btn.setMinimumHeight(50)
-        self.load_project_btn.setStyleSheet(btn_primary())
-        
-        for btn in (self.new_project_btn, self.load_project_btn):
-            btn.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-            btn.setFixedHeight(60)
-            btn.adjustSize()
-            
-        button_layout.addWidget(self.new_project_btn, alignment=Qt.AlignHCenter)
-        button_layout.addWidget(self.load_project_btn, alignment=Qt.AlignHCenter)
 
-        
-        layout.addLayout(button_layout)
-        
-        # Project info group
-        self.project_info_group = QGroupBox("Proyecto actual")
-        self.project_info_group.setVisible(False)
-        info_layout = QVBoxLayout()
-        
-        self.project_name_label = QLabel("")
-        self.project_name_label.setStyleSheet("font-size: 13px; font-weight: bold;")
-        info_layout.addWidget(self.project_name_label)
-        
-        self.project_stats_label = QLabel("")
-        self.project_stats_label.setStyleSheet("font-size: 11px; color: #666;")
-        info_layout.addWidget(self.project_stats_label)
-        
-        # Navigation buttons
-        nav_layout = QHBoxLayout()
-        
-        self.back_btn = QPushButton("← Regresar al menu principal")
-        self.back_btn.setStyleSheet(btn_primary())
-        nav_layout.addWidget(self.back_btn)
-        
-        self.save_project_btn = QPushButton("💾 Guardar proyecto")
-        self.save_project_btn.setStyleSheet(btn_primary())
-        nav_layout.addWidget(self.save_project_btn)
-        
-        self.export_csv_btn = QPushButton("📊 Exportar a CSV")
-        self.export_csv_btn.setStyleSheet(btn_primary())
-        nav_layout.addWidget(self.export_csv_btn)
-        
-        self.sync_btn = QPushButton("🔄 Sincronizar videos")
-        self.sync_btn.setStyleSheet(btn_primary())
+    # ─────────────────────────────────────────────
+    # UI construction
+    # ─────────────────────────────────────────────
+
+    def _init_ui(self):
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # ── Top bar ──────────────────────────────
+        self.topbar = QWidget()
+        self.topbar.setFixedHeight(48)
+        self.topbar.setStyleSheet(topbar_panel())
+        topbar_layout = QHBoxLayout(self.topbar)
+        topbar_layout.setContentsMargins(16, 0, 16, 0)
+        topbar_layout.setSpacing(10)
+
+        app_title = QLabel("Herramienta de etiquetado")
+        app_title.setStyleSheet(
+            f"font-size: {AppTheme.FONT_LG}; font-weight: bold; color: {AppTheme.TEXT_PRIMARY};"
+        )
+        topbar_layout.addWidget(app_title)
+
+        self._topbar_sep = self._make_vline()
+        topbar_layout.addWidget(self._topbar_sep)
+
+        self.topbar_project_label = QLabel("")
+        self.topbar_project_label.setStyleSheet(text_breadcrumb())
+        self.topbar_project_label.setVisible(False)
+        topbar_layout.addWidget(self.topbar_project_label)
+
+        topbar_layout.addStretch()
+
+        self.sync_badge = QLabel("")
+        self.sync_badge.setStyleSheet(chip_warning())
+        self.sync_badge.setVisible(False)
+        topbar_layout.addWidget(self.sync_badge)
+
+        self.progress_badge = QLabel("")
+        self.progress_badge.setStyleSheet(chip_info())
+        self.progress_badge.setVisible(False)
+        topbar_layout.addWidget(self.progress_badge)
+
+        root.addWidget(self.topbar)
+
+        # ── Thin divider ─────────────────────────
+        root.addWidget(self._make_hline())
+
+        # ── Body (sidebar + main) ─────────────────
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(0)
+
+        # ── Sidebar ───────────────────────────────
+        self.sidebar = QWidget()
+        self.sidebar.setFixedWidth(210)
+        self.sidebar.setStyleSheet(sidebar_panel())
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setContentsMargins(10, 12, 10, 12)
+        sidebar_layout.setSpacing(2)
+
+        # Welcome state — new/open buttons
+        self.welcome_section = QWidget()
+        ws_layout = QVBoxLayout(self.welcome_section)
+        ws_layout.setContentsMargins(0, 0, 0, 0)
+        ws_layout.setSpacing(2)
+
+        ws_header = QLabel("Inicio")
+        ws_header.setStyleSheet(sidebar_section_label())
+        ws_layout.addWidget(ws_header)
+
+        self.new_project_btn = QPushButton("  Nuevo proyecto")
+        self.new_project_btn.setStyleSheet(btn_primary())
+        self.new_project_btn.setMinimumHeight(36)
+        ws_layout.addWidget(self.new_project_btn)
+
+        self.load_project_btn = QPushButton("  Abrir proyecto")
+        self.load_project_btn.setStyleSheet(sidebar_btn())
+        self.load_project_btn.setMinimumHeight(36)
+        ws_layout.addWidget(self.load_project_btn)
+
+        sidebar_layout.addWidget(self.welcome_section)
+
+        # Project state — actions when project is loaded
+        self.project_section = QWidget()
+        self.project_section.setVisible(False)
+        ps_layout = QVBoxLayout(self.project_section)
+        ps_layout.setContentsMargins(0, 0, 0, 0)
+        ps_layout.setSpacing(2)
+
+        ps_header = QLabel("Proyecto")
+        ps_header.setStyleSheet(sidebar_section_label())
+        ps_layout.addWidget(ps_header)
+
+        self.save_project_btn = QPushButton("  Guardar")
+        self.save_project_btn.setStyleSheet(sidebar_btn())
+        self.save_project_btn.setMinimumHeight(34)
+        ps_layout.addWidget(self.save_project_btn)
+
+        self.export_csv_btn = QPushButton("  Exportar CSV")
+        self.export_csv_btn.setStyleSheet(sidebar_btn())
+        self.export_csv_btn.setMinimumHeight(34)
+        ps_layout.addWidget(self.export_csv_btn)
+
+        ps_layout.addWidget(self._make_hline())
+
+        actions_header = QLabel("Sincronización")
+        actions_header.setStyleSheet(sidebar_section_label())
+        ps_layout.addWidget(actions_header)
+
+        self.sync_btn = QPushButton("  Sincronizar videos")
+        self.sync_btn.setStyleSheet(sidebar_btn_warning())
+        self.sync_btn.setMinimumHeight(34)
         self.sync_btn.setEnabled(False)
-        nav_layout.addWidget(self.sync_btn)
-        
-        info_layout.addLayout(nav_layout)
-        
-        self.project_info_group.setLayout(info_layout)
-        layout.addWidget(self.project_info_group)
-        
+        ps_layout.addWidget(self.sync_btn)
+
+        ps_layout.addSpacing(8)
+        ps_layout.addWidget(self._make_hline())
+
+        self.back_btn = QPushButton("  Cerrar proyecto")
+        self.back_btn.setStyleSheet(sidebar_btn())
+        self.back_btn.setMinimumHeight(34)
+        ps_layout.addWidget(self.back_btn)
+
+        sidebar_layout.addWidget(self.project_section)
+        sidebar_layout.addStretch()
+
+        body_layout.addWidget(self.sidebar)
+        body_layout.addWidget(self._make_vline())
+
+        # ── Main panel ────────────────────────────
+        self.main_panel = QWidget()
+        main_layout = QVBoxLayout(self.main_panel)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Welcome screen (no project)
+        self.welcome_screen = QWidget()
+        welcome_layout = QVBoxLayout(self.welcome_screen)
+        welcome_layout.setAlignment(Qt.AlignCenter)
+
+        welcome_title = QLabel("Bienvenido")
+        welcome_title.setStyleSheet(text_title())
+        welcome_title.setAlignment(Qt.AlignCenter)
+
+        welcome_sub = QLabel(
+            "Crea un nuevo proyecto seleccionando una carpeta con videos,\n"
+            "o abre un proyecto existente para continuar etiquetando."
+        )
+        welcome_sub.setStyleSheet(text_secondary())
+        welcome_sub.setAlignment(Qt.AlignCenter)
+        welcome_sub.setWordWrap(True)
+
+        welcome_layout.addStretch()
+        welcome_layout.addWidget(welcome_title)
+        welcome_layout.addSpacing(8)
+        welcome_layout.addWidget(welcome_sub)
+        welcome_layout.addStretch()
+
+        main_layout.addWidget(self.welcome_screen)
+
+        # Fragment list screen (project loaded)
+        self.list_screen = QWidget()
+        self.list_screen.setVisible(False)
+        list_layout = QVBoxLayout(self.list_screen)
+        list_layout.setContentsMargins(0, 0, 0, 0)
+        list_layout.setSpacing(0)
+
+        # Toolbar row: filters + count
+        toolbar = QWidget()
+        toolbar.setFixedHeight(40)
+        toolbar.setStyleSheet(
+            f"background-color: {AppTheme.BG_PANEL}; "
+            f"border-bottom: 1px solid {AppTheme.BORDER};"
+        )
+        toolbar_layout = QHBoxLayout(toolbar)
+        toolbar_layout.setContentsMargins(14, 0, 14, 0)
+        toolbar_layout.setSpacing(8)
+
+        self.fragment_count_label = QLabel("")
+        self.fragment_count_label.setStyleSheet(text_muted())
+        toolbar_layout.addWidget(self.fragment_count_label)
+        toolbar_layout.addStretch()
+
+        self.stats_label = QLabel("")
+        self.stats_label.setStyleSheet(text_secondary())
+        toolbar_layout.addWidget(self.stats_label)
+
+        list_layout.addWidget(toolbar)
+
+        # Progress bar (3px strip under toolbar)
+        self.progress_bar_bg = QWidget()
+        self.progress_bar_bg.setFixedHeight(3)
+        self.progress_bar_bg.setStyleSheet(f"background-color: {AppTheme.BORDER};")
+        progress_container = QHBoxLayout(self.progress_bar_bg)
+        progress_container.setContentsMargins(0, 0, 0, 0)
+        progress_container.setSpacing(0)
+
+        self.progress_bar_fill = QWidget()
+        self.progress_bar_fill.setFixedHeight(3)
+        self.progress_bar_fill.setStyleSheet(f"background-color: {AppTheme.PRIMARY};")
+        progress_container.addWidget(self.progress_bar_fill)
+        progress_container.addStretch()
+
+        list_layout.addWidget(self.progress_bar_bg)
+
         # Fragment list
-        self.fragment_list_group = QGroupBox("Fragmentos de video")
-        self.fragment_list_group.setVisible(False)
-        fragment_list_layout = QVBoxLayout()
-        
-        search_label = QLabel("Selecciona un fragmento para etiquetar:")
-        search_label.setStyleSheet("font-size: 11px; color: #666;")
-        fragment_list_layout.addWidget(search_label)
-        
         self.fragment_list = QListWidget()
-        self.fragment_list.setStyleSheet("""
-            QListWidget {
-                border: 2px solid #DDD;
-                border-radius: 5px;
-                font-size: 12px;
-            }
-            QListWidget::item {
-                padding: 12px;
-                border-bottom: 1px solid #EEE;
-            }
-            QListWidget::item:selected {
-                background-color: #0078D4;
-                color: white;
-            }
-            QListWidget::item:hover {
-                background-color: #E8F4FD;
-            }
-        """)
-        fragment_list_layout.addWidget(self.fragment_list)
-        
-        self.fragment_list_group.setLayout(fragment_list_layout)
-        layout.addWidget(self.fragment_list_group)
-            
-        layout.addStretch()
-    
+        self.fragment_list.setStyleSheet(fragment_list())
+        self.fragment_list.setContentsMargins(8, 8, 8, 8)
+        self.fragment_list.setSpacing(1)
+        self.fragment_list.viewport().setContentsMargins(8, 8, 8, 8)
+        list_layout.addWidget(self.fragment_list)
+
+        main_layout.addWidget(self.list_screen)
+        body_layout.addWidget(self.main_panel)
+
+        root.addWidget(body, stretch=1)
+
+    # ─────────────────────────────────────────────
+    # Signal wiring
+    # ─────────────────────────────────────────────
+
     def _connect_signals(self):
-        """Connect widget signals to handlers."""
-        # Project options
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
         self.save_project_btn.clicked.connect(self._on_save_clicked)
-        # Export and sync contents
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
         self.sync_btn.clicked.connect(self._on_sync_clicked)
-
-        # Fragment and back to menu options
         self.back_btn.clicked.connect(self._on_back_clicked)
         self.fragment_list.itemDoubleClicked.connect(self._on_fragment_double_clicked)
-    
-    # === Command Handlers (UI Logic Only) ===
-    
+
+    # ─────────────────────────────────────────────
+    # Command handlers
+    # ─────────────────────────────────────────────
+
     def _on_new_project_clicked(self):
-        """Handle new project button click."""
         folder_path = self._select_folder()
         if not folder_path:
             return
-        
         try:
-            # Delegate to service (business logic)
             project = self._project_service.create_project_from_folder(folder_path)
             self._load_project(project)
             self.project_loaded.emit(project)
         except ValueError as e:
             self._show_error("Error al crear proyecto", str(e))
         except Exception as e:
-            self._show_error("Error inesperado", f"No se pudo crear el proyecto: {str(e)}")
-    
+            self._show_error("Error inesperado", f"No se pudo crear el proyecto:\n{str(e)}")
+
     def _on_load_project_clicked(self):
-        """Handle load project button click."""
         file_path = self._select_project_file()
         if not file_path:
             return
-        
         try:
-            # Delegate to service (business logic)
             project = self._project_service.load_project(file_path)
             self._load_project(project)
             self.project_loaded.emit(project)
         except ValueError as e:
             self._show_error("No se pudo cargar el proyecto", str(e))
         except Exception as e:
-            self._show_error("Error inesperado", f"No se pudo cargar el proyecto: {str(e)}")
-    
+            self._show_error("Error inesperado", f"No se pudo cargar el proyecto:\n{str(e)}")
+
     def _on_back_clicked(self):
-        """Handle back button click."""
         self._current_project = None
         self._update_view()
-    
+
     def _on_save_clicked(self):
-        """Handle save button click."""
         if not self._current_project:
             return
-        
         file_path = self._select_save_path(
             f"{self._current_project.name}.json",
             "JSON Files (*.json)"
         )
         if not file_path:
             return
-        
         try:
-            # Delegate to service (business logic)
             self._project_service.save_project(self._current_project, file_path)
-            
-            # Get summary from service
             summary = self._project_service.get_project_summary(self._current_project)
-            
             self._show_info(
-                "Éxito",
-                f"¡El proyecto se guardo correctamente!\n\n"
+                "Proyecto guardado",
+                f"Guardado correctamente.\n\n"
                 f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
                 f"({summary['progress_percentage']:.1f}%)"
             )
         except Exception as e:
             self._show_error("Error al guardar", str(e))
-    
+
     def _on_export_csv_clicked(self):
-        """Handle export to CSV button click."""
         if not self._current_project:
             self._show_error("Sin proyecto", "No hay proyecto cargado para exportar.")
             return
-        
         if self._current_project.get_total_count() == 0:
             self._show_error("Sin datos", "No hay fragmentos para exportar.")
             return
-        
         file_path = self._select_save_path(
             f"{self._current_project.name}_export.csv",
             "CSV Files (*.csv);;All Files (*)"
         )
-        
         if not file_path:
             return
-        
         try:
-            # Delegate to export service (SOLID principle)
             self._export_service.export(self._current_project, file_path, 'csv')
-            
             summary = self._project_service.get_project_summary(self._current_project)
-            
             self._show_info(
                 "Exportación exitosa",
-                f"✓ Se exportaron {summary['total_fragments']} fragmentos a CSV!\n\n"
+                f"{summary['total_fragments']} fragmentos exportados.\n"
                 f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}\n"
                 f"Archivo: {file_path.name}"
             )
         except Exception as e:
             self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(e)}")
-    
+
     def _on_sync_clicked(self):
-        """Handle sync button click."""
         if not self._current_project:
             return
-        
         new_videos = self._project_service.get_new_videos(self._current_project)
-        
         if not new_videos:
-            self._show_info("Sin cambios", "No hay videos nuevos para sincronizar")
+            self._show_info("Sin cambios", "No hay videos nuevos para sincronizar.")
             return
-            
         reply = QMessageBox.question(
             self,
             "Sincronizar videos",
-            f"Se encontraron {len(new_videos)} videos nuevos. \n\n¿Deseas agregarlos al proyecto?",
+            f"Se encontraron {len(new_videos)} videos nuevos.\n\n"
+            f"¿Deseas agregarlos al proyecto?",
             QMessageBox.Yes | QMessageBox.No
         )
-        
         if reply == QMessageBox.Yes:
-            try: 
+            try:
                 count = self._project_service.sync_new_videos(self._current_project, new_videos)
-                
                 self.refresh()
                 self._show_info(
-                "Sincronización exitosa",
-                f"Se agregaron {count} videos nuevos al proyecto."
+                    "Sincronización exitosa",
+                    f"Se agregaron {count} videos nuevos al proyecto."
                 )
-                self.sync_btn.setEnabled(False)
-                self.sync_btn.setText('Sincronizar videos')
             except Exception as e:
                 self._show_error("Error al sincronizar", str(e))
-    
-    def _on_fragment_double_clicked(self, item):
-        """Handle fragment double-click."""
+
+    def _on_fragment_double_clicked(self, item: QListWidgetItem):
         if not self._current_project:
             return
-        
         fragment_id = item.data(Qt.UserRole)
         fragment = self._current_project.get_fragment(fragment_id)
-        
         if fragment:
             self.fragment_selected.emit(fragment)
-    
-    # === Public Methods ===
-    
+
+    # ─────────────────────────────────────────────
+    # Public API
+    # ─────────────────────────────────────────────
+
     def set_project(self, project: Project):
-        """
-        Set the current project.
-        
-        Args:
-            project: Project to display
-        """
         self._load_project(project)
-    
+
     def refresh(self):
-        """Refresh the current view."""
         if self._current_project:
             self._populate_fragment_list()
             self._update_project_stats()
-    
+            self._check_for_new_videos()
+
     def get_current_project(self) -> Project:
-        """Get the currently loaded project."""
         return self._current_project
-    
-    # === Private Helper Methods (UI Only) ===
-    
+
+    # ─────────────────────────────────────────────
+    # Private helpers
+    # ─────────────────────────────────────────────
+
     def _load_project(self, project: Project):
-        """Load a project into the UI."""
         self._current_project = project
         self._update_view()
-        self._check_for_new_videos()
-    
+
     def _update_view(self):
-        """Update the view based on current state."""
         has_project = self._current_project is not None
-        
-        # Toggle visibility
-        self.project_info_group.setVisible(has_project)
-        self.fragment_list_group.setVisible(has_project)
-        
-        self.new_project_btn.setVisible(not has_project)
-        self.load_project_btn.setVisible(not has_project)
-        
+
+        # Top bar
+        self.topbar_project_label.setVisible(has_project)
+        self._topbar_sep.setVisible(has_project)
+        self.sync_badge.setVisible(False)
+        self.progress_badge.setVisible(has_project)
+
+        # Sidebar
+        self.welcome_section.setVisible(not has_project)
+        self.project_section.setVisible(has_project)
+
+        # Main panel
+        self.welcome_screen.setVisible(not has_project)
+        self.list_screen.setVisible(has_project)
+
         if has_project:
-            self.subtitle_label.setText(f"Proyecto: {self._current_project.name}")
-            self.project_name_label.setText(f"📁 {self._current_project.name}")
+            self.topbar_project_label.setText(self._current_project.name)
             self._populate_fragment_list()
             self._update_project_stats()
+            self._check_for_new_videos()
 
-        else:
-            self.subtitle_label.setText("Selecciona una carpeta con fragmentos de video para continuar")
-    
     def _check_for_new_videos(self):
-        """Check if there are new videos in the project folder."""
         if not self._current_project:
             return
-        
         new_videos = self._project_service.get_new_videos(self._current_project)
-        
         if new_videos:
             self.sync_btn.setEnabled(True)
-            self.sync_btn.setText(f"Sincronizar ({len(new_videos)} videos nuevos)")
+            self.sync_btn.setText(f"  Sincronizar ({len(new_videos)} nuevos)")
+            self.sync_badge.setText(f"{len(new_videos)} videos nuevos")
+            self.sync_badge.setVisible(True)
         else:
             self.sync_btn.setEnabled(False)
-            self.sync_btn.setText(f"Sincronizar videos")
-    
+            self.sync_btn.setText("  Sincronizar videos")
+            self.sync_badge.setVisible(False)
+
     def _populate_fragment_list(self):
-        """Populate the fragment list from current project."""
         self.fragment_list.clear()
-        
         if not self._current_project:
             return
-        
         for fragment in self._current_project.fragments:
             video_name = fragment.get_video_name()
-            
-            # Create display text
             if fragment.is_labeled():
-                text = f"✓ {fragment.fragment_id} - {video_name} [{fragment.label}]"
-                item = QListWidgetItem(text)
+                text = f"  {video_name}    [{fragment.label}]"
+            else:
+                text = f"  {video_name}"
+            item = QListWidgetItem(text)
+            item.setData(Qt.UserRole, fragment.fragment_id)
+            # Use foreground color to distinguish labeled / unlabeled
+            if fragment.is_labeled():
                 item.setForeground(Qt.darkGreen)
             else:
-                text = f"⭘ {fragment.fragment_id} - {video_name}"
-                item = QListWidgetItem(text)
-            
-            item.setData(Qt.UserRole, fragment.fragment_id)
+                from PySide6.QtGui import QColor
+                item.setForeground(QColor(AppTheme.TEXT_PRIMARY))
             self.fragment_list.addItem(item)
-    
+
+        count = self._current_project.get_total_count()
+        self.fragment_count_label.setText(f"{count} fragmentos")
+
     def _update_project_stats(self):
-        """Update project statistics display."""
         if not self._current_project:
             return
-        
-        # Use service for statistics
         summary = self._project_service.get_project_summary(self._current_project)
-        
-        self.project_stats_label.setText(
-            f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
-            f"fragmentos etiquetados ({summary['progress_percentage']:.1f}%)"
-        )
-    
+        labeled = summary['labeled']
+        total = summary['total_fragments']
+        pct = summary['progress_percentage']
+
+        self.stats_label.setText(f"{labeled}/{total} etiquetados  ({pct:.0f}%)")
+        self.progress_badge.setText(f"{labeled} / {total} etiquetados")
+
+        # Update progress bar fill width proportionally
+        if total > 0:
+            fill_pct = int(pct)
+            self.progress_bar_fill.setFixedWidth(
+                max(0, int(self.progress_bar_bg.width() * fill_pct / 100))
+            )
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Re-proportionate the progress bar fill on resize
+        self._update_project_stats() if self._current_project else None
+
+    # ─────────────────────────────────────────────
+    # Dialogs
+    # ─────────────────────────────────────────────
+
     def _select_folder(self) -> Path:
-        """Show folder selection dialog."""
         folder = QFileDialog.getExistingDirectory(
-            self,
-            "Seleciona la carpeta con los fragmentos",
-            "",
-            QFileDialog.ShowDirsOnly
+            self, "Selecciona la carpeta con los fragmentos",
+            "", QFileDialog.ShowDirsOnly
         )
         return Path(folder) if folder else None
-    
+
     def _select_project_file(self) -> Path:
-        """Show project file selection dialog."""
         file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Cargar proyecto",
-            "",
+            self, "Cargar proyecto", "",
             "JSON Files (*.json);;All Files (*)"
         )
         return Path(file_path) if file_path else None
-    
+
     def _select_save_path(self, default_name: str, filter: str) -> Path:
-        """Show save file dialog."""
         file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Guardar proyecto",
-            default_name,
-            filter
+            self, "Guardar", default_name, filter
         )
         return Path(file_path) if file_path else None
-    
+
     def _show_error(self, title: str, message: str):
-        """Show error message dialog."""
         QMessageBox.critical(self, title, message)
-    
+
     def _show_info(self, title: str, message: str):
-        """Show info message dialog."""
         QMessageBox.information(self, title, message)
+
+    # ─────────────────────────────────────────────
+    # Layout helpers
+    # ─────────────────────────────────────────────
+
+    @staticmethod
+    def _make_hline() -> QFrame:
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFixedHeight(1)
+        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        return line
+
+    @staticmethod
+    def _make_vline() -> QFrame:
+        line = QFrame()
+        line.setFrameShape(QFrame.VLine)
+        line.setFixedWidth(1)
+        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        return line
