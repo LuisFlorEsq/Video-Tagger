@@ -105,13 +105,13 @@ class FragmentViewer(QWidget):
 
         self.prev_btn = QPushButton("←")
         self.prev_btn.setStyleSheet(btn_ghost())
-        self.prev_btn.setFixedSize(32, 30)
+        self.prev_btn.setFixedSize(40, 30)
         self.prev_btn.setEnabled(False)
         topbar_layout.addWidget(self.prev_btn)
 
         self.next_btn = QPushButton("→")
         self.next_btn.setStyleSheet(btn_primary_sm())
-        self.next_btn.setFixedSize(32, 30)
+        self.next_btn.setFixedSize(40, 30)
         self.next_btn.setEnabled(False)
         topbar_layout.addWidget(self.next_btn)
 
@@ -233,7 +233,7 @@ class FragmentViewer(QWidget):
         if not self._current_fragment:
             return
         try:
-            self._labeling_service.assign_label(self._current_fragment, label)
+            self._labeling_service.assign_label(self._current_fragment, self._current_project, label)
             self._has_unsaved_changes = True
             self._schedule_auto_save()
             self._update_fragment_status()
