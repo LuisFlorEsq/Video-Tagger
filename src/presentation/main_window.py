@@ -89,26 +89,26 @@ class MainWindow(QMainWindow):
 
         new_action = QAction("&Nuevo proyecto desde carpeta", self)
         new_action.setShortcut("Ctrl+N")
-        new_action.triggered.connect(self._project_browser._on_new_project_clicked)
+        new_action.triggered.connect(self._project_browser.trigger_new_project)
         file_menu.addAction(new_action)
 
         load_action = QAction("&Cargar proyecto", self)
         load_action.setShortcut("Ctrl+O")
-        load_action.triggered.connect(self._project_browser._on_load_project_clicked)
+        load_action.triggered.connect(self._project_browser.trigger_load_project)
         file_menu.addAction(load_action)
 
         file_menu.addSeparator()
 
         save_action = QAction("&Guardar proyecto", self)
         save_action.setShortcut("Ctrl+S")
-        save_action.triggered.connect(self._on_save_project)
+        save_action.triggered.connect(self._project_browser.trigger_save_project)
         file_menu.addAction(save_action)
 
         file_menu.addSeparator()
 
         export_action = QAction("&Exportar a formato CSV", self)
         export_action.setShortcut("Ctrl+E")
-        export_action.triggered.connect(self._on_export)
+        export_action.triggered.connect(self._project_browser.trigger_export_project)
         file_menu.addAction(export_action)
 
         file_menu.addSeparator()
@@ -218,37 +218,6 @@ class MainWindow(QMainWindow):
             )
             self._show_browser()
 
-    def _on_save_project(self):
-        if not self._current_project:
-            QMessageBox.information(self, "Sin proyecto", "No hay ningún proyecto abierto.")
-            return
-        self._project_browser._on_save_clicked()
-
-    def _on_export(self):
-        if not self._current_project:
-            QMessageBox.information(self, "Sin proyecto", "No hay ningún proyecto abierto.")
-            return
-        if self._current_project.get_total_count() == 0:
-            QMessageBox.information(self, "Sin datos", "No hay fragmentos que exportar.")
-            return
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Exportar CSV",
-            f"{self._current_project.name}_export.csv",
-            "CSV Files (*.csv)"
-        )
-        if not file_path:
-            return
-        try:
-            self._export_service.export(self._current_project, Path(file_path), 'csv')
-            summary = self._project_service.get_project_summary(self._current_project)
-            QMessageBox.information(
-                self, "Exportación exitosa",
-                f"{summary['total_fragments']} fragmentos exportados.\n"
-                f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}"
-            )
-            self._update_status(f"Exportado: {Path(file_path).name}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error al exportar", str(e))
 
     def _show_browser(self):
         self._project_browser.refresh()

@@ -7,11 +7,15 @@ from PySide6.QtCore import Qt, Signal, QTimer
 
 from src.presentation.widgets.video_player import VideoPlayer
 from src.presentation.widgets.label_panel import LabelPanel
+from src.presentation.widgets.label_panel import DEFAULT_LABELS
+
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
+
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
+
 from src.presentation.styles import (
     AppTheme,
     topbar_panel, sidebar_panel,
@@ -49,7 +53,6 @@ class FragmentViewer(QWidget):
         self._current_fragment: Fragment = None
         self._current_project:  Project  = None
 
-        from src.presentation.widgets.label_panel import DEFAULT_LABELS
         self.available_labels = (available_labels or DEFAULT_LABELS).copy()
 
         # Auto-save
@@ -106,13 +109,11 @@ class FragmentViewer(QWidget):
         self.prev_btn = QPushButton("←")
         self.prev_btn.setStyleSheet(btn_ghost())
         self.prev_btn.setFixedSize(40, 30)
-        self.prev_btn.setEnabled(False)
         topbar_layout.addWidget(self.prev_btn)
 
         self.next_btn = QPushButton("→")
         self.next_btn.setStyleSheet(btn_primary_sm())
         self.next_btn.setFixedSize(40, 30)
-        self.next_btn.setEnabled(False)
         topbar_layout.addWidget(self.next_btn)
 
         root.addWidget(topbar)
@@ -219,9 +220,12 @@ class FragmentViewer(QWidget):
     # ─────────────────────────────────────────────
 
     def _connect_signals(self):
+        # Return to project browser view
         self.back_btn.clicked.connect(self._on_back_clicked)
+        # Navigation buttons
         self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
+        # Label management
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
 
@@ -397,10 +401,6 @@ class FragmentViewer(QWidget):
         self.label_panel.set_current_label(
             self._current_fragment.label if labeled else None
         )
-
-        # Navigation buttons
-        self.prev_btn.setEnabled(labeled)
-        self.next_btn.setEnabled(labeled)
 
         # Delete link
         self.delete_label_btn.setEnabled(labeled)

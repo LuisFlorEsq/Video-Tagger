@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QScrollArea
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QColor
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
@@ -271,12 +271,16 @@ class ProjectBrowser(QWidget):
     # ─────────────────────────────────────────────
 
     def _connect_signals(self):
+        # Project selection
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
+        # Project management
         self.save_project_btn.clicked.connect(self._on_save_clicked)
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
+        # Sync new videos and return to main window
         self.sync_btn.clicked.connect(self._on_sync_clicked)
         self.back_btn.clicked.connect(self._on_back_clicked)
+        # Switch to fragment viewer
         self.fragment_list.itemDoubleClicked.connect(self._on_fragment_double_clicked)
 
     # ─────────────────────────────────────────────
@@ -407,6 +411,34 @@ class ProjectBrowser(QWidget):
 
     def get_current_project(self) -> Project:
         return self._current_project
+    
+    
+    # ─────────────────────────────────────────────
+    # Public API (Triggers from main_window)
+    # ─────────────────────────────────────────────
+    def trigger_new_project(self):
+        """
+        Public entry point, used each time a new project is requested 
+        """
+        self._on_new_project_clicked()
+        
+    def trigger_load_project(self):
+        """
+        Public entry point, used each time a project is loaded
+        """
+        self._on_load_project_clicked()
+        
+    def trigger_save_project(self):
+        """
+        Public entry point, used each time a project is prompted to save
+        """
+        self._on_save_clicked()
+    
+    def trigger_export_project(self):
+        """
+        Public entry point, used each time a project is prompted to export
+        """
+        self._on_export_csv_clicked()
 
     # ─────────────────────────────────────────────
     # Private helpers
@@ -469,7 +501,6 @@ class ProjectBrowser(QWidget):
             if fragment.is_labeled():
                 item.setForeground(Qt.darkGreen)
             else:
-                from PySide6.QtGui import QColor
                 item.setForeground(QColor(AppTheme.TEXT_PRIMARY))
             self.fragment_list.addItem(item)
 
