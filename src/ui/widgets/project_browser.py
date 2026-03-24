@@ -2,7 +2,7 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QListWidget, QLabel, QListWidgetItem,
-    QFileDialog, QMessageBox, QFrame
+    QFileDialog, QMessageBox, QFrame, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -11,7 +11,7 @@ from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
-from src.presentation.styles import (
+from src.ui.styles import (
     AppTheme,
     sidebar_panel, sidebar_btn, sidebar_btn_active, sidebar_btn_warning,
     sidebar_section_label, topbar_panel, btn_primary, btn_success,
@@ -236,21 +236,26 @@ class ProjectBrowser(QWidget):
 
         list_layout.addWidget(toolbar)
 
-        # Progress bar (3px strip under toolbar)
-        self.progress_bar_bg = QWidget()
-        self.progress_bar_bg.setFixedHeight(3)
-        self.progress_bar_bg.setStyleSheet(f"background-color: {AppTheme.BORDER};")
-        progress_container = QHBoxLayout(self.progress_bar_bg)
-        progress_container.setContentsMargins(0, 0, 0, 0)
-        progress_container.setSpacing(0)
+        # Progress bar (real Qt widget)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFixedHeight(6)
 
-        self.progress_bar_fill = QWidget()
-        self.progress_bar_fill.setFixedHeight(3)
-        self.progress_bar_fill.setStyleSheet(f"background-color: {AppTheme.PRIMARY};")
-        progress_container.addWidget(self.progress_bar_fill)
-        progress_container.addStretch()
+        self.progress_bar.setStyleSheet(f"""
+            QProgressBar {{
+                border: none;
+                background-color: {AppTheme.BORDER};
+                border-radius: 3px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {AppTheme.PRIMARY};
+                border-radius: 3px;
+            }}
+        """)
 
-        list_layout.addWidget(self.progress_bar_bg)
+        list_layout.addWidget(self.progress_bar)
 
         # Fragment list
         self.fragment_list = QListWidget()
@@ -516,18 +521,8 @@ class ProjectBrowser(QWidget):
 
         self.stats_label.setText(f"{labeled}/{total} etiquetados  ({pct:.0f}%)")
         self.progress_badge.setText(f"{labeled} / {total} etiquetados")
-
-        # Update progress bar fill width proportionally
-        if total > 0:
-            fill_pct = int(pct)
-            self.progress_bar_fill.setFixedWidth(
-                max(0, int(self.progress_bar_bg.width() * fill_pct / 100))
-            )
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        # Re-proportionate the progress bar fill on resize
-        self._update_project_stats() if self._current_project else None
+        
+        self.progress_bar.setValue(int(pct))
 
     # ─────────────────────────────────────────────
     # Dialogs

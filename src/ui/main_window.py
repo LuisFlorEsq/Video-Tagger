@@ -11,9 +11,9 @@ from src.application.services.labeling_service import LabelingService
 from src.application.services.export_service import ExportService
 from src.application.services.navigation_service import NavigationService
 
-from src.presentation.widgets.project_browser import ProjectBrowser
-from src.presentation.widgets.fragment_viewer import FragmentViewer
-from src.presentation.styles import app_stylesheet
+from src.ui.widgets.project_browser import ProjectBrowser
+from src.ui.widgets.fragment_viewer import FragmentViewer
+from src.ui.styles import app_stylesheet
 
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
@@ -153,10 +153,7 @@ class MainWindow(QMainWindow):
         self._safe_switch_view(VIEW_PROJECT)
 
         summary = self._project_service.get_project_summary(project)
-        self._update_status(
-            f"{project.name} — "
-            f"{summary['labeled']}/{summary['total_fragments']} etiquetados"
-        )
+        self._update_status(self._project_summary_text(project=project))
 
     def _on_fragment_selected(self, fragment: Fragment):
         if not self._current_project or not self._navigation_service:
@@ -224,12 +221,9 @@ class MainWindow(QMainWindow):
     def _show_browser(self):
         self._project_browser.refresh()
         self._safe_switch_view(VIEW_PROJECT)
+        
         if self._current_project:
-            summary = self._project_service.get_project_summary(self._current_project)
-            self._update_status(
-                f"{self._current_project.name} — "
-                f"{summary['labeled']}/{summary['total_fragments']} etiquetados"
-            )
+            self._update_status(self._project_summary_text(project=self._current_project))
         else:
             self._update_status("Listo.")
 
@@ -253,6 +247,14 @@ class MainWindow(QMainWindow):
             "<li>Exporta a CSV al finalizar</li>"
             "</ol>"
             "<p>Centro de Investigación en Computación — IPN</p>"
+        )
+        
+    def _project_summary_text(self, project: Project) -> str:
+        summary = self._project_service.get_project_summary(project)
+        return (
+            f"{project.name} — "
+            f"{summary['labeled']}/{summary['total_fragments']} etiquetados "
+            f"({summary['progress_percentage']:.1f}%)"
         )
 
     def _update_status(self, message: str):

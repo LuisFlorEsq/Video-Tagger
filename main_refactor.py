@@ -12,8 +12,8 @@ from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 from src.application.services.labeling_service import LabelingService
 
-from src.presentation.main_window import create_main_window
-from src.presentation.styles import app_stylesheet
+from src.ui.main_window import create_main_window
+from src.ui.styles import app_stylesheet
 
 
 def main():

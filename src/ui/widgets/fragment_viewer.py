@@ -5,9 +5,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 
-from src.presentation.widgets.video_player import VideoPlayer
-from src.presentation.widgets.label_panel import LabelPanel
-from src.presentation.widgets.label_panel import DEFAULT_LABELS
+from src.ui.widgets.video_player import VideoPlayer
+from src.ui.widgets.label_panel import LabelPanel
+from src.ui.widgets.label_panel import DEFAULT_LABELS
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
@@ -16,7 +16,7 @@ from src.application.services.project_service import ProjectService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
-from src.presentation.styles import (
+from src.ui.styles import (
     AppTheme,
     topbar_panel, sidebar_panel,
     btn_primary_sm, btn_ghost, btn_danger,

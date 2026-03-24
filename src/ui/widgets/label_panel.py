@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
-from src.presentation.styles import (
+from src.ui.styles import (
     AppTheme, label_list, text_section_header,
     chip_labeled, chip_unlabeled,
 )
