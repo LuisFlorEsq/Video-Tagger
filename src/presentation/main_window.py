@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
         self._create_status_bar()
         self._connect_signals()
 
-        self.setWindowTitle("Herramienta de etiquetado de vídeos")
+        self.setWindowTitle("Herramienta de etiquetado - CIC IPN")
         self.resize(1400, 800)
 
     # ─────────────────────────────────────────────

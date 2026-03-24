@@ -118,12 +118,12 @@ class ProjectBrowser(QWidget):
         ws_header.setStyleSheet(sidebar_section_label())
         ws_layout.addWidget(ws_header)
 
-        self.new_project_btn = QPushButton("  Nuevo proyecto")
-        self.new_project_btn.setStyleSheet(btn_primary())
+        self.new_project_btn = QPushButton("Nuevo proyecto")
+        self.new_project_btn.setStyleSheet(sidebar_btn())
         self.new_project_btn.setMinimumHeight(36)
         ws_layout.addWidget(self.new_project_btn)
 
-        self.load_project_btn = QPushButton("  Abrir proyecto")
+        self.load_project_btn = QPushButton("Abrir proyecto")
         self.load_project_btn.setStyleSheet(sidebar_btn())
         self.load_project_btn.setMinimumHeight(36)
         ws_layout.addWidget(self.load_project_btn)

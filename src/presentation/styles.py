@@ -316,20 +316,19 @@ def btn_warning() -> str:
         QPushButton:disabled {{ background-color: #FDE68A; color: {t.TEXT_MUTED}; }}
     """
 
-def btn_danger_link() -> str:
+def btn_danger() -> str:
     """Understated delete/danger action — link style, turns red on hover."""
     t = AppTheme
     return f"""
         QPushButton {{
-            background-color: transparent;
-            color: {t.TEXT_MUTED};
+            background-color: {t.DANGER};
+            color: white;
             border: none;
             padding: 4px 0px;
             font-size: {t.FONT_SM};
-            text-decoration: underline;
             text-align: left;
         }}
-        QPushButton:hover:enabled {{ color: {t.DANGER}; }}
+        QPushButton:hover:enabled {{ color: {t.DANGER_HOVER}; }}
         QPushButton:disabled {{ color: {t.BORDER}; }}
     """
 

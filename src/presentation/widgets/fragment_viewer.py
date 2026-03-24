@@ -15,7 +15,7 @@ from src.domain.models.fragment import Fragment
 from src.presentation.styles import (
     AppTheme,
     topbar_panel, sidebar_panel,
-    btn_primary_sm, btn_ghost, btn_danger_link,
+    btn_primary_sm, btn_ghost, btn_danger, btn_warning,
     chip_labeled, chip_unlabeled,
     text_breadcrumb, text_section_header, text_muted, text_secondary,
 )
@@ -205,7 +205,7 @@ class FragmentViewer(QWidget):
         action_layout.setContentsMargins(14, 8, 14, 10)
 
         self.delete_label_btn = QPushButton("Eliminar etiqueta actual")
-        self.delete_label_btn.setStyleSheet(btn_danger_link())
+        self.delete_label_btn.setStyleSheet(btn_danger())
         self.delete_label_btn.setEnabled(False)
         action_layout.addWidget(self.delete_label_btn)
 
@@ -273,7 +273,7 @@ class FragmentViewer(QWidget):
         if not self._current_fragment or not self._current_fragment.is_labeled():
             return
         try:
-            self._labeling_service.clear_label(self._current_fragment)
+            self._labeling_service.clear_label(self._current_fragment, self._current_project)
             self._has_unsaved_changes = True
             self._schedule_auto_save()
             self._update_fragment_status()
