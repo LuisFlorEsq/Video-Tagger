@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QFileDialog, QStatusBar, QApplication
 )
 from PySide6.QtGui import QAction
+from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT
 
 from src.application.services.project_service import ProjectService
 from src.application.services.labeling_service import LabelingService
@@ -80,7 +81,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self._fragment_viewer)
 
         layout.addWidget(self.stacked_widget)
-        self._safe_switch_view(0)
+        self._safe_switch_view(VIEW_PROJECT)
 
     def _create_menu_bar(self):
         menubar = self.menuBar()
@@ -132,6 +133,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         self._project_browser.project_loaded.connect(self._on_project_loaded)
         self._project_browser.fragment_selected.connect(self._on_fragment_selected)
+        
         self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
         self._fragment_viewer.prev_requested.connect(self._on_prev_requested)
         self._fragment_viewer.next_requested.connect(self._on_next_requested)
@@ -148,7 +150,7 @@ class MainWindow(QMainWindow):
         self._fragment_viewer.set_navigation_service(self._navigation_service)
 
         # Always return to browser when a new project is loaded
-        self._safe_switch_view(0)
+        self._safe_switch_view(VIEW_PROJECT)
 
         summary = self._project_service.get_project_summary(project)
         self._update_status(
@@ -162,7 +164,7 @@ class MainWindow(QMainWindow):
 
         self._navigation_service.set_current_fragment(fragment.fragment_id)
         self._fragment_viewer.load_fragment(fragment, self._current_project)
-        self._safe_switch_view(1)
+        self._safe_switch_view(VIEW_FRAGMENT)
 
         current, total = self._navigation_service.get_position()
         self._update_status(
@@ -221,7 +223,7 @@ class MainWindow(QMainWindow):
 
     def _show_browser(self):
         self._project_browser.refresh()
-        self._safe_switch_view(0)
+        self._safe_switch_view(VIEW_PROJECT)
         if self._current_project:
             summary = self._project_service.get_project_summary(self._current_project)
             self._update_status(
@@ -267,7 +269,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
                 )
                 if reply == QMessageBox.Save:
-                    self._on_save_project()
+                    self._project_browser.trigger_save_project()
                     event.accept()
                 elif reply == QMessageBox.Discard:
                     event.accept()

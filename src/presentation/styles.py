@@ -324,9 +324,9 @@ def btn_danger() -> str:
             background-color: {t.DANGER};
             color: white;
             border: none;
-            padding: 4px 0px;
+            border-radius: {t.RADIUS_MD};
+            padding: 8px 18px;
             font-size: {t.FONT_SM};
-            text-align: left;
         }}
         QPushButton:hover:enabled {{ color: {t.DANGER_HOVER}; }}
         QPushButton:disabled {{ color: {t.BORDER}; }}
@@ -468,4 +468,4 @@ def text_success_bold() -> str:
 
 def divider() -> str:
     """Thin horizontal rule as a QFrame or QWidget background."""
-    return f"background-color: {AppTheme.BORDER}; max-height: 1px;"
+    return f"background-color: {AppTheme.BORDER}; border: none;"

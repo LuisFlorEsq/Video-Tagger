@@ -2,7 +2,9 @@
 
 **Video-Tagger** is a desktop video annotation tool that allows users to load local video files, inspect individual frames, and assign tags for labeling, analysis, or dataset creation.
 
-## TODO:
+---
+
+### TODO LIST
 
 - [X] Add synchronized file updates linked to the project (partial progress saving).
 - [X] Add an option to **update an existing project** instead of forcing the user to save it again.
@@ -13,3 +15,6 @@
 - [] Update the current logic to deactivate buttons when we are in the first and last fragment of the project.
 - [] Create a portable executable
 - [] Add an admin view to manage system configuration (e.g. manage available labels)
+- [] Ensure that when the user clicks on "Cerrar Proyecto" all the metadata is cleared because if the user close the project and then try to exit the app with fragments unlabeled the system still has project data in memmory
+- [] Consider to delete confirmation to exit with unlabeled fragments
+

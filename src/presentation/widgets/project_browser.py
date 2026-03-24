@@ -2,8 +2,7 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QListWidget, QLabel, QListWidgetItem,
-    QFileDialog, QMessageBox, QFrame, QSizePolicy,
-    QScrollArea
+    QFileDialog, QMessageBox, QFrame
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -61,7 +60,7 @@ class ProjectBrowser(QWidget):
         self.topbar.setStyleSheet(topbar_panel())
         topbar_layout = QHBoxLayout(self.topbar)
         topbar_layout.setContentsMargins(16, 0, 16, 0)
-        topbar_layout.setSpacing(10)
+        topbar_layout.setSpacing(5)
 
         app_title = QLabel("Herramienta de etiquetado")
         app_title.setStyleSheet(
@@ -92,7 +91,7 @@ class ProjectBrowser(QWidget):
         root.addWidget(self.topbar)
 
         # ── Thin divider ─────────────────────────
-        root.addWidget(self._make_hline())
+        # root.addWidget(self._make_hline())
 
         # ── Body (sidebar + main) ─────────────────
         body = QWidget()
@@ -141,12 +140,12 @@ class ProjectBrowser(QWidget):
         ps_header.setStyleSheet(sidebar_section_label())
         ps_layout.addWidget(ps_header)
 
-        self.save_project_btn = QPushButton("  Guardar")
+        self.save_project_btn = QPushButton("Guardar")
         self.save_project_btn.setStyleSheet(sidebar_btn())
         self.save_project_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.save_project_btn)
 
-        self.export_csv_btn = QPushButton("  Exportar CSV")
+        self.export_csv_btn = QPushButton("Exportar CSV")
         self.export_csv_btn.setStyleSheet(sidebar_btn())
         self.export_csv_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.export_csv_btn)
@@ -157,7 +156,7 @@ class ProjectBrowser(QWidget):
         actions_header.setStyleSheet(sidebar_section_label())
         ps_layout.addWidget(actions_header)
 
-        self.sync_btn = QPushButton("  Sincronizar videos")
+        self.sync_btn = QPushButton("Sincronizar videos")
         self.sync_btn.setStyleSheet(sidebar_btn_warning())
         self.sync_btn.setMinimumHeight(34)
         self.sync_btn.setEnabled(False)
@@ -166,7 +165,7 @@ class ProjectBrowser(QWidget):
         ps_layout.addSpacing(8)
         ps_layout.addWidget(self._make_hline())
 
-        self.back_btn = QPushButton("  Cerrar proyecto")
+        self.back_btn = QPushButton("Cerrar proyecto")
         self.back_btn.setStyleSheet(sidebar_btn())
         self.back_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.back_btn)
@@ -175,7 +174,7 @@ class ProjectBrowser(QWidget):
         sidebar_layout.addStretch()
 
         body_layout.addWidget(self.sidebar)
-        body_layout.addWidget(self._make_vline())
+        # body_layout.addWidget(self._make_vline())
 
         # ── Main panel ────────────────────────────
         self.main_panel = QWidget()
@@ -569,7 +568,7 @@ class ProjectBrowser(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFixedHeight(1)
-        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        line.setStyleSheet(divider())
         return line
 
     @staticmethod
@@ -577,5 +576,5 @@ class ProjectBrowser(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.VLine)
         line.setFixedWidth(1)
-        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
+        line.setStyleSheet(divider())
         return line

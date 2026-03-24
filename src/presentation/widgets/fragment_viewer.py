@@ -19,9 +19,9 @@ from src.domain.models.fragment import Fragment
 from src.presentation.styles import (
     AppTheme,
     topbar_panel, sidebar_panel,
-    btn_primary_sm, btn_ghost, btn_danger, btn_warning,
+    btn_primary_sm, btn_ghost, btn_danger,
     chip_labeled, chip_unlabeled,
-    text_breadcrumb, text_section_header, text_muted, text_secondary,
+    text_breadcrumb, text_section_header, text_muted,
 )
 
 
@@ -40,7 +40,6 @@ class FragmentViewer(QWidget):
         self,
         labeling_service: LabelingService,
         project_service: ProjectService,
-        navigation_service: NavigationService = None,
         available_labels: list = None,
         parent=None
     ):
@@ -48,7 +47,7 @@ class FragmentViewer(QWidget):
 
         self._labeling_service    = labeling_service
         self._project_service     = project_service
-        self._navigation_service  = navigation_service
+        self._navigation_service  = None
 
         self._current_fragment: Fragment = None
         self._current_project:  Project  = None
