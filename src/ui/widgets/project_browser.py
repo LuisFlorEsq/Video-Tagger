@@ -2,19 +2,26 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QListWidget, QLabel, QListWidgetItem,
-    QFileDialog, QMessageBox, QFrame, QProgressBar
+    QFileDialog, QMessageBox, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
+
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
+
+from src.ui.helpers.dividers import make_hline, make_vline
+from src.ui.helpers.project_formatter import (
+    format_project_badge,
+    format_project_stats
+)
 from src.ui.styles import (
     AppTheme,
     sidebar_panel, sidebar_btn, sidebar_btn_active, sidebar_btn_warning,
-    sidebar_section_label, topbar_panel, btn_primary, btn_success,
+    sidebar_section_label, topbar_panel, progress_bar, btn_primary, btn_success,
     fragment_list, chip_labeled, chip_unlabeled, chip_warning, chip_info,
     text_title, text_secondary, text_muted, text_breadcrumb, divider,
     text_section_header,
@@ -68,7 +75,7 @@ class ProjectBrowser(QWidget):
         )
         topbar_layout.addWidget(app_title)
 
-        self._topbar_sep = self._make_vline()
+        self._topbar_sep = make_vline()
         topbar_layout.addWidget(self._topbar_sep)
 
         self.topbar_project_label = QLabel("")
@@ -150,7 +157,7 @@ class ProjectBrowser(QWidget):
         self.export_csv_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.export_csv_btn)
 
-        ps_layout.addWidget(self._make_hline())
+        ps_layout.addWidget(make_hline())
 
         actions_header = QLabel("Sincronización")
         actions_header.setStyleSheet(sidebar_section_label())
@@ -163,7 +170,7 @@ class ProjectBrowser(QWidget):
         ps_layout.addWidget(self.sync_btn)
 
         ps_layout.addSpacing(8)
-        ps_layout.addWidget(self._make_hline())
+        ps_layout.addWidget(make_hline())
 
         self.back_btn = QPushButton("Cerrar proyecto")
         self.back_btn.setStyleSheet(sidebar_btn())
@@ -243,17 +250,7 @@ class ProjectBrowser(QWidget):
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(6)
 
-        self.progress_bar.setStyleSheet(f"""
-            QProgressBar {{
-                border: none;
-                background-color: {AppTheme.BORDER};
-                border-radius: 3px;
-            }}
-            QProgressBar::chunk {{
-                background-color: {AppTheme.PRIMARY};
-                border-radius: 3px;
-            }}
-        """)
+        self.progress_bar.setStyleSheet(progress_bar())
 
         list_layout.addWidget(self.progress_bar)
 
@@ -515,15 +512,12 @@ class ProjectBrowser(QWidget):
         if not self._current_project:
             return
         summary = self._project_service.get_project_summary(self._current_project)
-        labeled = summary['labeled']
-        total = summary['total_fragments']
         pct = summary['progress_percentage']
 
-        self.stats_label.setText(f"{labeled}/{total} etiquetados  ({pct:.0f}%)")
-        self.progress_badge.setText(f"{labeled} / {total} etiquetados")
-        
+        self.stats_label.setText(format_project_stats(summary))
+        self.progress_badge.setText(format_project_badge(summary))
         self.progress_bar.setValue(int(pct))
-
+        
     # ─────────────────────────────────────────────
     # Dialogs
     # ─────────────────────────────────────────────
@@ -553,23 +547,3 @@ class ProjectBrowser(QWidget):
 
     def _show_info(self, title: str, message: str):
         QMessageBox.information(self, title, message)
-
-    # ─────────────────────────────────────────────
-    # Layout helpers
-    # ─────────────────────────────────────────────
-
-    @staticmethod
-    def _make_hline() -> QFrame:
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFixedHeight(1)
-        line.setStyleSheet(divider())
-        return line
-
-    @staticmethod
-    def _make_vline() -> QFrame:
-        line = QFrame()
-        line.setFrameShape(QFrame.VLine)
-        line.setFixedWidth(1)
-        line.setStyleSheet(divider())
-        return line

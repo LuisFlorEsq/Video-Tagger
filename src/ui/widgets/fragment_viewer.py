@@ -1,7 +1,7 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QFrame, QMessageBox
+    QLabel, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 
@@ -16,12 +16,13 @@ from src.application.services.project_service import ProjectService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
+from src.ui.helpers.dividers import make_hline, make_vline
 from src.ui.styles import (
     AppTheme,
-    topbar_panel, sidebar_panel,
+    topbar_panel,
     btn_primary_sm, btn_ghost, btn_danger,
     chip_labeled, chip_unlabeled,
-    text_breadcrumb, text_section_header, text_muted,
+    text_breadcrumb, text_section_header
 )
 
 
@@ -86,7 +87,7 @@ class FragmentViewer(QWidget):
         self.back_btn.setFixedHeight(30)
         topbar_layout.addWidget(self.back_btn)
 
-        topbar_layout.addWidget(self._make_vline())
+        topbar_layout.addWidget(make_vline())
 
         # Breadcrumb: "project / filename"
         self.breadcrumb_label = QLabel("")
@@ -116,7 +117,7 @@ class FragmentViewer(QWidget):
         topbar_layout.addWidget(self.next_btn)
 
         root.addWidget(topbar)
-        root.addWidget(self._make_hline())
+        root.addWidget(make_hline())
 
         # ── Body ──────────────────────────────────
         body = QWidget()
@@ -135,7 +136,7 @@ class FragmentViewer(QWidget):
         video_layout.addWidget(self.video_player, stretch=1)
 
         body_layout.addWidget(video_area, stretch=1)
-        body_layout.addWidget(self._make_vline())
+        body_layout.addWidget(make_vline())
 
         # ── Right panel ───────────────────────────
         right_panel = QWidget()
@@ -183,7 +184,7 @@ class FragmentViewer(QWidget):
         info_layout.addLayout(id_row)
 
         right_layout.addWidget(info_strip)
-        right_layout.addWidget(self._make_hline())
+        right_layout.addWidget(make_hline())
 
         # Label picker — fills remaining space
         label_area = QWidget()
@@ -198,7 +199,7 @@ class FragmentViewer(QWidget):
         right_layout.addWidget(label_area, stretch=1)
 
         # Delete action strip — bottom, understated
-        right_layout.addWidget(self._make_hline())
+        right_layout.addWidget(make_hline())
         action_strip = QWidget()
         action_strip.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
         action_layout = QVBoxLayout(action_strip)
@@ -414,23 +415,3 @@ class FragmentViewer(QWidget):
 
     def _show_error(self, title: str, message: str):
         QMessageBox.critical(self, title, message)
-
-    # ─────────────────────────────────────────────
-    # Layout helpers
-    # ─────────────────────────────────────────────
-
-    @staticmethod
-    def _make_hline() -> QFrame:
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFixedHeight(1)
-        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
-        return line
-
-    @staticmethod
-    def _make_vline() -> QFrame:
-        line = QFrame()
-        line.setFrameShape(QFrame.VLine)
-        line.setFixedWidth(1)
-        line.setStyleSheet(f"background-color: {AppTheme.BORDER}; border: none;")
-        return line

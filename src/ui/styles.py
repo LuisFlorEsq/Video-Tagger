@@ -150,7 +150,19 @@ def topbar_panel() -> str:
             border-bottom: 1px solid {t.BORDER};
         }}
     """
-
+def progress_bar() -> str:
+    t = AppTheme
+    return f"""
+        QProgressBar {{
+            border: none;
+            background-color: {t.BORDER};
+            border-radius: 3px;
+        }}
+        QProgressBar::chunk {{
+            background-color: {t.PRIMARY};
+            border-radius: 3px;
+        }}
+    """
 
 # ─────────────────────────────────────────────
 # Sidebar
