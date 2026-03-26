@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QLabel, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtGui import QAction
 
 from src.ui.widgets.video_player import VideoPlayer
 from src.ui.widgets.label_panel import LabelPanel
@@ -64,6 +65,7 @@ class FragmentViewer(QWidget):
 
         self._init_ui()
         self._connect_signals()
+        self._setup_shortcuts()
 
     # ─────────────────────────────────────────────
     # UI construction
@@ -216,7 +218,7 @@ class FragmentViewer(QWidget):
         root.addWidget(body, stretch=1)
 
     # ─────────────────────────────────────────────
-    # Signal wiring
+    # Signal wring
     # ─────────────────────────────────────────────
 
     def _connect_signals(self):
@@ -228,6 +230,41 @@ class FragmentViewer(QWidget):
         # Label management
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
+        
+    # ─────────────────────────────────────────────
+    # Keyboard shortcuts
+    # ─────────────────────────────────────────────
+
+    def _setup_shortcuts(self):
+        # Navigation
+        prev_action = QAction(self)
+        prev_action.setShortcut("Left")
+        prev_action.triggered.connect(self._on_prev_clicked)
+        self.addAction(prev_action)
+        
+        next_action = QAction(self)
+        next_action.setShortcut("Right")
+        next_action.triggered.connect(self._on_next_clicked)
+        self.addAction(next_action)
+        
+        # Back to Project browser
+        back_action = QAction(self)
+        back_action.setShortcut("Escape")
+        back_action.triggered.connect(self._on_back_clicked)
+        self.addAction(back_action)
+        
+        # Delete label
+        delete_action = QAction(self)
+        delete_action.setShortcut("Delete")
+        delete_action.triggered.connect(self._on_delete_clicked)
+        self.addAction(delete_action)
+        
+        # Label shortcuts
+        for i in range(min(9, len(self.available_labels))):
+            label_action = QAction(self)
+            label_action.setShortcut(str(i + 1))
+            label_action.triggered.connect(lambda checked=False, idx=i: self._assign_label_by_index(idx))
+            self.addAction(label_action)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -296,6 +333,14 @@ class FragmentViewer(QWidget):
             if reply == QMessageBox.No:
                 return
         self.back_requested.emit()
+        
+    def _assign_label_by_index(self, index: int):
+        if not self._current_fragment or not self._current_project:
+            return
+        if index < 0 or index >= len(self.available_labels):
+            return
+        label = self.available_labels[index]
+        self._on_label_assigned(label)
 
     # ─────────────────────────────────────────────
     # Auto-save
