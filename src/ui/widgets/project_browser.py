@@ -275,14 +275,18 @@ class ProjectBrowser(QWidget):
         # Project selection
         self.new_project_btn.clicked.connect(self._on_new_project_clicked)
         self.load_project_btn.clicked.connect(self._on_load_project_clicked)
+        
         # Project management
         self.save_project_btn.clicked.connect(self._on_save_clicked)
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
+        
         # Sync new videos and return to main window
         self.sync_btn.clicked.connect(self._on_sync_clicked)
         self.back_btn.clicked.connect(self._on_back_clicked)
+        
         # Switch to fragment viewer
-        self.fragment_list.itemDoubleClicked.connect(self._on_fragment_double_clicked)
+        self.fragment_list.itemDoubleClicked.connect(self._on_fragment_selected)
+        self.fragment_list.itemActivated.connect(self._on_fragment_selected)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -389,7 +393,7 @@ class ProjectBrowser(QWidget):
             except Exception as e:
                 self._show_error("Error al sincronizar", str(e))
 
-    def _on_fragment_double_clicked(self, item: QListWidgetItem):
+    def _on_fragment_selected(self, item: QListWidgetItem):
         if not self._current_project:
             return
         fragment_id = item.data(Qt.UserRole)

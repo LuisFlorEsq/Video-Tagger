@@ -132,9 +132,11 @@ class MainWindow(QMainWindow):
         self._update_status("Listo — selecciona una carpeta para iniciar.")
 
     def _connect_signals(self):
+        # Project signals
         self._project_browser.project_loaded.connect(self._on_project_loaded)
         self._project_browser.fragment_selected.connect(self._on_fragment_selected)
         
+        # Fragment viewer signals
         self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
         self._fragment_viewer.prev_requested.connect(self._on_prev_requested)
         self._fragment_viewer.next_requested.connect(self._on_next_requested)

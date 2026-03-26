@@ -224,9 +224,11 @@ class FragmentViewer(QWidget):
     def _connect_signals(self):
         # Return to project browser view
         self.back_btn.clicked.connect(self._on_back_clicked)
+        
         # Navigation buttons
         self.prev_btn.clicked.connect(self._on_prev_clicked)
         self.next_btn.clicked.connect(self._on_next_clicked)
+        
         # Label management
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
@@ -258,6 +260,12 @@ class FragmentViewer(QWidget):
         delete_action.setShortcut("Delete")
         delete_action.triggered.connect(self._on_delete_clicked)
         self.addAction(delete_action)
+        
+        # Play and pause action
+        play_pause_action = QAction(self)
+        play_pause_action.setShortcut("Space")
+        play_pause_action.triggered.connect(self.video_player.toggle_playback)
+        self.addAction(play_pause_action)
         
         # Label shortcuts
         for i in range(min(9, len(self.available_labels))):

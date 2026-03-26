@@ -73,15 +73,18 @@ class VideoPlayer(QWidget):
         layout.addLayout(controls_layout)
 
     def _connect_signals(self):
+        # Media Player metadata
         self.media_player.positionChanged.connect(self._on_position_changed)
         self.media_player.durationChanged.connect(self._on_duration_changed)
         self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
+        
+        # Play buttons and position tracker
         self.play_button.clicked.connect(self.toggle_playback)
         self.timeline_slider.sliderMoved.connect(self.seek_position)
 
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
     # Video loading
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
 
     def load_video(self, video_path: str) -> bool:
         path = Path(video_path)
@@ -124,8 +127,6 @@ class VideoPlayer(QWidget):
         if video_path != self._pending_video_path:
             return  # A newer request superseded this one
 
-        # Only clear the source if there actually is one — avoids confusing
-        # the Windows backend by calling setSource(QUrl()) on an empty player
         if self.media_player.source().isValid():
             self.media_player.setSource(QUrl())
 
@@ -151,9 +152,7 @@ class VideoPlayer(QWidget):
         """
         if status == QMediaPlayer.LoadedMedia:
             self._disconnect_media_ready()
-
-            # play() then immediately pause() forces the demuxer to run on Windows,
-            # which is what reliably triggers durationChanged and renders the first frame.
+            
             self.media_player.play()
             self.media_player.pause()
             self.media_player.setPosition(0)
@@ -162,10 +161,10 @@ class VideoPlayer(QWidget):
             if self.on_ready_callback:
                 self.on_ready_callback()
 
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
     # Signal connection helpers — use flags to avoid double-connect/
     # disconnect-when-not-connected RuntimeWarnings
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
 
     def _connect_stop_listener(self):
         if not self._stop_listener_connected:
@@ -193,18 +192,18 @@ class VideoPlayer(QWidget):
                 pass
             self._media_ready_connected = False
 
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
     # Loader failure
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
 
     def _on_video_load_failed(self, video_path: str, error_message: str):
         print(f"Failed to load video {video_path}: {error_message}")
         self.fps = 30.0
         self.total_frames = 0
 
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
     # Playback controls
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
 
     def _on_playback_state_changed(self, state):
         """Reset play button and seek to start when video finishes playing naturally."""
@@ -244,9 +243,9 @@ class VideoPlayer(QWidget):
         seconds = seconds % 60
         return f"{minutes:02d}:{seconds:02d}"
 
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
     # Public helpers
-    # ------------------------------------------------------------------
+    # ─────────────────────────────────────────────
 
     def get_current_position_ms(self) -> int:
         return self.media_player.position()
@@ -256,8 +255,8 @@ class VideoPlayer(QWidget):
 
     def force_stop(self):
         """
-        Called when navigating away. Uses pause() not stop() to avoid
-        the Windows multimedia pipeline teardown that causes freezes.
+        Force stop video reproduction when navigating across the application 
+        (e.g. return to previous window)
         """
         self._disconnect_stop_listener()
         self._disconnect_media_ready()

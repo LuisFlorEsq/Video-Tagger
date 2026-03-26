@@ -116,7 +116,9 @@ class LabelPanel(QWidget):
         self.label_list.clear()
         font = QFont()
         font.setPointSize(10)
-        for label in self.labels:
-            item = QListWidgetItem(f"  {label}")
+        
+        for idx, label in enumerate(self.labels):
+            prefix = f"[{idx+1}] " if idx < 9 else ""
+            item = QListWidgetItem(f" {prefix}{label}")
             item.setFont(font)
             self.label_list.addItem(item)
