@@ -67,7 +67,11 @@ class LabelPanel(QWidget):
     def _on_label_clicked(self, item: QListWidgetItem):
         if not self._enabled:
             return
-        label_text = item.text().strip()
+        
+        label_text = item.data(Qt.UserRole)
+        if not label_text:
+            return
+        
         self._current_label = label_text
         self.label_assigned.emit(label_text)
 
@@ -78,23 +82,31 @@ class LabelPanel(QWidget):
     def set_enabled(self, enabled: bool):
         self._enabled = enabled
         self.label_list.setEnabled(enabled)
+        
+        if enabled:
+            self.label_list.setFocus()
 
     def set_current_label(self, label: str):
         """Reflect the fragment's current label in the chip and list selection."""
         self._current_label = label
+        
         if label:
             self.current_label_chip.setText(f"✓  {label}")
             self.current_label_chip.setStyleSheet(chip_labeled())
+            
             # Highlight matching row in the list
             for i in range(self.label_list.count()):
                 item = self.label_list.item(i)
-                if item.text().strip() == label:
+                if item.data(Qt.UserRole) == label:
                     self.label_list.setCurrentRow(i)
                     return
         else:
             self.current_label_chip.setText("Sin etiqueta asignada")
             self.current_label_chip.setStyleSheet(chip_unlabeled())
             self.label_list.clearSelection()
+            
+            if self.label_list.count() > 0:
+                self.label_list.setCurrentRow(0)
 
     def clear_selection(self):
         self.label_list.clearSelection()
@@ -119,6 +131,10 @@ class LabelPanel(QWidget):
         
         for idx, label in enumerate(self.labels):
             prefix = f"[{idx+1}] " if idx < 9 else ""
-            item = QListWidgetItem(f" {prefix}{label}")
+            display_text = f" {prefix}{label}"
+            
+            item = QListWidgetItem(display_text)
             item.setFont(font)
+            
+            item.setData(Qt.UserRole, label)
             self.label_list.addItem(item)
