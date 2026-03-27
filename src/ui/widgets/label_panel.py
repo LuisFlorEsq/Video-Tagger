@@ -50,7 +50,10 @@ class LabelPanel(QWidget):
         self.label_list.setStyleSheet(label_list())
         self.label_list.setMouseTracking(True)
         self.label_list.viewport().setCursor(Qt.PointingHandCursor)
+        
         self.label_list.itemClicked.connect(self._on_label_clicked)
+        self.label_list.itemActivated.connect(self._on_label_clicked)
+        
         layout.addWidget(self.label_list)
 
         # Current label chip

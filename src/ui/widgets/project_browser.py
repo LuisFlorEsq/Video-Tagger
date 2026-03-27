@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QFileDialog, QMessageBox, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QAction
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
@@ -50,6 +50,7 @@ class ProjectBrowser(QWidget):
 
         self._init_ui()
         self._connect_signals()
+        self._setup_shortcuts() 
         self._update_view()
 
     # ─────────────────────────────────────────────
@@ -284,9 +285,26 @@ class ProjectBrowser(QWidget):
         self.sync_btn.clicked.connect(self._on_sync_clicked)
         self.back_btn.clicked.connect(self._on_back_clicked)
         
-        # Switch to fragment viewer
+        # Switch to fragment viewer (with the fragment selected)
         self.fragment_list.itemDoubleClicked.connect(self._on_fragment_selected)
         self.fragment_list.itemActivated.connect(self._on_fragment_selected)
+        
+    # ─────────────────────────────────────────────
+    # Keyboard shortcuts
+    # ─────────────────────────────────────────────
+
+    def _setup_shortcuts(self):
+        # Sync videos
+        sync_action = QAction(self)
+        sync_action.setShortcut("Ctrl+R")
+        sync_action.triggered.connect(self._on_sync_clicked)
+        self.addAction(sync_action)
+
+        # Close project
+        close_action = QAction(self)
+        close_action.setShortcut("Escape")
+        close_action.triggered.connect(self._on_back_clicked)
+        self.addAction(close_action)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -413,6 +431,11 @@ class ProjectBrowser(QWidget):
             self._populate_fragment_list()
             self._update_project_stats()
             self._check_for_new_videos()
+            
+            # Focus on fragment list for arrow navigation    
+            self.fragment_list.setFocus()
+            if self.fragment_list.count() > 0:
+                self.fragment_list.setCurrentRow(0)
 
     def get_current_project(self) -> Project:
         return self._current_project
@@ -472,9 +495,7 @@ class ProjectBrowser(QWidget):
 
         if has_project:
             self.topbar_project_label.setText(self._current_project.name)
-            self._populate_fragment_list()
-            self._update_project_stats()
-            self._check_for_new_videos()
+            self.refresh()
 
     def _check_for_new_videos(self):
         if not self._current_project:
