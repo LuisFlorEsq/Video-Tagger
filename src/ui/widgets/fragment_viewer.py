@@ -414,9 +414,8 @@ class FragmentViewer(QWidget):
 
     def _on_video_ready_for_fragment(self):
         if self._current_fragment:
-            self.video_player.seek_position(
-                int(self._current_fragment.start_time * 1000)
-            )
+            pos = int(self._current_fragment.start_time * 1000)
+            QTimer.singleShot(50, lambda: self.video_player.seek_position(pos))
             
     def _on_video_load_failed(self, msg: str):
         QMessageBox.critical(self, "Error al cargar video", msg)
