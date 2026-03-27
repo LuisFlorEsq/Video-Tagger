@@ -233,6 +233,10 @@ class FragmentViewer(QWidget):
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
         
+        # Video player
+        self.video_player.ready.connect(self._on_video_ready_for_fragment)
+        self.video_player.load_failed.connect(self._on_video_load_failed)
+        
     # ─────────────────────────────────────────────
     # Keyboard shortcuts
     # ─────────────────────────────────────────────
@@ -331,6 +335,7 @@ class FragmentViewer(QWidget):
             self._show_error("Error", str(e))
 
     def _on_back_clicked(self):
+        self.video_player.force_stop()
         self._force_save()
         if self._current_fragment and not self._current_fragment.is_labeled():
             reply = QMessageBox.question(
@@ -389,7 +394,6 @@ class FragmentViewer(QWidget):
             )
             return
 
-        self.video_player.on_ready_callback = self._on_video_ready_for_fragment
         self.video_player.load_video(fragment.video_path)
 
         self._update_breadcrumb()
@@ -413,6 +417,9 @@ class FragmentViewer(QWidget):
             self.video_player.seek_position(
                 int(self._current_fragment.start_time * 1000)
             )
+            
+    def _on_video_load_failed(self, msg: str):
+        QMessageBox.critical(self, "Error al cargar video", msg)
 
     def _update_breadcrumb(self):
         """Show  project / filename  in the top bar — single source for both."""

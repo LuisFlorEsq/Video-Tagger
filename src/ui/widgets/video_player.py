@@ -5,12 +5,15 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtCore import Qt, Signal, QUrl, QTimer
 
 
 class VideoPlayer(QWidget):
     """Custom video player widget with basic controls."""
 
+    ready = Signal()
+    load_failed = Signal(str)
+    
     position_changed = Signal(int)
     duration_changed = Signal(int)
 
@@ -18,9 +21,10 @@ class VideoPlayer(QWidget):
         super().__init__(parent)
 
         self.video_path = None
-
-        self.on_ready_callback = None
         self._media_ready_connected = False
+        
+        self._load_id = 0
+        self._active_load_id = 0
 
         self._init_player()
         self._init_ui()
@@ -57,8 +61,10 @@ class VideoPlayer(QWidget):
         self.play_button = QPushButton()
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         controls_layout.addWidget(self.play_button)
+        
         controls_layout.addSpacing(20)
         controls_layout.addStretch()
+        
         layout.addLayout(controls_layout)
 
     def _connect_signals(self):
@@ -69,7 +75,7 @@ class VideoPlayer(QWidget):
 
         # Play buttons and position tracker
         self.play_button.clicked.connect(self.toggle_playback)
-        self.timeline_slider.sliderMoved.connect(self.seek_position)
+        self.timeline_slider.sliderMoved.connect(self.seek_position)        
 
     # ─────────────────────────────────────────────
     # Video loading
@@ -78,11 +84,12 @@ class VideoPlayer(QWidget):
     def load_video(self, video_path: str) -> bool:
         path = Path(video_path)
         if not path.exists():
+            self.load_failed.emit(f"No se encontró el archivo:\n{video_path}")
             return False
 
-        self.video_path = video_path
-
-        # Disconnect old media status listener if connected
+        self.video_path = str(path)
+        
+        # disconnect old one-shot media status connection
         if self._media_ready_connected:
             try:
                 self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
@@ -90,13 +97,13 @@ class VideoPlayer(QWidget):
                 pass
             self._media_ready_connected = False
 
-        # Connect listener for new load
+        # connect one-shot listener
         self.media_player.mediaStatusChanged.connect(self._on_media_status_changed)
         self._media_ready_connected = True
 
         self.media_player.stop()
         self.media_player.setSource(QUrl.fromLocalFile(str(path.absolute())))
-
+        
         return True
 
     def _on_media_status_changed(self, status):
@@ -109,16 +116,15 @@ class VideoPlayer(QWidget):
                     pass
                 self._media_ready_connected = False
 
-            # Render first frame
+            # Force first frame render (important on Windows)
             self.media_player.play()
             self.media_player.pause()
             self.media_player.setPosition(0)
 
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
-            if self.on_ready_callback:
-                self.on_ready_callback()
-
+            # notify FragmentViewer that seek is now safe
+            self.ready.emit()
     # ─────────────────────────────────────────────
     # Playback controls
     # ─────────────────────────────────────────────
