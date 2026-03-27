@@ -164,4 +164,5 @@ class VideoPlayer(QWidget):
     def force_stop(self):
         self._load_token += 1
         self.media_player.stop()
+        self.media_player.setSource(QUrl())
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))

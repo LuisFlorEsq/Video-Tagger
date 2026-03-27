@@ -51,8 +51,7 @@ class LabelPanel(QWidget):
         self.label_list.setMouseTracking(True)
         self.label_list.viewport().setCursor(Qt.PointingHandCursor)
         
-        self.label_list.itemClicked.connect(self._on_label_clicked)
-        self.label_list.itemActivated.connect(self._on_label_clicked)
+        self.label_list.itemActivated.connect(self._on_label_selected)
         
         layout.addWidget(self.label_list)
 
@@ -67,7 +66,7 @@ class LabelPanel(QWidget):
     # Slots
     # ─────────────────────────────────────────────
 
-    def _on_label_clicked(self, item: QListWidgetItem):
+    def _on_label_selected(self, item: QListWidgetItem):
         if not self._enabled:
             return
         
@@ -77,6 +76,7 @@ class LabelPanel(QWidget):
         
         self._current_label = label_text
         self.label_assigned.emit(label_text)
+        self.label_list.setFocus()
 
     # ─────────────────────────────────────────────
     # Public API
@@ -107,9 +107,6 @@ class LabelPanel(QWidget):
             self.current_label_chip.setText("Sin etiqueta asignada")
             self.current_label_chip.setStyleSheet(chip_unlabeled())
             self.label_list.clearSelection()
-            
-            if self.label_list.count() > 0:
-                self.label_list.setCurrentRow(0)
 
     def clear_selection(self):
         self.label_list.clearSelection()

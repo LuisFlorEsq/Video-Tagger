@@ -1,9 +1,9 @@
-from pathlib import Path
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
     QMessageBox, QStatusBar, QApplication
 )
 from PySide6.QtGui import QAction
+from PySide6.QtCore import QTimer
 from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT
 
 from src.application.services.project_service import ProjectService
@@ -162,7 +162,9 @@ class MainWindow(QMainWindow):
 
         self._navigation_service.set_current_fragment(fragment.fragment_id)
         self._fragment_viewer.load_fragment(fragment, self._current_project)
+        
         self._safe_switch_view(VIEW_FRAGMENT)
+        self._fragment_viewer.label_panel.label_list.setFocus()
 
         current, total = self._navigation_service.get_position()
         self._update_status(
@@ -183,12 +185,11 @@ class MainWindow(QMainWindow):
     def _on_prev_requested(self):
         if not self._navigation_service:
             return
-        self._fragment_viewer.video_player.force_stop()
+        
         prev_fragment = self._navigation_service.move_to_previous()
+        
         if prev_fragment:
-            self._fragment_viewer.load_fragment(prev_fragment, self._current_project)
-            current, total = self._navigation_service.get_position()
-            self._update_status(f"{prev_fragment.get_video_name()}  —  {current}/{total}")
+            QTimer.singleShot(50, lambda: self._load_fragment_safe)
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
@@ -202,12 +203,11 @@ class MainWindow(QMainWindow):
     def _on_next_requested(self):
         if not self._navigation_service:
             return
-        self._fragment_viewer.video_player.force_stop()
+        
         next_fragment = self._navigation_service.move_to_next()
+        
         if next_fragment:
-            self._fragment_viewer.load_fragment(next_fragment, self._current_project)
-            current, total = self._navigation_service.get_position()
-            self._update_status(f"{next_fragment.get_video_name()}  —  {current}/{total}")
+            QTimer.singleShot(50, lambda: self._load_fragment_safe)
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
@@ -217,11 +217,21 @@ class MainWindow(QMainWindow):
                 f"({summary['progress_percentage']:.1f}%)"
             )
             self._show_browser()
+            
+    # ─────────────────────────────────────────────
+    # Private handlers/helpers
+    # ─────────────────────────────────────────────
+    
+    def _load_fragment_safe(self, fragment: Fragment):
+        self._fragment_viewer.load_fragment(fragment, self._current_project)
+        current, total = self._navigation_service.get_position()
+        self._update_status(f"{fragment.get_video_name()}  —  {current}/{total}")
 
 
     def _show_browser(self):
         self._project_browser.refresh()
         self._safe_switch_view(VIEW_PROJECT)
+        self._project_browser.fragment_list.setFocus()
         
         if self._current_project:
             summary = self._project_service.get_project_summary(self._current_project)
