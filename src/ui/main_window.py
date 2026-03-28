@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         prev_fragment = self._navigation_service.move_to_previous()
         
         if prev_fragment:
-            QTimer.singleShot(50, lambda: self._load_fragment_safe)
+            QTimer.singleShot(50, lambda: self._load_fragment_safe(prev_fragment))
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         next_fragment = self._navigation_service.move_to_next()
         
         if next_fragment:
-            QTimer.singleShot(50, lambda: self._load_fragment_safe)
+            QTimer.singleShot(50, lambda: self._load_fragment_safe(next_fragment))
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(

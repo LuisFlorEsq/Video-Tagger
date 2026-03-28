@@ -22,7 +22,6 @@ class VideoPlayer(QWidget):
 
         self.video_path = None
         self._media_ready_connected = False
-        
         self._load_token = 0
 
         self._init_player()
@@ -67,18 +66,15 @@ class VideoPlayer(QWidget):
         layout.addLayout(controls_layout)
 
     def _connect_signals(self):
-        # Media player metadata
+        # Video player metadata
         self.media_player.positionChanged.connect(self._on_position_changed)
         self.media_player.durationChanged.connect(self._on_duration_changed)
-        
-        # Media changed (play/pause and )
         self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
-        self.media_player.mediaStatusChanged.connect(self._on_media_status_changed)
-        
-        # Play buttons and position tracker
+
+        # Control buttons and position tracker
         self.play_button.clicked.connect(self.toggle_playback)
         self.timeline_slider.sliderReleased.connect(self._on_slider_released)
-        
+
     # ─────────────────────────────────────────────
     # Video loading
     # ─────────────────────────────────────────────
@@ -90,13 +86,21 @@ class VideoPlayer(QWidget):
             return False
 
         self.video_path = str(path)
-        
         self._load_token += 1
-        
-        self.media_player.stop()
+
+
+        if self._media_ready_connected:
+            try:
+                self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
+            except RuntimeError:
+                pass
+            self._media_ready_connected = False
+
+        self.media_player.mediaStatusChanged.connect(self._on_media_status_changed)
+        self._media_ready_connected = True
         self.media_player.setSource(QUrl.fromLocalFile(str(path.absolute())))
-        
-         # UI reset
+
+        # UI reset
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.timeline_slider.setValue(0)
         self.time_label.setText("00:00 / 00:00")
@@ -107,14 +111,28 @@ class VideoPlayer(QWidget):
         if status != QMediaPlayer.LoadedMedia:
             return
         
+        if self._media_ready_connected:
+            try:
+                self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
+            except RuntimeError:
+                pass
+            self._media_ready_connected = False
+
         token = self._load_token
+
+        self.media_player.play()
+        self.media_player.pause()
+        self.media_player.setPosition(0)
+
+        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+
         QTimer.singleShot(0, lambda: self._finalize_load(token))
-        
+
     def _finalize_load(self, token: int):
         if token != self._load_token:
             return
-        
         self.ready.emit()
+
     # ─────────────────────────────────────────────
     # Playback controls
     # ─────────────────────────────────────────────
@@ -129,7 +147,7 @@ class VideoPlayer(QWidget):
 
     def seek_position(self, position: int):
         self.media_player.setPosition(position)
-        
+
     def _on_slider_released(self):
         self.seek_position(self.timeline_slider.value())
 
@@ -152,7 +170,13 @@ class VideoPlayer(QWidget):
     def _on_playback_state_changed(self, state):
         if state == QMediaPlayer.StoppedState:
             self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-            self.media_player.setPosition(0)
+            
+            if self.media_player.mediaStatus() not in (
+                QMediaPlayer.NoMedia,
+                QMediaPlayer.InvalidMedia,
+                QMediaPlayer.LoadingMedia,
+            ):
+                self.media_player.setPosition(0)
 
     @staticmethod
     def _format_time(ms: int) -> str:
@@ -164,5 +188,4 @@ class VideoPlayer(QWidget):
     def force_stop(self):
         self._load_token += 1
         self.media_player.stop()
-        self.media_player.setSource(QUrl())
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
