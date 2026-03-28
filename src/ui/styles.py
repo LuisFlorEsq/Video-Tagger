@@ -352,24 +352,34 @@ def btn_danger() -> str:
 def fragment_list() -> str:
     t = AppTheme
     return f"""
-        QListWidget {{
+        QTreeWidget {{
             border: none;
             background-color: transparent;
             font-size: {t.FONT_BASE};
             outline: none;
         }}
-        QListWidget::item {{
-            padding: 9px 12px;
+
+        QTreeWidget::item {{
+            padding: 8px 10px;
             border-radius: {t.RADIUS_MD};
-            color: {t.TEXT_PRIMARY};
-            margin: 1px 0;
         }}
-        QListWidget::item:selected {{
+
+        QTreeWidget::item:selected {{
             background-color: {t.PRIMARY_LIGHT};
             color: {t.PRIMARY};
         }}
-        QListWidget::item:hover:!selected {{
+
+        QTreeWidget::item:hover:!selected {{
             background-color: {t.BG_APP};
+        }}
+
+        QHeaderView::section {{
+            background-color: {t.BG_PANEL};
+            border: none;
+            border-bottom: 1px solid {t.BORDER};
+            padding: 6px;
+            font-weight: bold;
+            color: {t.TEXT_SECONDARY};
         }}
     """
 

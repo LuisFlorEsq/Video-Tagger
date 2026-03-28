@@ -1,8 +1,8 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QListWidget, QLabel, QListWidgetItem,
-    QFileDialog, QMessageBox, QProgressBar
+    QTreeWidget, QTreeWidgetItem,
+    QLabel, QFileDialog, QMessageBox, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QAction
@@ -256,13 +256,23 @@ class ProjectBrowser(QWidget):
         list_layout.addWidget(self.progress_bar)
 
         # Fragment list
-        self.fragment_list = QListWidget()
-        self.fragment_list.setStyleSheet(fragment_list())
-        self.fragment_list.setContentsMargins(8, 8, 8, 8)
-        self.fragment_list.setSpacing(1)
-        self.fragment_list.viewport().setContentsMargins(8, 8, 8, 8)
-        list_layout.addWidget(self.fragment_list)
+        self.fragment_list = QTreeWidget()
+        self.fragment_list.setColumnCount(3)
+        self.fragment_list.setHeaderLabels(["Video", "Etiqueta", "ID"])
 
+        self.fragment_list.setRootIsDecorated(False)
+        self.fragment_list.setAlternatingRowColors(True)
+        self.fragment_list.setItemsExpandable(False)
+
+        self.fragment_list.setStyleSheet(fragment_list())
+        self.fragment_list.setIndentation(0)
+
+        # Column sizes
+        self.fragment_list.setColumnWidth(0, 500)
+        self.fragment_list.setColumnWidth(1, 120)
+        self.fragment_list.setColumnWidth(2, 200)
+
+        list_layout.addWidget(self.fragment_list)
         main_layout.addWidget(self.list_screen)
         body_layout.addWidget(self.main_panel)
 
@@ -412,11 +422,11 @@ class ProjectBrowser(QWidget):
             except Exception as e:
                 self._show_error("Error al sincronizar", str(e))
 
-    def _on_fragment_selected(self, item: QListWidgetItem):
+    def _on_fragment_selected(self, item: QTreeWidgetItem):
         if not self._current_project:
             return
         
-        fragment_id = item.data(Qt.UserRole)
+        fragment_id = item.data(0, Qt.UserRole)
         fragment = self._current_project.get_fragment(fragment_id)
         if fragment:
             self.fragment_selected.emit(fragment)
@@ -520,22 +530,24 @@ class ProjectBrowser(QWidget):
 
     def _populate_fragment_list(self):
         self.fragment_list.clear()
+        
         if not self._current_project:
             return
+        
         for fragment in self._current_project.fragments:
             video_name = fragment.get_video_name()
-            if fragment.is_labeled():
-                text = f"  {video_name}    [{fragment.label}]"
-            else:
-                text = f"  {video_name}"
-            item = QListWidgetItem(text)
-            item.setData(Qt.UserRole, fragment.fragment_id)
-            # Use foreground color to distinguish labeled / unlabeled
+            status = fragment.label if fragment.is_labeled() else "Sin etiquetar"
+            id = fragment.fragment_id
+            
+            item = QTreeWidgetItem([video_name, status, id])
+            item.setData(0, Qt.UserRole, fragment.fragment_id)
+            
             if fragment.is_labeled():
                 item.setForeground(Qt.darkGreen)
             else:
                 item.setForeground(QColor(AppTheme.TEXT_PRIMARY))
-            self.fragment_list.addItem(item)
+                
+            self.fragment_list.addTopLevelItem(item)
 
         count = self._current_project.get_total_count()
         self.fragment_count_label.setText(f"{count} fragmentos")
