@@ -9,9 +9,6 @@ from src.ui.styles import (
     chip_labeled, chip_unlabeled,
 )
 
-DEFAULT_LABELS = ["Etiqueta 1", "Etiqueta 2", "Etiqueta 3", "Etiqueta 4", "Otro"]
-
-
 class LabelPanel(QWidget):
     """
     Label picker panel.
@@ -23,7 +20,7 @@ class LabelPanel(QWidget):
     def __init__(self, labels: list = None, parent=None):
         super().__init__(parent)
 
-        self.labels = (labels or DEFAULT_LABELS).copy()
+        self.labels = labels
         self._current_label: str = None
         self._enabled = False
 

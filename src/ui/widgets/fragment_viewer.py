@@ -8,7 +8,8 @@ from PySide6.QtGui import QAction
 
 from src.ui.widgets.video_player import VideoPlayer
 from src.ui.widgets.label_panel import LabelPanel
-from src.ui.widgets.label_panel import DEFAULT_LABELS
+
+from src.core.config import DEFAULT_LABELS
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
@@ -34,9 +35,10 @@ class FragmentViewer(QWidget):
     """
 
     fragment_labeled = Signal(Fragment)
-    prev_requested   = Signal()
-    next_requested   = Signal()
-    back_requested   = Signal()
+    prev_requested = Signal()
+    next_requested = Signal()
+    back_requested = Signal()
+    auto_saved = Signal ()
 
     def __init__(
         self,
@@ -272,11 +274,24 @@ class FragmentViewer(QWidget):
         self.addAction(play_pause_action)
         
         # Label shortcuts
-        for i in range(min(9, len(self.available_labels))):
-            label_action = QAction(self)
-            label_action.setShortcut(str(i + 1))
-            label_action.triggered.connect(lambda checked=False, idx=i: self._assign_label_by_index(idx))
-            self.addAction(label_action)
+        self._register_label_shortcuts()
+            
+    def _register_label_shortcuts(self):
+        """
+        Register numeric shortcuts for the current label list
+        """
+        for action in self.actions():
+            if getattr(action, "_is_label_shortcut", False):
+                self.removeAction(action)
+        
+        for i in range (min(9, len(self.available_labels))):
+            action = QAction(self)
+            action.setShortcut(str(i+1))
+            action.triggered.connect(
+                lambda checked=False, idx=i: self._assign_label_by_index(idx)
+            )
+            action._is_label_shortcut = True
+            self.addAction(action)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -286,7 +301,9 @@ class FragmentViewer(QWidget):
         if not self._current_fragment:
             return
         try:
-            self._labeling_service.assign_label(self._current_fragment, self._current_project, label)
+            self._labeling_service.assign_label(
+                self._current_fragment, self._current_project, label
+                )
             self._has_unsaved_changes = True
             self._schedule_auto_save()
             self._update_fragment_status()
@@ -371,6 +388,7 @@ class FragmentViewer(QWidget):
             success = self._project_service.auto_save_project(self._current_project)
             if success:
                 self._has_unsaved_changes = False
+                self.auto_saved.emit()
         except Exception as e:
             print(f"Auto-save failed: {e}")
 
@@ -407,7 +425,39 @@ class FragmentViewer(QWidget):
 
     def get_current_fragment(self) -> Fragment:
         return self._current_fragment
-
+    
+    def reset(self):
+        """
+        Clear all project related state
+        """
+        self._auto_save_timer.stop()
+        self._force_save()
+        
+        # Clean class attributes
+        self._current_fragment = None
+        self._current_project = None
+        self._navigation_service = None
+        self._has_unsaved_changes = False
+        
+        # Clean UI
+        self.stop_video()
+        self.label_panel.setEnabled(False)
+        self.label_panel.clear_selection()
+        self._clear_display()
+        
+    def stop_video(self):
+        self.video_player.force_stop()
+    
+    def focus_label_list(self):
+        self.label_panel.label_list.setFocus()
+        
+    def update_labels(self, labels: list):
+        if not labels:
+            return
+        
+        self.available_labels = labels.copy()
+        self.label_panel.set_labels(labels)
+        self._register_label_shortcuts()
     # ─────────────────────────────────────────────
     # Private UI updaters
     # ─────────────────────────────────────────────
@@ -423,8 +473,7 @@ class FragmentViewer(QWidget):
     def _update_breadcrumb(self):
         """Show  project / filename  in the top bar — single source for both."""
         if not self._current_fragment:
-            self.breadcrumb_label.setText("")
-            self.id_label.setText("—")
+            self._clear_display()
             return
 
         video_name = self._current_fragment.get_video_name()
@@ -471,6 +520,19 @@ class FragmentViewer(QWidget):
             self.position_label.setVisible(True)
         else:
             self.position_label.setVisible(False)
+            
+    def _clear_display(self):
+        """
+        Reset all labels and chips to their empty state
+        """
+        self.breadcrumb_label.setText("")
+        self.id_label.setText("-")
+        
+        self.status_chip.setText("Sin etiquetar")
+        self.status_chip.setStyleSheet(chip_unlabeled())
+        
+        self.position_label.setVisible(False)
+        self.delete_label_btn.setEnabled(False)
 
     def _show_error(self, title: str, message: str):
         QMessageBox.critical(self, title, message)
