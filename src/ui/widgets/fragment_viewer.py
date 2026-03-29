@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QAction
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent
+from PySide6.QtGui import QAction, QKeyEvent
 
 from src.ui.widgets.video_player import VideoPlayer
 from src.ui.widgets.label_panel import LabelPanel
@@ -38,7 +38,7 @@ class FragmentViewer(QWidget):
     prev_requested = Signal()
     next_requested = Signal()
     back_requested = Signal()
-    auto_saved = Signal ()
+    auto_saved = Signal()
 
     def __init__(
         self,
@@ -244,37 +244,52 @@ class FragmentViewer(QWidget):
     # ─────────────────────────────────────────────
 
     def _setup_shortcuts(self):
+        
+        # Helpers
+        def _action(shortcut: str, slot, label_shortcut: bool = False) -> QAction:
+            """Create an action scoped for this widget subtree"""
+            act = QAction(self)
+            act.setShortcut(shortcut)
+            
+            act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+            act.triggered.connect(slot)
+            act._is_label_shortcut = label_shortcut
+            self.addAction(act)
+            return act
+        
         # Navigation
-        prev_action = QAction(self)
-        prev_action.setShortcut("Left")
-        prev_action.triggered.connect(self._on_prev_clicked)
-        self.addAction(prev_action)
+        _action("Left", self._on_prev_clicked)
+        _action("Right", self._on_next_clicked)
+        _action("Escape", self._on_back_clicked)
         
-        next_action = QAction(self)
-        next_action.setShortcut("Right")
-        next_action.triggered.connect(self._on_next_clicked)
-        self.addAction(next_action)
         
-        # Back to Project browser
-        back_action = QAction(self)
-        back_action.setShortcut("Escape")
-        back_action.triggered.connect(self._on_back_clicked)
-        self.addAction(back_action)
+        # Video
+        _action("Space", self.video_player.toggle_playback)
+        _action("Delete", self._on_delete_clicked)
         
-        # Delete label
-        delete_action = QAction(self)
-        delete_action.setShortcut("Delete")
-        delete_action.triggered.connect(self._on_delete_clicked)
-        self.addAction(delete_action)
-        
-        # Play and pause action
-        play_pause_action = QAction(self)
-        play_pause_action.setShortcut("Space")
-        play_pause_action.triggered.connect(self.video_player.toggle_playback)
-        self.addAction(play_pause_action)
-        
-        # Label shortcuts
+        # Numeric shortcuts for labeling
         self._register_label_shortcuts()
+        
+        # eventFilter on label_list
+        self.label_panel.label_list.installEventFilter(self)
+        self.label_panel.label_list.viewport().installEventFilter(self)
+        
+    def eventFilter(self, watched, event: QEvent) -> bool:
+        """
+        Intercepts keys that QListWidget before QAction shortcuts fire
+        """
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
+            # Space → toggle video playback
+            if key == Qt.Key_Space:
+                self.video_player.toggle_playback()
+                return True
+            # Delete → clear label
+            if key == Qt.Key_Delete:
+                self._on_delete_clicked()
+                return True
+        
+        return super().eventFilter(watched, event)
             
     def _register_label_shortcuts(self):
         """
@@ -285,13 +300,14 @@ class FragmentViewer(QWidget):
                 self.removeAction(action)
         
         for i in range (min(9, len(self.available_labels))):
-            action = QAction(self)
-            action.setShortcut(str(i+1))
-            action.triggered.connect(
+            act = QAction(self)
+            act.setShortcut(str(i+1))
+            act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+            act.triggered.connect(
                 lambda checked=False, idx=i: self._assign_label_by_index(idx)
             )
-            action._is_label_shortcut = True
-            self.addAction(action)
+            act._is_label_shortcut = True
+            self.addAction(act)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -441,7 +457,7 @@ class FragmentViewer(QWidget):
         
         # Clean UI
         self.stop_video()
-        self.label_panel.setEnabled(False)
+        self.label_panel.set_enabled(False)
         self.label_panel.clear_selection()
         self._clear_display()
         
