@@ -135,18 +135,22 @@ class MainWindow(QMainWindow):
         # Project signals
         self._project_browser.project_loaded.connect(self._on_project_loaded)
         self._project_browser.fragment_selected.connect(self._on_fragment_selected)
+        self._project_browser.project_closed.connect(self._on_project_closed)
         
         # Fragment viewer signals
         self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
         self._fragment_viewer.prev_requested.connect(self._on_prev_requested)
         self._fragment_viewer.next_requested.connect(self._on_next_requested)
         self._fragment_viewer.back_requested.connect(self._show_browser)
+        self._fragment_viewer.auto_saved.connect(self._on_auto_saved)
 
     # ─────────────────────────────────────────────
     # Event handlers
     # ─────────────────────────────────────────────
 
     def _on_project_loaded(self, project: Project):
+        self._reset_project_state()
+        
         self._current_project    = project
         self._navigation_service = NavigationService(project)
 
@@ -155,6 +159,10 @@ class MainWindow(QMainWindow):
         
         summary = self._project_service.get_project_summary(project=project)
         self._update_status(format_project_progress(project=project, summary=summary))
+    
+    def _on_project_closed(self):
+        self._reset_project_state()
+        self._update_status("Listo, - selecciona una carpeta para iniciar")
 
     def _on_fragment_selected(self, fragment: Fragment):
         if not self._current_project or not self._navigation_service:
@@ -164,8 +172,8 @@ class MainWindow(QMainWindow):
         self._fragment_viewer.load_fragment(fragment, self._current_project)
         
         self._safe_switch_view(VIEW_FRAGMENT)
-        self._fragment_viewer.label_panel.label_list.setFocus()
-
+        self._fragment_viewer.focus_label_list()
+        
         current, total = self._navigation_service.get_position()
         self._update_status(
             f"{fragment.get_video_name()}  —  {current}/{total}"
@@ -181,6 +189,11 @@ class MainWindow(QMainWindow):
             self._update_status(
                 f"Etiqueta eliminada  —  {fragment.fragment_id}"
             )
+            
+    def _on_auto_saved(self):
+        self._update_status("Guardado automaticamente")
+        QTimer.singleShot(3000, self._restore_contextual_status)
+        
 
     def _on_prev_requested(self):
         if not self._navigation_service:
@@ -222,11 +235,15 @@ class MainWindow(QMainWindow):
     # Private handlers/helpers
     # ─────────────────────────────────────────────
     
+    def _reset_project_state(self):
+        self._current_project = None
+        self._navigation_service = None
+        self._fragment_viewer.reset()
+        
     def _load_fragment_safe(self, fragment: Fragment):
         self._fragment_viewer.load_fragment(fragment, self._current_project)
         current, total = self._navigation_service.get_position()
         self._update_status(f"{fragment.get_video_name()}  —  {current}/{total}")
-
 
     def _show_browser(self):
         self._project_browser.refresh()
@@ -240,11 +257,30 @@ class MainWindow(QMainWindow):
             self._update_status("Listo.")
 
     def _safe_switch_view(self, index: int):
-        if self._fragment_viewer and index != 1:
-            player = self._fragment_viewer.video_player
-            if player:
-                player.force_stop()
+        if index != VIEW_FRAGMENT:
+            self._fragment_viewer.stop_video()
         self.stacked_widget.setCurrentIndex(index)
+    
+    def _restore_contextual_status(self):
+        """
+        Rebuild the current context message after a transient notification
+        """
+        if not self._current_project:
+            self._update_status("Listo - Selecciona una carpeta para continuar")
+            return
+        
+        fragment = self._fragment_viewer.get_current_fragment()
+        if fragment and self._navigation_service:
+            current, total = self._navigation_service.get_position()
+            self._update_status(f"{fragment.get_video_name()}  —  {current}/{total}")
+            
+        else:
+            summary = self._project_service.get_project_summary(self._current_project)
+            self._update_status(
+                format_project_progress(
+                    project=self._current_project, summary=summary
+                )
+            )
 
     def _show_about(self):
         QMessageBox.about(

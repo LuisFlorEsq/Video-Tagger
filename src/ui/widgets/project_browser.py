@@ -27,7 +27,6 @@ from src.ui.styles import (
     text_section_header,
 )
 
-
 class ProjectBrowser(QWidget):
     """
     Project browser widget — UI presentation only.
@@ -36,6 +35,7 @@ class ProjectBrowser(QWidget):
 
     project_loaded = Signal(Project)
     fragment_selected = Signal(Fragment)
+    project_closed = Signal()
 
     def __init__(
         self,
@@ -349,7 +349,9 @@ class ProjectBrowser(QWidget):
 
     def _on_back_clicked(self):
         self._current_project = None
+        self._reset_list_ui()
         self._update_view()
+        self.project_closed.emit()
 
     def _on_save_clicked(self):
         if not self._current_project:
@@ -440,23 +442,32 @@ class ProjectBrowser(QWidget):
 
     def refresh(self):
         if self._current_project:
-            current_row = self.fragment_list.currentRow()
-    
+            
+            selected_id = None
+            current_item = self.fragment_list.currentItem()
+            
+            if current_item:
+                selected_id = current_item.data(0, Qt.UserRole)
+                
             self._populate_fragment_list()
             self._update_project_stats()
             self._check_for_new_videos()
             
-            if self.fragment_list.count() > 0:
-                if current_row >= 0 and current_row < self.fragment_list.count():
-                    self.fragment_list.setCurrentRow(current_row)
-                else:
-                    self.fragment_list.setCurrentRow(0)
-                    
+            if selected_id:
+                for i in range(self.fragment_list.topLevelItemCount()):
+                    item = self.fragment_list.topLevelItem(i)
+                    if item.data(0, Qt.UserRole) == selected_id:
+                        self.fragment_list.setCurrentItem(item)
+                        break
+            elif self.fragment_list.topLevelItemCount() > 0:
+                self.fragment_list.setCurrentItem(
+                    self.fragment_list.topLevelItem(0)
+                )
+            
             self.fragment_list.setFocus()
-
+        
     def get_current_project(self) -> Project:
         return self._current_project
-    
     
     # ─────────────────────────────────────────────
     # Public API (Triggers from main_window)
@@ -513,6 +524,20 @@ class ProjectBrowser(QWidget):
         if has_project:
             self.topbar_project_label.setText(self._current_project.name)
             self.refresh()
+            
+    def _reset_list_ui(self):
+        self.fragment_list.clear()
+        self.progress_bar.setValue(0)
+        
+        self.stats_label.setText("")
+        self.fragment_count_label.setText("")
+        
+        self.sync_badge.setVisible(False)
+        self.sync_btn.setEnabled(False)
+        self.sync_btn.setText("Sincronizar videos")
+        
+        self.progress_badge.setVisible(False)
+        
 
     def _check_for_new_videos(self):
         if not self._current_project:
@@ -543,9 +568,9 @@ class ProjectBrowser(QWidget):
             item.setData(0, Qt.UserRole, fragment.fragment_id)
             
             if fragment.is_labeled():
-                item.setForeground(Qt.darkGreen)
+                item.setForeground(1, QColor(AppTheme.SUCCESS))
             else:
-                item.setForeground(QColor(AppTheme.TEXT_PRIMARY))
+                item.setForeground(1, QColor(AppTheme.TEXT_PRIMARY))
                 
             self.fragment_list.addTopLevelItem(item)
 
