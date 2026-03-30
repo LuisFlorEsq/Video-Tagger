@@ -1,12 +1,23 @@
 # ─────────────────────────────────────────────
-# Stacked widgets indexes
+# View indices (QStackedWidget slots on MainWindow)
 # ─────────────────────────────────────────────
 
 VIEW_PROJECT = 0
 VIEW_FRAGMENT = 1
 
 # ─────────────────────────────────────────────
-# Labeling
+# Label configuration
 # ─────────────────────────────────────────────
 
-DEFAULT_LABELS = ["Etiqueta 1", "Etiqueta 2", "Etiqueta 3", "Etiqueta 4", "Otro"]
+DEFAULT_LABELS: list[str] = [
+    "Etiqueta 1",
+    "Etiqueta 2",
+    "Etiqueta 3",
+    "Etiqueta 4",
+    "Etiqueta 5",
+    "Otro"
+]
+
+LABELS_MIN_COUNT = 1
+LABELS_MAX_COUNT = 20
+LABEL_MAX_LENGTH = 60
