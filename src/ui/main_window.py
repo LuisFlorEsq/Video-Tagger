@@ -136,6 +136,7 @@ class MainWindow(QMainWindow):
         self._project_browser.project_loaded.connect(self._on_project_loaded)
         self._project_browser.fragment_selected.connect(self._on_fragment_selected)
         self._project_browser.project_closed.connect(self._on_project_closed)
+        self._project_browser.labels_changed.connect(self._on_labels_changed)
         
         # Fragment viewer signals
         self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
@@ -190,11 +191,21 @@ class MainWindow(QMainWindow):
                 f"Etiqueta eliminada  —  {fragment.fragment_id}"
             )
             
+    def _on_labels_changed(self, new_labels: list):
+        """Propagate updated label set to the fragment viewer."""
+        self._fragment_viewer.update_labels(new_labels)
+        label_count = len(new_labels)
+        self._update_status(
+            f"Etiquetas actualizadas — {label_count} etiqueta"
+            f"{'s' if label_count != 1 else ''} definida"
+            f"{'s' if label_count != 1 else ''}"
+        )
+        QTimer.singleShot(3000, self._restore_contextual_status)
+            
     def _on_auto_saved(self):
         self._update_status("Guardado automaticamente")
         QTimer.singleShot(3000, self._restore_contextual_status)
         
-
     def _on_prev_requested(self):
         if not self._navigation_service:
             return

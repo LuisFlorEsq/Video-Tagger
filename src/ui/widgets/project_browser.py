@@ -13,6 +13,7 @@ from src.application.services.export_service import ExportService
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
+from src.ui.widgets.label_config_dialog import LabelConfigDialog
 from src.ui.helpers.dividers import make_hline, make_vline
 from src.ui.helpers.project_formatter import (
     format_project_badge,
@@ -36,6 +37,7 @@ class ProjectBrowser(QWidget):
     project_loaded = Signal(Project)
     fragment_selected = Signal(Fragment)
     project_closed = Signal()
+    labels_changed = Signal(list)
 
     def __init__(
         self,
@@ -159,7 +161,20 @@ class ProjectBrowser(QWidget):
         ps_layout.addWidget(self.export_csv_btn)
 
         ps_layout.addWidget(make_hline())
+        
+        # ── Labels section ────────────────────────
+        labels_header = QLabel("Etiquetas")
+        labels_header.setStyleSheet(sidebar_section_label())
+        ps_layout.addWidget(labels_header)
+ 
+        self.config_labels_btn = QPushButton("Configurar etiquetas")
+        self.config_labels_btn.setStyleSheet(sidebar_btn())
+        self.config_labels_btn.setMinimumHeight(34)
+        ps_layout.addWidget(self.config_labels_btn)
+ 
+        ps_layout.addWidget(make_hline())
 
+        # ── Sync section ──────────────────────────
         actions_header = QLabel("Sincronización")
         actions_header.setStyleSheet(sidebar_section_label())
         ps_layout.addWidget(actions_header)
@@ -290,6 +305,7 @@ class ProjectBrowser(QWidget):
         # Project management
         self.save_project_btn.clicked.connect(self._on_save_clicked)
         self.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
+        self.config_labels_btn.clicked.connect(self._on_config_labels_clicked)
         
         # Sync new videos and return to main window
         self.sync_btn.clicked.connect(self._on_sync_clicked)
@@ -398,6 +414,32 @@ class ProjectBrowser(QWidget):
             )
         except Exception as e:
             self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(e)}")
+
+    def _on_config_labels_clicked(self):
+        """Open the label configuration dialog."""
+        if not self._current_project:
+            return
+ 
+        dlg = LabelConfigDialog(
+            current_labels=self._current_project.get_labels(),
+            parent=self,
+        )
+        
+        dlg.set_assigned_labels(
+            set(self._current_project.get_label_statistics().keys())
+        )
+        dlg.labels_changed.connect(self._on_labels_confirmed)
+        dlg.exec()
+        
+    def _on_labels_confirmed(self, new_labels: list):
+        """Persist the new label set and propagate it upward."""
+        if not self._current_project:
+            return
+        self._current_project.set_labels(new_labels)
+        
+        self._project_service.auto_save_project(self._current_project)
+        self.labels_changed.emit(new_labels)
+
 
     def _on_sync_clicked(self):
         if not self._current_project:
