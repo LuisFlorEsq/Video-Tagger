@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.domain.models.fragment import Fragment
+from src.core.config import DEFAULT_LABELS
 
 class Project:
     """Represents a video annotation project"""
@@ -13,7 +14,8 @@ class Project:
         folder_path: str,
         save_path: Optional[str] = None,
         created_at: Optional[datetime] = None,
-        modified_at: Optional[datetime] = None
+        modified_at: Optional[datetime] = None,
+        custom_labels: Optional[List[str]] = None
     ):
         if not name or not name.strip():
             raise ValueError("Project name cannot be empty")
@@ -21,10 +23,34 @@ class Project:
         self.name = name.strip()
         self.folder_path = folder_path
         self.save_path = save_path
+        
+        self.custom_labels: List[str] = (
+            list(custom_labels) if custom_labels else list(DEFAULT_LABELS)
+        )
+        
         self._fragments: List[Fragment] = []
         self._fragment_index: Dict[str, int] = {}
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
+        
+    # ─────────────────────────────────────────────
+    # Label management
+    # ─────────────────────────────────────────────
+    
+    def set_labels(self, labels: List[str]) -> None:
+        """Replace the label set for this project"""
+        cleaned = [lbl.strip() for lbl in labels if lbl.strip()]
+        if not cleaned:
+            raise ValueError("El proyecto debe tener al menos una etiqueta.")
+        self.custom_labels = cleaned
+        self.modified_at = datetime.now()
+        
+    def get_labels(self) -> List[str]:
+        return list(self.custom_labels)
+    
+    # ─────────────────────────────────────────────
+    # Fragment management
+    # ─────────────────────────────────────────────
     
     @property
     def fragments(self) -> List[Fragment]:
