@@ -73,7 +73,6 @@ class LabelPanel(QWidget):
         
         self._current_label = label_text
         self.label_assigned.emit(label_text)
-        self.label_list.setFocus()
 
     # ─────────────────────────────────────────────
     # Public API

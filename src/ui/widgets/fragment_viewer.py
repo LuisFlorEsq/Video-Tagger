@@ -280,14 +280,32 @@ class FragmentViewer(QWidget):
         """
         if event.type() == QEvent.KeyPress:
             key = event.key()
+            
             # Space → toggle video playback
             if key == Qt.Key_Space:
                 self.video_player.toggle_playback()
                 return True
+            
             # Delete → clear label
             if key == Qt.Key_Delete:
                 self._on_delete_clicked()
                 return True
+            
+            # Right arrow → next fragment
+            if key == Qt.Key_Right:
+                self._on_next_clicked()
+                return True
+
+            # Escape → back to browser
+            if key == Qt.Key_Escape:
+                self._on_back_clicked()
+                return True
+
+            # 1–9 → assign label by index
+            if Qt.Key_1 <= key <= Qt.Key_9:
+                self._assign_label_by_index(key - Qt.Key_1)
+                return True
+
         
         return super().eventFilter(watched, event)
             
@@ -326,6 +344,9 @@ class FragmentViewer(QWidget):
             self.fragment_labeled.emit(self._current_fragment)
         except ValueError as e:
             self._show_error("No se pudo etiquetar", str(e))
+            
+        finally:
+            self.label_panel.label_list.setFocus() # Set focus on label list to prevent keyboard input conflicts
 
     def _on_prev_clicked(self):
         if not self._current_fragment:
