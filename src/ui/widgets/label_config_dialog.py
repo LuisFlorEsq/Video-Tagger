@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QLabel, QMessageBox, QWidget
 )
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QFont
 
 from src.core.config import LABELS_MIN_COUNT, LABELS_MAX_COUNT, LABEL_MAX_LENGTH
@@ -33,7 +33,9 @@ class LabelConfigDialog(QDialog):
         self.setMinimumSize(420, 480)
         self.resize(420, 520)
         
-        # TODO
+        self._init_ui()
+        self._populate(current_labels)
+        self._update_button_states()
         
         
     # ─────────────────────────────────────────────
@@ -69,6 +71,10 @@ class LabelConfigDialog(QDialog):
         self.label_list.itemDoubleClicked.connect(self._on_item_double_clicked)
         list_row.addWidget(self.label_list, stretch=1)
         
+        # Ctrl+Up / Ctrl+Down reorder items via keyboard
+        self.label_list.installEventFilter(self)
+        list_row.addWidget(self.label_list, stretch=1)
+        
         # Side action buttons (up / down / delete)
         side_btns = QVBoxLayout()
         side_btns.setSpacing(4)
@@ -89,7 +95,7 @@ class LabelConfigDialog(QDialog):
         
         side_btns.addSpacing(8)
         
-        self.delete_btn = QPushButton("✕")
+        self.delete_btn = QPushButton("X")
         self.delete_btn.setFixedSize(36, 36)
         self.delete_btn.setStyleSheet(btn_danger())
         self.delete_btn.setToolTip("Eliminar etiqueta seleccionada")
@@ -150,19 +156,35 @@ class LabelConfigDialog(QDialog):
         btn_row.addWidget(self.ok_btn)
  
         root.addLayout(btn_row)
-
-
         
+    # ─────────────────────────────────────────────
+    # Event filter - keyboard ordering
+    # ─────────────────────────────────────────────
+    
+    def eventFilter(self, watched, event) -> bool:
+        """Ctrl+Up / Ctrl + Down reorder the selected label without the mouse."""
         
-           
+        if watched is self.label_list and event.type() == QEvent.KeyPress:
+            modifiers = event.modifiers()
+            key = event.key()
+            if modifiers == Qt.ControlModifier:
+                if key == Qt.Key_Up:
+                    self._move_up()
+                    return True
+                if key == Qt.Key_Down:
+                    self._move_down()
+                    return True
+            
+        return super().eventFilter(watched, event)
+    
     # ─────────────────────────────────────────────
     # Population
     # ─────────────────────────────────────────────
     
     def _populate(self, labels: list[str]):
-        self._label_list.clear()
+        self.label_list.clear()
         for label in labels:
-            self._apppend_item(label)
+            self._append_item(label)
         self._refresh_counter()
     
     def _append_item(self, text: str):
@@ -205,13 +227,13 @@ class LabelConfigDialog(QDialog):
             )
             return
          
-        self._apppend_item(text)
+        self._append_item(text)
         self.new_label_input.clear()
         self.label_list.setCurrentRow(self.label_list.count() - 1)
         self._refresh_counter()
         self._update_button_states()
          
-    def _on_delete_selected(self):
+    def _delete_selected(self):
         row = self.label_list.currentRow()
         if row < 0:
             return
