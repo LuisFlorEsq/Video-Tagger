@@ -31,7 +31,6 @@ The workflow is intentionally linear: open a folder → review each fragment →
 |---|---|
 | Python | 3.10 or later |
 | PySide6 | 6.x |
-| OpenCV (`opencv-python`) | 4.x |
 | pandas | 2.x |
 
 Install all dependencies with:
@@ -233,10 +232,14 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 - [X] Ensure the project is saved even if the **“Save Project”** button is not explicitly pressed.
 - [X] Save the project when the `_on_back()` method is executed, when the application is closed, or prompt the user asking whether they want to save changes.
 - [X] Add a button to return to the previous fragment, remove the current tag, and adjust the layout and size of the buttons.
-- [] Add functionality to check the project status when resuming (reload the project’s saved state).
-- [] Update the current logic to deactivate buttons when we are in the first and last fragment of the project.
-- [] Create a portable executable
-- [] Add an admin view to manage system configuration (e.g. manage available labels)
-- [] Ensure that when the user clicks on "Cerrar Proyecto" all the metadata is cleared because if the user close the project and then try to exit the app with fragments unlabeled the system still has project data in memmory
-- [] Consider to delete confirmation to exit with unlabeled fragments
+- [X] Implement Fragment Viewer shortcuts
+- [X] Ensure that every project related variable is cleaned when the user clicks on "Cerrar Proyecto"
+- [X] Fix label panel not displaying selected label properly on label panel
+- [X] Implement label configuration/management panel
+- [X] Update current list of fragments view to display properly the label assigned and their ID on fragment list component(table or qtreewidget)
+- [X] Search and filter of labels by sections (labeled, unlabeled, new, etc.) on project browser view
+- [X] Bug: Fix current label assignation, when user clicks on a label and then want to switch the label using enter shortcut and up and down the system dont allow them
+- [X] Bug: The first time the user enter to the fragment viewer if he tries to navigate to the next fragment the app crashes but if before navigating the user play the video, returns to the fragment list view and then return to the fragment viewer the app works as expected
+- [X] Bug: When the user clicks twice on a label the second time the app back to the first fragment of the fragment list
+- [] Create a PyInstaller file and test the installation on other devices
 
