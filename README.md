@@ -242,4 +242,3 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 - [X] Bug: The first time the user enter to the fragment viewer if he tries to navigate to the next fragment the app crashes but if before navigating the user play the video, returns to the fragment list view and then return to the fragment viewer the app works as expected
 - [X] Bug: When the user clicks twice on a label the second time the app back to the first fragment of the fragment list
 - [] Create a PyInstaller file and test the installation on other devices
-

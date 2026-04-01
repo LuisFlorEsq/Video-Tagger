@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 from src.core.qt_config import setup_quiet_mode, setup_verbose_mode
+from src.core.resources import resource_path
 
 from src.core.container import get_container
 from src.application.services.project_service import ProjectService
@@ -27,6 +28,10 @@ def main():
     )
     
     app = QApplication(sys.argv)
+    
+    # app_icon = QIcon(resource_path("src/ui/resources/icons/icon_cic.png"))
+    # app.setWindowIcon(app_icon)
+    
     app.setApplicationName("Herramienta de etiquetado")
     app.setOrganizationName("Centro de Investigación en Computación")
     app.setStyleSheet(app_stylesheet())

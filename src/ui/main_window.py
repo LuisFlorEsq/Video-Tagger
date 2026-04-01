@@ -2,9 +2,11 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
     QMessageBox, QStatusBar, QApplication
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtCore import QTimer
+
 from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT
+from src.core.resources import resource_path
 
 from src.application.services.project_service import ProjectService
 from src.application.services.labeling_service import LabelingService
@@ -46,6 +48,7 @@ class MainWindow(QMainWindow):
 
         # Apply global design system to the whole application
         QApplication.instance().setStyleSheet(app_stylesheet())
+        self.setWindowIcon(QIcon(resource_path("src/ui/resources/icons/icon_cic.png")))
 
         self._init_ui()
         self._create_menu_bar()
@@ -60,6 +63,7 @@ class MainWindow(QMainWindow):
     # ─────────────────────────────────────────────
 
     def _init_ui(self):
+                
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
