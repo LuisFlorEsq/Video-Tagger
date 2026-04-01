@@ -21,3 +21,10 @@ DEFAULT_LABELS: list[str] = [
 LABELS_MIN_COUNT = 1
 LABELS_MAX_COUNT = 20
 LABEL_MAX_LENGTH = 60
+
+# ─────────────────────────────────────────────
+# Fragment filter options
+# ─────────────────────────────────────────────
+FILTER_ALL = "all"
+FILTER_LABELED = "labeled"
+FILTER_UNLABELED = "unlabeled"

@@ -2,7 +2,8 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QTreeWidget, QTreeWidgetItem,
-    QLabel, QFileDialog, QMessageBox, QProgressBar
+    QLabel, QFileDialog, QMessageBox, QProgressBar,
+    QLineEdit
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QAction
@@ -19,6 +20,7 @@ from src.ui.helpers.project_formatter import (
     format_project_badge,
     format_project_stats
 )
+
 from src.ui.styles import (
     AppTheme,
     sidebar_panel, sidebar_btn, sidebar_btn_active, sidebar_btn_warning,
@@ -27,6 +29,7 @@ from src.ui.styles import (
     text_title, text_secondary, text_muted, text_breadcrumb, divider,
     text_section_header,
 )
+from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
 
 class ProjectBrowser(QWidget):
     """
@@ -49,6 +52,7 @@ class ProjectBrowser(QWidget):
         self._project_service = project_service
         self._export_service = export_service
         self._current_project: Project = None
+        self.active_filter = FILTER_ALL
 
         self._init_ui()
         self._connect_signals()
@@ -236,8 +240,63 @@ class ProjectBrowser(QWidget):
         list_layout = QVBoxLayout(self.list_screen)
         list_layout.setContentsMargins(0, 0, 0, 0)
         list_layout.setSpacing(0)
+        
+        # ── Search + filter bar ───────────────────
+        filter_bar = QWidget()
+        filter_bar.setFixedHeight(48)
+        filter_bar.setStyleSheet(
+            f"background-color: {AppTheme.BG_PANEL};"
+            f"border-bottom: 1px solid {AppTheme.BORDER};" 
+        )
+        filter_layout = QHBoxLayout(filter_bar)
+        filter_layout.setContentsMargins(14, 0, 14, 0)
+        filter_layout.setSpacing(8)
+        
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Buscar fragmento…")
+        self.search_input.setFixedHeight(30)
+        self.search_input.setFixedWidth(220)
+        self.search_input.setStyleSheet(
+            f"QLineEdit {{"
+            f"border: 1px solid {AppTheme.BORDER};"
+            f"border-radius: {AppTheme.RADIUS_MD};"
+            f"padding: 0 8px;"
+            f"font-size: {AppTheme.FONT_BASE};"
+            f"background-color: {AppTheme.BG_SUBTLE};"
+            f"color: {AppTheme.TEXT_PRIMARY};"
+            f"}}"
+            f"QLineEdit:focus {{"
+            f"border-color: {AppTheme.BORDER_FOCUS};"
+            f"background-color: {AppTheme.BG_PANEL};"
+            f"}}"
+        )
+        filter_layout.addWidget(self.search_input)
+        filter_layout.addSpacing(4)
+        
+        # Filter pill buttons
+        self._filter_btns: dict = {}
+        for mode, label in[
+            (FILTER_ALL, "Todos"),
+            (FILTER_LABELED, "Etiquetados"),
+            (FILTER_UNLABELED, "Sin etiquetar")
+        ]:
+            btn = QPushButton(label)
+            btn.setFixedHeight(28)
+            btn.setCheckable(True)
+            btn.setStyleSheet(self._filter_btn_style(active=(mode == FILTER_ALL)))
+            btn.clicked.connect(lambda checked, m=mode: self._on_filter_clicked(m))
+            filter_layout.addWidget(btn)
+            self._filter_btns[mode] = btn
+        
+        filter_layout.addStretch()
+        
+        self.fragment_count_label = QLabel("")
+        self.fragment_count_label.setStyleSheet(text_muted())
+        filter_layout.addWidget(self.fragment_count_label)
+        
+        list_layout.addWidget(filter_bar)
 
-        # Toolbar row: filters + count
+        # Stats toolbar
         toolbar = QWidget()
         toolbar.setFixedHeight(40)
         toolbar.setStyleSheet(
@@ -270,7 +329,7 @@ class ProjectBrowser(QWidget):
 
         list_layout.addWidget(self.progress_bar)
 
-        # Fragment list
+        # Fragment tree
         self.fragment_list = QTreeWidget()
         self.fragment_list.setColumnCount(3)
         self.fragment_list.setHeaderLabels(["Video", "Etiqueta", "ID"])
@@ -286,6 +345,8 @@ class ProjectBrowser(QWidget):
         self.fragment_list.setColumnWidth(0, 500)
         self.fragment_list.setColumnWidth(1, 120)
         self.fragment_list.setColumnWidth(2, 200)
+        self.fragment_list.header().setStretchLastSection(False)
+
 
         list_layout.addWidget(self.fragment_list)
         main_layout.addWidget(self.list_screen)
@@ -311,6 +372,9 @@ class ProjectBrowser(QWidget):
         self.sync_btn.clicked.connect(self._on_sync_clicked)
         self.back_btn.clicked.connect(self._on_back_clicked)
         
+        # Filter fragment list elemens
+        self.search_input.textChanged.connect(self._apply_filter)
+        
         # Switch to fragment viewer (with the fragment selected)
         self.fragment_list.itemActivated.connect(self._on_fragment_selected)
         
@@ -332,6 +396,13 @@ class ProjectBrowser(QWidget):
         close_action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
         close_action.triggered.connect(self._on_back_clicked)
         self.addAction(close_action)
+        
+        # Search fragments
+        search_action = QAction(self)
+        search_action.setShortcut("Ctrl+F")
+        search_action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+        search_action.triggered.connect(self._focus_search)
+        self.addAction(search_action)
 
     # ─────────────────────────────────────────────
     # Command handlers
@@ -474,6 +545,15 @@ class ProjectBrowser(QWidget):
         fragment = self._current_project.get_fragment(fragment_id)
         if fragment:
             self.fragment_selected.emit(fragment)
+            
+    def _on_filter_clicked(self, mode: str):
+        self._active_filter = mode
+        self._update_filter_btn_styles()
+        self._apply_filter()
+        
+    def _focus_search(self):
+        self.search_input.setFocus()
+        self.search_input.selectAll()
 
     # ─────────────────────────────────────────────
     # Public API
@@ -494,6 +574,7 @@ class ProjectBrowser(QWidget):
             self._populate_fragment_list()
             self._update_project_stats()
             self._check_for_new_videos()
+            self._apply_filter()
             
             if selected_id:
                 for i in range(self.fragment_list.topLevelItemCount()):
@@ -537,6 +618,58 @@ class ProjectBrowser(QWidget):
         Public entry point, used each time a project is prompted to export
         """
         self._on_export_csv_clicked()
+        
+    # ─────────────────────────────────────────────
+    # Filter logic
+    # ─────────────────────────────────────────────
+
+    def _apply_filter(self):
+        """Show / Hide rows based on active filter + search text."""
+        
+        if not self._current_project:
+            return
+        
+        search = self.search_input.text().strip().lower()
+        visible = 0
+        total = self.fragment_list.topLevelItemCount()
+        
+        for i in range(total):
+            item = self.fragment_list.topLevelItem(i)
+            fragment_id = item.data(0, Qt.UserRole)
+            fragment = self._current_project.get_fragment(fragment_id=fragment_id)
+            
+            if fragment is None:
+                item.setHidden(True)
+                continue
+            
+            # Filter mode
+            if self._active_filter == FILTER_LABELED and not fragment.is_labeled():
+                item.setHidden(True)
+                continue
+            if self._active_filter == FILTER_UNLABELED and fragment.is_labeled():
+                item.setHidden(True)
+                continue
+            
+            # Search text — matches video name, label text, or fragment ID
+            if search:
+                haystack = (
+                    fragment.get_video_name().lower()
+                    + (fragment.label or "").lower()
+                    + fragment.fragment_id.lower()
+                )
+                if search not in haystack:
+                    item.setHidden(True)
+                    continue
+ 
+            item.setHidden(False)
+            visible += 1
+ 
+        grand_total = self._current_project.get_total_count()
+        if visible == grand_total and not search and self._active_filter == FILTER_ALL:
+            self.fragment_count_label.setText(f"{grand_total} fragmentos")
+        else:
+            self.fragment_count_label.setText(f"{visible} / {grand_total} fragmentos")
+                
 
     # ─────────────────────────────────────────────
     # Private helpers
@@ -544,6 +677,9 @@ class ProjectBrowser(QWidget):
 
     def _load_project(self, project: Project):
         self._current_project = project
+        self._active_filter = FILTER_ALL
+        self._update_filter_btn_styles()
+        self.search_input.clear()
         self._update_view()
 
     def _update_view(self):
@@ -573,6 +709,10 @@ class ProjectBrowser(QWidget):
         
         self.stats_label.setText("")
         self.fragment_count_label.setText("")
+        
+        self.search_input.clear()
+        self._active_filter = FILTER_ALL
+        self._update_filter_btn_styles()
         
         self.sync_badge.setVisible(False)
         self.sync_btn.setEnabled(False)
@@ -608,6 +748,7 @@ class ProjectBrowser(QWidget):
             
             item = QTreeWidgetItem([video_name, status, id])
             item.setData(0, Qt.UserRole, fragment.fragment_id)
+            item.setToolTip(0, fragment.video_path)
             
             if fragment.is_labeled():
                 item.setForeground(1, QColor(AppTheme.SUCCESS))
@@ -628,6 +769,41 @@ class ProjectBrowser(QWidget):
         self.stats_label.setText(format_project_stats(summary))
         self.progress_badge.setText(format_project_badge(summary))
         self.progress_bar.setValue(int(pct))
+        
+    def _update_filter_btn_styles(self):
+        for mode, btn in self._filter_btns.items():
+            btn.setStyleSheet(self._filter_btn_style(active=(mode == self._active_filter)))
+            
+    @staticmethod
+    def _filter_btn_style(active: bool) -> str:
+        t = AppTheme
+        if active:
+            return (
+                f"QPushButton {{"
+                f"background-color: {t.PRIMARY_LIGHT};"
+                f"color: {t.PRIMARY};"
+                f"border: 1px solid {t.PRIMARY};"
+                f"border-radius: 10px;"
+                f"padding: 0 12px;"
+                f"font-size: {t.FONT_SM};"
+                f"font-weight: bold;"
+                f"}}"
+            )
+        return (
+            f"QPushButton {{"
+            f"background-color: transparent;"
+            f"color: {t.TEXT_SECONDARY};"
+            f"border: 1px solid {t.BORDER};"
+            f"border-radius: 10px;"
+            f"padding: 0 12px;"
+            f"font-size: {t.FONT_SM};"
+            f"}}"
+            f"QPushButton:hover {{"
+            f"background-color: {t.BG_APP};"
+            f"color: {t.TEXT_PRIMARY};"
+            f"}}"
+        )
+ 
         
     # ─────────────────────────────────────────────
     # Dialogs
