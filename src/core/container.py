@@ -6,7 +6,7 @@ from src.domain.interfaces import (
 )
 from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
-from src.infrastructure.video import OpenCvVideoSource
+from src.infrastructure.video import QtVideoSource
 from src.infrastructure.scanners import FileSystemFragmentScanner
 from src.infrastructure.validators import SimpleLabelValidator
 from src.application.services.project_service import ProjectService
@@ -50,7 +50,7 @@ class ServiceContainer:
         """Register default implementations."""
         # Infrastructure layer - singletons
         self.register_singleton(IProjectRepository, JsonProjectRepository())
-        self.register_singleton(IVideoSource, OpenCvVideoSource())
+        self.register_singleton(IVideoSource, QtVideoSource())
         self.register_singleton(IFragmentScanner, FileSystemFragmentScanner())
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
         

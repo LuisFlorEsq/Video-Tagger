@@ -37,3 +37,9 @@ FILTER_UNLABELED = "unlabeled"
 
 ICONS_PATH = Path("ui/resources/icons")
 ICON_SIZE = (16, 16)
+
+# ─────────────────────────────────────────────
+# Video metadata timeout
+# ─────────────────────────────────────────────
+
+METADATA_TIMEOUT_MS = 5_000
