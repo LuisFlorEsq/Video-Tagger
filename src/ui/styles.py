@@ -196,10 +196,14 @@ def sidebar_btn() -> str:
             padding: 7px 10px;
             font-size: {t.FONT_BASE};
             text-align: left;
+            padding-left: 12px;
         }}
         QPushButton:hover {{
             background-color: {t.BG_APP};
             color: {t.TEXT_PRIMARY};
+        }}
+        QPushButton:icon {{
+            margin-right: 8px;
         }}
     """
 

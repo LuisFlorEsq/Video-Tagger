@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # ─────────────────────────────────────────────
 # View indices (QStackedWidget slots on MainWindow)
 # ─────────────────────────────────────────────
@@ -28,3 +30,10 @@ LABEL_MAX_LENGTH = 60
 FILTER_ALL = "all"
 FILTER_LABELED = "labeled"
 FILTER_UNLABELED = "unlabeled"
+
+# ─────────────────────────────────────────────
+# Icons and assets configuration
+# ─────────────────────────────────────────────
+
+ICONS_PATH = Path("ui/resources/icons")
+ICON_SIZE = (16, 16)

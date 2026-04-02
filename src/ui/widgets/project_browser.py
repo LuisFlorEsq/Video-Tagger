@@ -5,8 +5,8 @@ from PySide6.QtWidgets import (
     QLabel, QFileDialog, QMessageBox, QProgressBar,
     QLineEdit
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QAction
+from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtGui import QColor, QAction, QIcon
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
@@ -29,7 +29,8 @@ from src.ui.styles import (
     text_title, text_secondary, text_muted, text_breadcrumb, divider,
     text_section_header,
 )
-from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
+from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED, ICON_SIZE
+from src.core.resources import icon
 
 class ProjectBrowser(QWidget):
     """
@@ -132,12 +133,16 @@ class ProjectBrowser(QWidget):
         ws_layout.addWidget(ws_header)
 
         self.new_project_btn = QPushButton("Nuevo proyecto")
+        self.new_project_btn.setIcon(icon("new_project.png"))
+        self.new_project_btn.setIconSize(QSize(*ICON_SIZE))
         self.new_project_btn.setStyleSheet(sidebar_btn())
         self.new_project_btn.setMinimumHeight(36)
         ws_layout.addWidget(self.new_project_btn)
 
         self.load_project_btn = QPushButton("Abrir proyecto")
         self.load_project_btn.setStyleSheet(sidebar_btn())
+        self.load_project_btn.setIcon(icon("open_project.png"))
+        self.load_project_btn.setIconSize(QSize(*ICON_SIZE))
         self.load_project_btn.setMinimumHeight(36)
         ws_layout.addWidget(self.load_project_btn)
 
@@ -156,11 +161,15 @@ class ProjectBrowser(QWidget):
 
         self.save_project_btn = QPushButton("Guardar")
         self.save_project_btn.setStyleSheet(sidebar_btn())
+        self.save_project_btn.setIcon(icon("save_project.png"))
+        self.save_project_btn.setIconSize(QSize(*ICON_SIZE))
         self.save_project_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.save_project_btn)
 
         self.export_csv_btn = QPushButton("Exportar CSV")
         self.export_csv_btn.setStyleSheet(sidebar_btn())
+        self.export_csv_btn.setIcon(icon("export_csv.png"))
+        self.export_csv_btn.setIconSize(QSize(*ICON_SIZE))
         self.export_csv_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.export_csv_btn)
 
@@ -173,6 +182,8 @@ class ProjectBrowser(QWidget):
  
         self.config_labels_btn = QPushButton("Configurar etiquetas")
         self.config_labels_btn.setStyleSheet(sidebar_btn())
+        self.config_labels_btn.setIcon(icon("config_labels.png"))
+        self.config_labels_btn.setIconSize(QSize(*ICON_SIZE))
         self.config_labels_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.config_labels_btn)
  
@@ -185,6 +196,8 @@ class ProjectBrowser(QWidget):
 
         self.sync_btn = QPushButton("Sincronizar videos")
         self.sync_btn.setStyleSheet(sidebar_btn_warning())
+        self.sync_btn.setIcon(icon("sync_videos.png"))
+        self.sync_btn.setIconSize(QSize(*ICON_SIZE))
         self.sync_btn.setMinimumHeight(34)
         self.sync_btn.setEnabled(False)
         ps_layout.addWidget(self.sync_btn)
@@ -194,6 +207,8 @@ class ProjectBrowser(QWidget):
 
         self.back_btn = QPushButton("Cerrar proyecto")
         self.back_btn.setStyleSheet(sidebar_btn())
+        self.back_btn.setIcon(icon("close_project.png"))
+        self.back_btn.setIconSize(QSize(*ICON_SIZE))
         self.back_btn.setMinimumHeight(34)
         ps_layout.addWidget(self.back_btn)
 
