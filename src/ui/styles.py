@@ -20,6 +20,8 @@ class AppTheme:
 
     DANGER          = "#D13438"
     DANGER_HOVER    = "#B02A2E"
+    DANGER_LIGHT    = "#FEE2E2"
+    DANGER_TEXT     = "#7F1D1D"
 
     NEUTRAL         = "#6C757D"
     NEUTRAL_HOVER   = "#5A6268"
@@ -201,7 +203,7 @@ def sidebar_btn() -> str:
         QPushButton:hover {{
             background-color: {t.BG_APP};
             color: {t.TEXT_PRIMARY};
-        }}
+         }}
         QPushButton:icon {{
             margin-right: 8px;
         }}
@@ -211,14 +213,23 @@ def sidebar_btn_active() -> str:
     t = AppTheme
     return f"""
         QPushButton {{
-            background-color: {t.PRIMARY_LIGHT};
+            background-color: transparent;
             color: {t.PRIMARY};
             border: none;
             border-radius: {t.RADIUS_MD};
             padding: 7px 10px;
             font-size: {t.FONT_BASE};
-            font-weight: bold;
             text-align: left;
+        }}
+        QPushButton:hover {{
+            background-color: {t.PRIMARY_LIGHT};
+        }}
+        QPushButton:disabled {{
+            color: {t.TEXT_MUTED};
+            background-color: transparent;
+        }}
+        QPushButton:icon {{
+            margin-right: 8px;
         }}
     """
 
@@ -241,9 +252,34 @@ def sidebar_btn_warning() -> str:
             color: {t.TEXT_MUTED};
             background-color: transparent;
         }}
+        QPushButton:icon {{
+            margin-right: 8px;
+        }}
     """
-
-
+    
+def sidebar_btn_danger() -> str:
+    t = AppTheme
+    return f"""
+        QPushButton {{
+            background-color: transparent;
+            color: {t.DANGER_TEXT};
+            border: none;
+            border-radius: {t.RADIUS_MD};
+            padding: 7px 10px;
+            font-size: {t.FONT_BASE};
+            text-align: left;
+        }}
+        QPushButton:hover {{
+            background-color: {t.DANGER_LIGHT};
+        }}
+        QPushButton:disabled {{
+            color: {t.TEXT_MUTED};
+            background-color: transparent;
+        }}
+        QPushButton:icon {{
+            margin-right: 8px;
+        }}
+    """
 # ─────────────────────────────────────────────
 # Buttons
 # ─────────────────────────────────────────────
@@ -337,15 +373,23 @@ def btn_danger() -> str:
     t = AppTheme
     return f"""
         QPushButton {{
-            background-color: {t.DANGER};
-            color: white;
+            background-color: transparent;
+            color: {t.DANGER_TEXT};
             border: none;
             border-radius: {t.RADIUS_MD};
             padding: 8px 18px;
             font-size: {t.FONT_SM};
         }}
-        QPushButton:hover:enabled {{ color: {t.DANGER_HOVER}; }}
-        QPushButton:disabled {{ color: {t.BORDER}; }}
+        QPushButton:hover {{
+            background-color: {t.DANGER_LIGHT};
+        }}
+        QPushButton:disabled {{
+            color: {t.TEXT_MUTED};
+            background-color: transparent;
+        }}
+        QPushButton:icon {{
+            margin-right: 10px;
+        }}
     """
 
 

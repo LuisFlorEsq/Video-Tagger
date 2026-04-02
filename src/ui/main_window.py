@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QStackedWidget,
     QMessageBox, QStatusBar, QApplication
 )
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction
 from PySide6.QtCore import QTimer
 
 from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT, ICONS_PATH
@@ -161,6 +161,7 @@ class MainWindow(QMainWindow):
         self._navigation_service = NavigationService(project)
 
         self._fragment_viewer.set_navigation_service(self._navigation_service)
+        self._fragment_viewer.update_labels(project.get_labels())
         self._safe_switch_view(VIEW_PROJECT)
         
         summary = self._project_service.get_project_summary(project=project)

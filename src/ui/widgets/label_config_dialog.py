@@ -4,10 +4,12 @@ from PySide6.QtWidgets import (
     QLineEdit, QLabel, QMessageBox, QWidget
 )
 
-from PySide6.QtCore import Qt, Signal, QEvent
+from PySide6.QtCore import Qt, Signal, QEvent, QSize
 from PySide6.QtGui import QFont
 
-from src.core.config import LABELS_MIN_COUNT, LABELS_MAX_COUNT, LABEL_MAX_LENGTH
+from src.core.config import LABELS_MIN_COUNT, LABELS_MAX_COUNT, LABEL_MAX_LENGTH, ICON_SIZE
+from src.core.resources import icon
+
 from src.ui.styles import (
     AppTheme,
     btn_primary, btn_ghost, btn_danger,
@@ -95,9 +97,12 @@ class LabelConfigDialog(QDialog):
         
         side_btns.addSpacing(8)
         
-        self.delete_btn = QPushButton("X")
+        self.delete_btn = QPushButton("")
         self.delete_btn.setFixedSize(36, 36)
         self.delete_btn.setStyleSheet(btn_danger())
+        self.delete_btn.setIcon(icon("delete.png"))
+        self.delete_btn.setIconSize(QSize(*ICON_SIZE))
+        
         self.delete_btn.setToolTip("Eliminar etiqueta seleccionada")
         self.delete_btn.clicked.connect(self._delete_selected)
         side_btns.addWidget(self.delete_btn)

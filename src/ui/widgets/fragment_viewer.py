@@ -3,13 +3,14 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent
-from PySide6.QtGui import QAction, QKeyEvent
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
+from PySide6.QtGui import QAction
 
 from src.ui.widgets.video_player import VideoPlayer
 from src.ui.widgets.label_panel import LabelPanel
 
-from src.core.config import DEFAULT_LABELS
+from src.core.config import DEFAULT_LABELS, ICON_SIZE
+from src.core.resources import icon
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
@@ -209,8 +210,10 @@ class FragmentViewer(QWidget):
         action_layout = QVBoxLayout(action_strip)
         action_layout.setContentsMargins(14, 8, 14, 10)
 
-        self.delete_label_btn = QPushButton("Eliminar etiqueta actual")
+        self.delete_label_btn = QPushButton("Eliminar etiqueta")
         self.delete_label_btn.setStyleSheet(btn_danger())
+        self.delete_label_btn.setIcon(icon("delete.png"))
+        self.delete_label_btn.setIconSize(QSize(*ICON_SIZE))
         self.delete_label_btn.setEnabled(False)
         action_layout.addWidget(self.delete_label_btn)
 
@@ -342,6 +345,7 @@ class FragmentViewer(QWidget):
             self._schedule_auto_save()
             self._update_fragment_status()
             self.fragment_labeled.emit(self._current_fragment)
+            
         except ValueError as e:
             self._show_error("No se pudo etiquetar", str(e))
             
@@ -385,8 +389,13 @@ class FragmentViewer(QWidget):
             self._schedule_auto_save()
             self._update_fragment_status()
             self.fragment_labeled.emit(self._current_fragment)
+            
         except Exception as e:
             self._show_error("Error", str(e))
+            
+        finally:
+            self.label_panel.label_list.setFocus()
+        
 
     def _on_back_clicked(self):
         self.video_player.force_stop()

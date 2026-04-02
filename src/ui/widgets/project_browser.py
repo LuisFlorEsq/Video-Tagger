@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QLineEdit
 )
 from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QColor, QAction, QIcon
+from PySide6.QtGui import QColor, QAction
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
@@ -23,7 +23,7 @@ from src.ui.helpers.project_formatter import (
 
 from src.ui.styles import (
     AppTheme,
-    sidebar_panel, sidebar_btn, sidebar_btn_active, sidebar_btn_warning,
+    sidebar_panel, sidebar_btn, sidebar_btn_warning, sidebar_btn_danger,
     sidebar_section_label, topbar_panel, progress_bar, btn_primary, btn_success,
     fragment_list, chip_labeled, chip_unlabeled, chip_warning, chip_info,
     text_title, text_secondary, text_muted, text_breadcrumb, divider,
@@ -206,7 +206,7 @@ class ProjectBrowser(QWidget):
         ps_layout.addWidget(make_hline())
 
         self.back_btn = QPushButton("Cerrar proyecto")
-        self.back_btn.setStyleSheet(sidebar_btn())
+        self.back_btn.setStyleSheet(sidebar_btn_danger())
         self.back_btn.setIcon(icon("close_project.png"))
         self.back_btn.setIconSize(QSize(*ICON_SIZE))
         self.back_btn.setMinimumHeight(34)
@@ -742,12 +742,12 @@ class ProjectBrowser(QWidget):
         new_videos = self._project_service.get_new_videos(self._current_project)
         if new_videos:
             self.sync_btn.setEnabled(True)
-            self.sync_btn.setText(f"  Sincronizar ({len(new_videos)} nuevos)")
+            self.sync_btn.setText(f"Sincronizar ({len(new_videos)} nuevos)")
             self.sync_badge.setText(f"{len(new_videos)} videos nuevos")
             self.sync_badge.setVisible(True)
         else:
             self.sync_btn.setEnabled(False)
-            self.sync_btn.setText("  Sincronizar videos")
+            self.sync_btn.setText("Sincronizar videos")
             self.sync_badge.setVisible(False)
 
     def _populate_fragment_list(self):
