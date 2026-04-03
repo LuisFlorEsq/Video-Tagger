@@ -87,9 +87,10 @@ class FragmentViewer(QWidget):
         topbar_layout.setContentsMargins(12, 0, 16, 0)
         topbar_layout.setSpacing(10)
 
-        self.back_btn = QPushButton("← Volver")
+        self.back_btn = QPushButton("Volver")
         self.back_btn.setStyleSheet(btn_ghost())
         self.back_btn.setFixedHeight(30)
+        self.back_btn.setIcon(icon("navigation/left.png"))
         topbar_layout.addWidget(self.back_btn)
 
         topbar_layout.addWidget(make_vline())
@@ -111,14 +112,18 @@ class FragmentViewer(QWidget):
 
         topbar_layout.addSpacing(4)
 
-        self.prev_btn = QPushButton("←")
+        self.prev_btn = QPushButton("")
         self.prev_btn.setStyleSheet(btn_ghost())
         self.prev_btn.setFixedSize(40, 30)
+        self.prev_btn.setIcon(icon("navigation/left.png"))
+        self.prev_btn.setIconSize(QSize(*ICON_SIZE))
         topbar_layout.addWidget(self.prev_btn)
 
-        self.next_btn = QPushButton("→")
+        self.next_btn = QPushButton("")
         self.next_btn.setStyleSheet(btn_primary_sm())
         self.next_btn.setFixedSize(40, 30)
+        self.next_btn.setIcon(icon("navigation/right.png"))
+        self.next_btn.setIconSize(QSize(*ICON_SIZE))
         topbar_layout.addWidget(self.next_btn)
 
         root.addWidget(topbar)

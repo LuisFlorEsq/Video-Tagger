@@ -81,17 +81,21 @@ class LabelConfigDialog(QDialog):
         side_btns = QVBoxLayout()
         side_btns.setSpacing(4)
         
-        self.up_btn = QPushButton("↑")
+        self.up_btn = QPushButton("")
         self.up_btn.setFixedSize(36, 36)
         self.up_btn.setStyleSheet(btn_ghost())
         self.up_btn.setToolTip("Subir etiqueta")
+        self.up_btn.setIcon(icon("navigation/up.png"))
+        self.up_btn.setIconSize(QSize(*ICON_SIZE))
         self.up_btn.clicked.connect(self._move_up)
         side_btns.addWidget(self.up_btn)
         
-        self.down_btn = QPushButton("↓")
+        self.down_btn = QPushButton("")
         self.down_btn.setFixedSize(36, 36)
         self.down_btn.setStyleSheet(btn_ghost())
         self.down_btn.setToolTip("Bajar etiqueta")
+        self.down_btn.setIcon(icon("navigation/down.png"))
+        self.down_btn.setIconSize(QSize(*ICON_SIZE))
         self.down_btn.clicked.connect(self._move_down)
         side_btns.addWidget(self.down_btn)     
         
