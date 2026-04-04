@@ -136,11 +136,15 @@ class FragmentListPanel(QWidget):
         """Replace the displayed project and repopulate the list."""
         self._project = project
         self._active_filter = FILTER_ALL
+        
         self._update_pill_styles()
         self.search_input.clear()
+        
         self._populate()
         self._update_stats()
         self._apply_filter()
+        
+        self.set_focus()
 
     def refresh(self, project: Project):
         """Repopulate preserving the current selection and filter."""
@@ -165,16 +169,19 @@ class FragmentListPanel(QWidget):
         elif self.tree.topLevelItemCount() > 0:
             self.tree.setCurrentItem(self.tree.topLevelItem(0))
 
-        self.tree.setFocus()
+        self.set_focus()
 
     def reset(self):
         """Clear all content back to the empty state."""
         self._project = None
+        
         self.tree.clear()
         self.progress_bar.setValue(0)
+        
         self.stats_label.setText("")
         self.count_label.setText("")
         self.progress_badge.setVisible(False)
+        
         self.search_input.clear()
         self._active_filter = FILTER_ALL
         self._update_pill_styles()

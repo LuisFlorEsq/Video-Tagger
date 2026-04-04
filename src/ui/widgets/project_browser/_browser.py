@@ -340,6 +340,7 @@ class ProjectBrowser(QWidget):
         self.topbar_project_label.setVisible(True)
         self._topbar_sep.setVisible(True)
         self._sidebar.show_project_state(project.name)
+        
         self._stack.setCurrentIndex(VIEW_LIST)
         self._fragment_list.load(project)
         self._check_for_new_videos()
@@ -348,6 +349,7 @@ class ProjectBrowser(QWidget):
         self.topbar_project_label.setVisible(False)
         self._topbar_sep.setVisible(False)
         self.sync_badge.setVisible(False)
+        
         self._sidebar.show_welcome_state()
         self._sidebar.set_sync_idle()
         self._fragment_list.reset()
