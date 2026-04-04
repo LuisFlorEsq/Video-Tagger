@@ -165,6 +165,24 @@ def progress_bar() -> str:
             border-radius: 3px;
         }}
     """
+    
+def input_field() -> str:
+    t = AppTheme
+    return f"""
+        QLineEdit {{
+            border: 1px solid {t.BORDER};
+            border-radius: {t.RADIUS_MD};
+            padding: 6px 8px;
+            font-size: {t.FONT_BASE};
+            background-color: {t.BG_SUBTLE};
+            color: {t.TEXT_PRIMARY};
+        }}
+
+        QLineEdit:focus {{
+            border-color: {t.BORDER_FOCUS};
+            background-color: {t.BG_PANEL};
+        }}
+    """
 
 # ─────────────────────────────────────────────
 # Sidebar
@@ -499,7 +517,6 @@ def chip_info() -> str:
         f"border-radius: 10px; font-size: {t.FONT_SM}; font-weight: bold; "
         f"color: {t.PRIMARY};"
     )
-
 
 # ─────────────────────────────────────────────
 # Text helpers (used on QLabel)
