@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction
 from PySide6.QtCore import QTimer
 
-from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT, ICONS_PATH
+from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT
 from src.core.resources import icon
 
 from src.application.services.project_service import ProjectService
@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
     def _show_browser(self):
         self._project_browser.refresh()
         self._safe_switch_view(VIEW_PROJECT)
-        self._project_browser.fragment_list.setFocus()
+        self._project_browser.set_focus()
         
         if self._current_project:
             summary = self._project_service.get_project_summary(self._current_project)

@@ -308,6 +308,9 @@ class ProjectBrowser(QWidget):
         if self._current_project:
             self._fragment_list.refresh(self._current_project)
             self._check_for_new_videos()
+            
+    def set_focus(self):
+        self._fragment_list.set_focus()
 
     def get_current_project(self) -> Project:
         return self._current_project
