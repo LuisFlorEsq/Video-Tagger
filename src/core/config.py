@@ -1,11 +1,13 @@
 from pathlib import Path
 
 # ─────────────────────────────────────────────
-# View indices (QStackedWidget slots on MainWindow)
+# View indices (QStackedWidget slots on MainWindow and Project browser)
 # ─────────────────────────────────────────────
 
 VIEW_PROJECT = 0
 VIEW_FRAGMENT = 1
+VIEW_WELCOME = 0
+VIEW_LIST = 1
 
 # ─────────────────────────────────────────────
 # Label configuration
