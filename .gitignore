@@ -209,3 +209,5 @@ __marimo__/
 # Project specific test files
 tests/json/*.json
 tests/export/*.csv
+*.rar
+*.zip
