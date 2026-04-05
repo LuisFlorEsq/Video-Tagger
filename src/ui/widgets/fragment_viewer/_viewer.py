@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
 from PySide6.QtGui import QAction
 
-from src.ui.widgets.video_player import VideoPlayer
-from src.ui.widgets.label_panel import LabelPanel
+from ._video_player import VideoPlayer
+from ._label_panel  import LabelPanel
 
 from src.core.config import DEFAULT_LABELS, ICON_SIZE
 from src.core.resources import icon
