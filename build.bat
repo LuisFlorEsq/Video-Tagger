@@ -8,9 +8,9 @@ REM ─────────────────────────�
 setlocal EnableDelayedExpansion
 
 echo.
-echo ══════════════════════════════════════════
+echo --------------------------------------------------------
 echo   Video-Tagger  ^|  PyInstaller build
-echo ══════════════════════════════════════════
+echo --------------------------------------------------------
 echo.
 
 REM ── 1. Check virtual environment ─────────────────────────────────────────────
@@ -70,9 +70,9 @@ if not exist "dist\VideoTagger\VideoTagger.exe" (
 
 REM ── 7. Print summary ─────────────────────────────────────────────────────────
 echo.
-echo ══════════════════════════════════════════
+echo --------------------------------------------------------
 echo   Build successful!
-echo ══════════════════════════════════════════
+echo --------------------------------------------------------
 echo.
 echo   Executable : dist\VideoTagger\VideoTagger.exe
 echo   Distribute : copy the entire dist\VideoTagger\ folder
