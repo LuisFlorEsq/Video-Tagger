@@ -1,57 +1,72 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
 from datetime import datetime
-from pathlib import Path
+
+from src.domain.models.media.media_item import MediaItem, MediaType
+
 
 @dataclass
-class Fragment:
+class Fragment(MediaItem):
     """Represents a video fragment - Pure domain entity."""
     
-    fragment_id: str
-    video_path: str
-    start_time: float
+    start_time: float = 0.0
     duration: float = 1.0
-    label: Optional[str] = None
-    notes: str = ""
-    created_at: datetime = field(default_factory=datetime.now)
-    modified_at: datetime = field(default_factory=datetime.now)
     
-    def __post_init__(self):
-        """Validate fragment data."""
-        if not self.fragment_id or not self.fragment_id.strip():
-            raise ValueError("fragment_id cannot be empty")
-        if not self.video_path or not self.video_path.strip():
-            raise ValueError("video_path cannot be empty")
-        if self.start_time < 0:
+    def __init__(
+        self, 
+        fragment_id: str,
+        video_path: str,
+        start_time: float,
+        duration: float = 1.0,
+        label: Optional[str] = None,
+        notes: str = "",
+        created_at: Optional[datetime] = None,
+        modified_at: Optional[datetime] = None
+    ) -> None:
+        
+        super().__init__(
+            item_id=fragment_id,
+            file_path=video_path,
+            media_type=MediaType.VIDEO,
+            label=label,
+            notes=notes,
+            created_at=created_at or datetime.now(),
+            modified_at=modified_at or datetime.now(),
+        )
+        self._validate_video(start_time, duration)
+        self.start_time = start_time
+        self.duration = duration
+        
+    @staticmethod
+    def _validate_video(start_time: float, duration: float) -> None:
+        if start_time < 0:
             raise ValueError("Start time must be non-negative")
-        if self.duration <= 0:
+        if duration <= 0:
             raise ValueError("Duration must be positive")
+        
+    # ----- Backward compatibility ------
+
+    @property
+    def fragment_id(self) -> str:
+        return self.item_id
     
-    def assign_label(self, label: str) -> None:
-        """Assign a label to this fragment."""
-        if not label or not label.strip():
-            raise ValueError("Label cannot be empty")
-        self.label = label.strip()
-        self.modified_at = datetime.now()
+    @fragment_id.setter
+    def fragment_id(self, value: str) -> None:
+        self.item_id = value
+        
+    @property
+    def video_path(self) -> str:
+        return self.file_path
     
-    def clear_label(self) -> None:
-        """Remove the label from this fragment."""
-        self.label = None
-        self.modified_at = datetime.now()
+    @video_path.setter
+    def video_path(self, value: str) -> None:
+        self.file_path = value
+        
     
-    def update_notes(self, notes: str) -> None:
-        """Update notes for this fragment."""
-        self.notes = notes
-        self.modified_at = datetime.now()
-    
-    def is_labeled(self) -> bool:
-        """Check if fragment has a label."""
-        return self.label is not None and self.label.strip() != ""
+    # ----- Video specific helpers ------
     
     def get_end_time(self) -> float:
-        """Get the end time of the fragment."""
         return self.start_time + self.duration
     
     def get_video_name(self) -> str:
-        """Get just the video filename."""
-        return Path(self.video_path).name
+        return self.get_filename()
