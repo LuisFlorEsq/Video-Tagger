@@ -14,26 +14,26 @@ class MediaType(Enum):
     AUDIO = "audio",
     TEXT = "text"
     
-@classmethod
-def from_str(cls, value: str) -> "MediaType":
-    """
-    Case sensitive factory; falls back to video for unknown values
-    """
-    try:
-        return cls(value.lower())
-    except (ValueError, AttributeError):
-        return cls.VIDEO
+    @classmethod
+    def from_str(cls, value: str) -> "MediaType":
+        """
+        Case sensitive factory; falls back to video for unknown values
+        """
+        try:
+            return cls(value.lower())
+        except (ValueError, AttributeError):
+            return cls.VIDEO
 
-def label(self) -> str:
-    """
-    Human-readable Spanish label for the UI
-    """
-    return {
-        MediaType.VIDEO: "Video",
-        MediaType.IMAGE: "Imagen",
-        MediaType.AUDIO: "Audio",
-        MediaType.TEXT: "Texto",
-    }[self]
+    def label(self) -> str:
+        """
+        Human-readable Spanish label for the UI
+        """
+        return {
+            MediaType.VIDEO: "Video",
+            MediaType.IMAGE: "Imagen",
+            MediaType.AUDIO: "Audio",
+            MediaType.TEXT: "Texto",
+        }[self]
     
 
 # ---------------------------------------------
