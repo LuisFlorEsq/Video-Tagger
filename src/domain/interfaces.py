@@ -112,7 +112,7 @@ class IMediaScanner(ABC):
         pass
         
     @abstractmethod
-    def scan_folder(self, folder_path: str) -> List[MediaItem]:
+    def scan_folder(self, folder_path: Path) -> List[MediaItem]:
         """
         Scan folder_path and return a list of MediaItem subclass instances.
         """
