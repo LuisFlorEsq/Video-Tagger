@@ -1,12 +1,19 @@
 from pathlib import Path
+from typing import Optional
 
-from src.domain.models.project import Project
+from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.fragment import Fragment
+from src.domain.models.project import Project
 from src.domain.interfaces import (
-    IProjectRepository, IVideoSource, 
-    IFragmentScanner
+    IProjectRepository, 
+    IVideoSource, 
+    IFragmentScanner,
+    IMediaScanner
 )
 
+# ---------------------------------------------
+# Project Service
+# ---------------------------------------------
 
 class ProjectService:
     """Service for project-related operations (SRP)."""
@@ -15,43 +22,59 @@ class ProjectService:
         self, 
         repository: IProjectRepository,
         scanner: IFragmentScanner,
-        video_source: IVideoSource
+        video_source: IVideoSource,
+        media_factory: Optional["MediaTypeFactory"] = None
     ):
         self._repository = repository
         self._scanner = scanner
         self._video_source = video_source
+        self._media_factory = media_factory
+        
+    # ---- Project creation ----
     
-    def create_project_from_folder(self, folder_path: Path) -> Project:
-        """Create a new project by scanning a folder for video fragments."""
+    def create_project_from_folder(self, folder_path: Path, media_type: MediaType = MediaType.VIDEO) -> Project:
+        """Create a new project by scanning *folder_path*."""
         if not folder_path.exists():
             raise ValueError(f"La carpeta no existe: {folder_path}")
         
-        # Scan for video files
-        video_files = self._scanner.scan_folder(folder_path)
+        if media_type == MediaType.VIDEO:
+            return self._create_video_project(folder_path)
+        
+        if self._media_factory is None:
+            raise RuntimeError(
+                "MediaTypeFactory is required for non-video projects"
+                "Register it in the service container"
+            )
+        
+        return self._media_factory.create_project(folder_path, media_type)
+    
+    def _create_video_project(self, folder_path: Path) -> Project:
+        """Original video project creation logic."""
+        video_files = self._scanner.scan_folder(folder_path=folder_path)
         
         if not video_files:
             raise ValueError("No se encontraron archivos de video")
         
-        # Create project
         project = Project(
-            name=folder_path.name,
-            folder_path=str(folder_path)
+            name = folder_path.name,
+            folder_path = folder_path,
+            media_type= MediaType.VIDEO
         )
         
-        # Create fragments from video files
         for i, video_file in enumerate(sorted(video_files)):
             duration = self._video_source.get_duration(video_file)
-            
             fragment = Fragment(
-                fragment_id=f"fragment_{i+1:03d}",
+                fragment_id=f"fragment_{i + 1:03d}",
                 video_path=str(video_file),
                 start_time=0.0,
                 duration=min(1.0, duration)
             )
-            project.add_fragment(fragment)
-        
+            project.add_fragment(fragment=fragment)
+            
         return project
     
+    # ---- Save / load ----
+
     def save_project(self, project: Project, file_path: Path) -> None:
         """Save a project to file."""
         self._repository.save(project, file_path)
@@ -84,6 +107,8 @@ class ProjectService:
             raise ValueError(f"El proyecto no existe: {file_path}")
         
         return self._repository.load(file_path)
+    
+    # ---- Sync (video only) ----
     
     def get_new_videos(self, project: Project) -> set[Path]:
         """Get the count of new videos in a project folder
@@ -148,6 +173,8 @@ class ProjectService:
             
         return added
     
+    # ---- Statistics ----
+    
     def get_project_summary(self, project: Project) -> dict:
         """Get a summary of project statistics."""
         return {
@@ -158,3 +185,49 @@ class ProjectService:
             'progress_percentage': project.get_progress_percentage(),
             'label_statistics': project.get_label_statistics()
         }
+        
+
+# ---------------------------------------------
+# MediaTypeFactory
+# ---------------------------------------------
+
+class MediaTypeFactory:
+    """
+    Creates a project for non-video media types.
+    
+    ProjectService delegates here when MediaType != VIDEO
+    
+    Register one IMediaScanner per MediaType at startup via register_scanner()
+    """
+    
+    def __init__(self):
+        self._scanners: dict[MediaType, IMediaScanner] = {}
+        
+    def register_scanner(self, scanner: IMediaScanner) -> None:
+        self._scanners[scanner.media_type] = scanner
+        
+    def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
+        scanner = self._scanners.get(media_type)
+        
+        if scanner is None:
+            raise ValueError(
+                f"No scanner registered for media type: {media_type.value}"
+            )
+            
+        items = scanner.scan_folder(folder_path=folder_path)
+        if not items:
+            label = media_type.label
+            raise ValueError(
+                f"No se encontraron archivos de {label.lower()} en la carpeta"
+            )
+            
+        project = Project(
+            name=folder_path.name,
+            folder_path=str(folder_path),
+            media_type=media_type
+        )
+        
+        for item in items:
+            project.add_item(item)
+            
+        return project

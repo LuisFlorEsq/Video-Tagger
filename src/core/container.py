@@ -1,15 +1,33 @@
 from typing import Dict, Any, Callable, TypeVar, Type
 
 from src.domain.interfaces import (
-    IProjectRepository, IExporter, IVideoSource,
-    IFragmentScanner, ILabelValidator
+    IFragmentScanner,
+    ILabelValidator,
+    IMediaPreviewSource,
+    IMediaScanner,
+    IProjectRepository,
+    IVideoSource
 )
+
+from src.domain.models.media.media_item import MediaType
+
 from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
 from src.infrastructure.video import QtVideoSource
-from src.infrastructure.scanners import FileSystemFragmentScanner
+from src.infrastructure.scanners import (
+    AudioScanner,
+    FileSystemFragmentScanner,
+    ImageScanner,
+    TextScanner
+)
+from src.infrastructure.preview_sources import(
+    AudioPreviewSource,
+    ImagePreviewSource,
+    TextPreviewSource
+)
 from src.infrastructure.validators import SimpleLabelValidator
-from src.application.services.project_service import ProjectService
+
+from src.application.services.project_service import MediaTypeFactory, ProjectService
 from src.application.services.labeling_service import LabelingService
 from src.application.services.export_service import ExportService
 from src.application.services.navigation_service import NavigationService
@@ -22,9 +40,9 @@ class ServiceContainer:
     """Simple service container for dependency injection."""
     
     def __init__(self):
-        self._services: Dict[Type, Any] = {}
-        self._factories: Dict[Type, Callable] = {}
         self._singletons: Dict[Type, Any] = {}
+        self._factories: Dict[Type, Callable] = {}
+
     
     def register_singleton(self, interface: Type[T], implementation: T) -> None:
         """Register a singleton instance."""
@@ -48,19 +66,42 @@ class ServiceContainer:
     
     def register_default_services(self) -> None:
         """Register default implementations."""
-        # Infrastructure layer - singletons
+        # ------ Infrastructure layer - singletons ---------
         self.register_singleton(IProjectRepository, JsonProjectRepository())
         self.register_singleton(IVideoSource, QtVideoSource())
         self.register_singleton(IFragmentScanner, FileSystemFragmentScanner())
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
         
-        # Application layer - factories
+        # ------ Infrastructure layer - new scanners ---------
+        image_scanner = ImageScanner()
+        audio_scanner = AudioScanner()
+        text_scanner = TextScanner()
+        
+        # Register by MediaType
+        self.register_singleton(ImageScanner, image_scanner)
+        self.register_singleton(AudioScanner, audio_scanner)
+        self.register_singleton(TextScanner, text_scanner)
+
+        # ------ Infrastructure layer - previer sources ---------
+        self.register_singleton(ImagePreviewSource, ImagePreviewSource())
+        self.register_singleton(AudioPreviewSource, AudioPreviewSource())
+        self.register_singleton(TextPreviewSource, TextPreviewSource())
+        
+        # ------ MediaTypeFactory ---------
+        media_factory = MediaTypeFactory()
+        media_factory.register_scanner(image_scanner)
+        media_factory.register_scanner(audio_scanner)
+        media_factory.register_scanner(text_scanner)
+        self.register_singleton(MediaTypeFactory, media_factory)
+            
+        # ------ Application services ---------
         self.register_transient(
             ProjectService,
             lambda: ProjectService(
                 repository=self.resolve(IProjectRepository),
                 scanner=self.resolve(IFragmentScanner),
-                video_source=self.resolve(IVideoSource)
+                video_source=self.resolve(IVideoSource),
+                media_factory=self.resolve(MediaTypeFactory)
             )
         )
         
