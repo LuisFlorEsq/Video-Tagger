@@ -480,7 +480,25 @@ def label_list() -> str:
             color: {t.TEXT_MUTED};
         }}
     """
+    
+# ─────────────────────────────────────────────
+# Media Card
+# ─────────────────────────────────────────────
 
+def media_card(accent: str) -> str:
+    t = AppTheme
+    return f"""
+        QWidget {{
+        background-color: {AppTheme.BG_SUBTLE};"
+        border: 1px solid {AppTheme.BORDER};"
+        border-radius: {AppTheme.RADIUS_MD};"
+        }}
+        
+        QWidget:hover {{
+        background-color: {AppTheme.BG_APP};"
+        border-color: {accent};"
+        }}
+        """
 
 # ─────────────────────────────────────────────
 # Info / status chips (used on QLabel)
@@ -552,6 +570,22 @@ def text_breadcrumb() -> str:
 def text_success_bold() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_BASE}; font-weight: bold; color: {t.SUCCESS};"
+
+
+def text_label() -> str:
+    t = AppTheme
+    return (
+        f"font-size: {AppTheme.FONT_BASE}; font-weight: bold;" 
+        f"color: {AppTheme.TEXT_PRIMARY}; background: transparent; border: none;"
+        )
+    
+
+def text_desc() -> str:
+    t = AppTheme
+    return (
+        f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY};" 
+        f"background: transparent; border: none;"
+        )
 
 def divider() -> str:
     """Thin horizontal rule as a QFrame or QWidget background."""
