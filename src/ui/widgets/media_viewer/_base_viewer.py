@@ -1,0 +1,302 @@
+from abc import abstractmethod
+
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget
+)
+
+from src.application.services.labeling_service import LabelingService
+from src.application.services.navigation_service import NavigationService
+from src.application.services.project_service import ProjectService
+
+from src.core.config import DEFAULT_LABELS, ICON_SIZE
+from src.core.resources import icon
+
+from src.domain.models.media.media_item import MediaItem
+from src.domain.models.project import Project
+
+from src.ui.helpers.dividers import make_hline, make_vline
+from src.ui.styles import (
+    AppTheme,
+    topbar_panel, info_strip,
+    btn_danger, btn_ghost, btn_primary_sm,
+    chip_labeled, chip_unlabeled,
+    text_breadcrumb, text_section_header
+)
+from src.ui.widgets.fragment_viewer._label_panel import LabelPanel
+
+
+
+class BaseViewer(QWidget):
+    """
+    Abstract base class for all media viewer widgets
+    """
+    
+    # ------ Signals --------
+    item_labeled = Signal(object) # emits MediaItem
+    prev_requested = Signal()
+    next_requested = Signal()
+    back_requested = Signal()
+    auto_saved = Signal()
+    
+    
+    def __init__(
+        self,
+        labeling_service: LabelingService,
+        project_service: ProjectService,
+        available_labels: list = None,
+        parent = None
+    ) -> None:
+        
+        super().__init__(parent)
+        
+        self._labeling_service = labeling_service
+        self._project_service = project_service
+        self._navigation_service: NavigationService = None
+        
+        self.available_labels = (available_labels or DEFAULT_LABELS).copy()
+        
+        self._auto_save_timer = QTimer()
+        self._auto_save_timer.setSingleShot(True)
+        self._auto_save_timer.timeout.connect(self._auto_save_project)
+        self._auto_save_delay_ms = 3000
+        self._has_unsaved_changes = False
+        
+        self._init_ui()
+        self._connect_base_signals()
+        self._setup_shortcuts()
+        
+        
+    # --------------------------------------
+    # Hooks - subclass must / may override
+    # --------------------------------------
+    
+    @abstractmethod
+    def build_media_area(self) -> QWidget:
+        """Return the central content widget for this media type"""
+        ...
+        
+    
+    def build_info_rows(self, info_layout: QVBoxLayout) -> None:
+        """
+        Append type-specific metadata rows to the info strip
+        
+        Defatult: no-op (subclass overrides when it has extra fields)
+        """
+        ...
+        
+    @abstractmethod
+    def on_item_loaded(self, item: MediaItem, project: Project) -> None:
+        """
+        Load item into media widget
+        
+        Called after the base has updated all shared UI
+        """
+        ...
+        
+    def on_reset(self) -> None:
+        """
+        Stop/Clear the media widget beforee the base clears shared state 
+        
+        Default: no-op
+        """
+        ...
+        
+    @abstractmethod
+    def item_type_label(self) -> str:
+        """
+        Short ui term for this media type, used in dialog messages.
+        
+        e.g "Fragmento", "Image", etc.
+        """
+        ...
+        
+    # --------------------------------------
+    # UI Construction - base
+    # --------------------------------------
+    
+    def _init_ui(self) -> None:
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        root.addWidget(self._build_topbar())
+        root.addWidget(make_hline())
+        root.addWidget(self._build_body(), stretch=1)
+    
+    def _build_topbar(self) -> QWidget:
+        topbar = QWidget()
+        topbar.setStyleSheet(topbar_panel())
+
+        tb = QHBoxLayout(topbar)
+        tb.setContentsMargins(12, 0, 16, 0)
+        tb.setSpacing(10)
+
+        self.back_btn = QPushButton("Volver")
+        self.back_btn.setStyleSheet(btn_ghost())
+        self.back_btn.setFixedHeight(30)
+        self.back_btn.setIcon(icon("navigation/left.png"))
+        tb.addWidget(self.back_btn)
+
+        tb.addWidget(make_vline())
+
+        self.breadcrumb_label = QLabel("")
+        self.breadcrumb_label.setStyleSheet(text_breadcrumb())
+        tb.addWidget(self.breadcrumb_label)
+
+        tb.addStretch()
+
+        # Optional extra topbar widgets injected by subclass
+        self._populate_topbar_extras(tb)
+
+        self.position_label = QLabel("")
+        self.position_label.setStyleSheet(
+            f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY}; "
+            f"background-color: {AppTheme.BG_APP}; padding: 2px 10px; "
+            f"border-radius: 10px;"
+        )
+        tb.addWidget(self.position_label)
+        tb.addSpacing(4)
+
+        self.prev_btn = QPushButton("")
+        self.prev_btn.setStyleSheet(btn_ghost())
+        self.prev_btn.setFixedSize(40, 30)
+        self.prev_btn.setIcon(icon("navigation/left.png"))
+        self.prev_btn.setIconSize(QSize(*ICON_SIZE))
+        tb.addWidget(self.prev_btn)
+
+        self.next_btn = QPushButton("")
+        self.next_btn.setStyleSheet(btn_primary_sm())
+        self.next_btn.setFixedSize(40, 30)
+        self.next_btn.setIcon(icon("navigation/right.png"))
+        self.next_btn.setIconSize(QSize(*ICON_SIZE))
+        tb.addWidget(self.next_btn)
+
+        return topbar
+    
+    
+    def _populate_topbar_extras(self, tb: QHBoxLayout) -> None:
+        """
+        Optional Hook: injects widgets between the breadcrumb search stretch and the position 
+        counter (e.g. zoom controls for ImageViewer)
+        Default: no-op
+        """
+        
+    def _build_body(self) -> QWidget:
+        body = QWidget()
+        layout = QHBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+ 
+        layout.addWidget(self.build_media_area(), stretch=1)
+        layout.addWidget(make_vline())
+        layout.addWidget(self._build_right_panel())
+        
+        return body
+ 
+    
+    def _build_right_panel(self) -> QWidget:
+        panel = QWidget()
+        panel.setFixedWidth(230)
+        panel.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+        
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        layout.addWidget(self._build_info_strip())
+        layout.addWidget(make_hline())
+ 
+        label_area = QWidget()
+        label_area.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+
+        la = QVBoxLayout(label_area)
+        la.setContentsMargins(14, 10, 14, 0)
+        la.setSpacing(0)
+        
+        self.label_panel = LabelPanel(self.available_labels)
+        la.addWidget(self.label_panel, stretch=1)
+        layout.addWidget(label_area, stretch=1)
+ 
+        layout.addWidget(make_hline())
+        layout.addWidget(self._build_action_strip())
+        
+        return panel
+    
+    def _build_info_strip(self) -> QWidget:
+        strip = QWidget()
+        strip.setStyleSheet(info_strip())
+        
+        info = QVBoxLayout(strip)
+        info.setContentsMargins(14, 10, 14, 10)
+        info.setSpacing(6)
+        
+        # Status row
+        status_row = QHBoxLayout()
+        lbl = QLabel("ESTADO")
+        lbl.setStyleSheet(text_section_header())
+        
+        self.status_chip = QLabel("Sin etiquetar")
+        self.status_chip.setStyleSheet(chip_unlabeled())
+        self.status_chip.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        
+        status_row.addWidget(lbl)
+        status_row.addStretch()
+        status_row.addWidget(self.status_chip)
+        info.addLayout(status_row)
+        
+        # ID row - always present
+        id_row = QHBoxLayout()
+        id_key = QLabel("ID")
+        id_key .setStyleSheet(text_section_header())
+        self.id_label = QLabel("-")
+        self.id_label.setStyleSheet(
+            f"font-size: {AppTheme.FONT_SM}; font-weight: bold; "
+            f"color: {AppTheme.TEXT_PRIMARY};"
+        )
+        self.id_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        id_row.addWidget(id_key)
+        id_row.addStretch()
+        id_row.addWidget(self.id_label)
+        info.addLayout(id_row)
+        
+        # Type specific rows injected by subclass
+        self.build_info_rows(info)
+        
+        return strip
+
+    def _build_action_strip(self) -> QWidget:
+        strip = QWidget()
+        strip.setStyleSheet(f"background-color: {AppTheme.BG_PANEL};")
+        al = QVBoxLayout(strip)
+        al.setContentsMargins(14, 8, 14, 10)
+        
+        self.delete_label_btn = QPushButton("Eliminar etiqueta")
+        self.delete_label_btn.setStyleSheet(btn_danger())
+        self.delete_label_btn.setIcon(icon("delete.png"))
+        self.delete_label_btn.setIconSize(QSize(*ICON_SIZE))
+        self.delete_label_btn.setEnabled(False)
+        al.addWidget(self.delete_label_btn)
+        
+        return strip
+    
+    # --------------------------------------
+    # Signal wiring (base)
+    # --------------------------------------
+    def _connect_base_signals(self) -> None:
+        # Return to project browser view
+        self.back_btn.clicked.connect(self._on_back_clicked)
+        
+        # Navigation buttons
+        self.prev_btn.clicked.connect(self._on_prev_clicked)
+        self.next_btn.clicked.connect(self._on_next_clicked)
+        
+        # Label management
+        self.delete_label_btn.clicked.connect(self._on_delete_clicked)
+        self.label_panel.label_assigned.connect(self._on_label_assigned)

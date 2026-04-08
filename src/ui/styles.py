@@ -183,6 +183,14 @@ def input_field() -> str:
             background-color: {t.BG_PANEL};
         }}
     """
+    
+def info_strip() -> str:
+    t = AppTheme
+    return (
+        f" background-color: {AppTheme.BG_PANEL};"
+        f"border-bottom: 1px solid {AppTheme.BG_APP};"
+    )
+
 
 # ─────────────────────────────────────────────
 # Sidebar
