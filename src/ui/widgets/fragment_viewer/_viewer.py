@@ -509,6 +509,7 @@ class FragmentViewer(QWidget):
         self.available_labels = labels.copy()
         self.label_panel.set_labels(labels)
         self._register_label_shortcuts()
+        
     # ─────────────────────────────────────────────
     # Private UI updaters
     # ─────────────────────────────────────────────

@@ -472,3 +472,174 @@ class BaseViewer(QWidget):
             f"Este {noun} aún no tiene etiqueta. ¿Deseas saltarlo?",
             QMessageBox.Yes | QMessageBox.No,
         )
+        
+    # --------------------------------------
+    # Auto-Save Project
+    # --------------------------------------
+    
+    def _schedule_auto_save(self) -> None:
+        if self._current_project and self._current_project.get_save_path():
+            self._auto_save_timer.stop()
+            self._auto_save_timer.start(self._auto_save_delay_ms)
+            
+    def _auto_save_project(self) -> None:
+        if not self._current_project:
+            return
+        try:
+            if self._project_service.auto_save_project(self._current_project):
+                self._has_unsaved_changes = False
+                self.auto_saved.emit()
+                
+        except Exception as e:
+            print(f"Auto-save failed {e}")
+            
+    def _force_save(self) -> None:
+        if self._has_unsaved_changes and self._current_project:
+            self._auto_save_timer.stop()
+            self._auto_save_project()
+            
+
+    # --------------------------------------
+    # Public API
+    # --------------------------------------
+    
+    def load_item(self, item: MediaItem, project: Project) -> None:
+        """
+        Load item into viewer
+        Updates all shared UI, then delegates to on_item_loaded()
+        """
+        self._current_item = item
+        self._current_project = project
+        
+        self._update_breadcrumb()
+        self._update_item_status()
+        self._update_position_display()
+        self.label_panel.set_enabled(True)
+        
+        self._on_item_loaded(item, project)
+        
+    def set_navigation_service(self, nav: NavigationService) -> None:
+        self._navigation_service = nav
+        self._update_position_display()
+        
+    def get_current_item(self) -> MediaItem | None:
+        return self._current_item
+    
+    def reset(self) -> None:
+        """
+        Clear all project related state
+        """
+        
+        self._auto_save_timer.stop()
+        self._force_save()
+        self._on_reset()
+        
+        # Clean class attributes
+        self._current_item = None
+        self._current_project = None
+        self._navigation_service = None
+        self._has_unsaved_changes = False
+        
+        # Clean UI
+        self.label_panel.set_enabled(False)
+        self.label_panel.clear_selection()
+        self._clear_display()
+    
+    def stop(self) -> None:
+        """Stop any active media playback"""
+        
+    
+    # TODO: Implement Backward compatibility
+    
+    def focus_label_list(self) -> None:
+        self.label_panel.label_list.setFocus()
+        
+    def update_labels(self, labels: list) -> None:
+        if not labels:
+            return
+        self.available_labels = labels.copy()
+        self.label_panel.set_labels(self.available_labels)
+        self._register_label_shortcuts()
+        
+    # --------------------------------------
+    # Private UI updaters
+    # --------------------------------------
+    
+    def _update_breadcrumb(self) -> None:
+        if not self._current_item:
+            self._clear_display()
+            return
+        name = self._current_item.get_filename()
+        project_name = self._current_project.name if self._current_project else ""
+        if project_name:
+            self.breadcrumb_label.setText(
+                f'<span style="color:{AppTheme.TEXT_MUTED}">{project_name} /</span> '
+                f'<span style="color:{AppTheme.TEXT_PRIMARY}; font-weight:600">{name}</span>'
+            )
+        else:
+            self.breadcrumb_label.setText(name)
+        self.id_label.setText(self._current_item.item_id)
+ 
+    def _update_item_status(self) -> None:
+        if not self._current_item:
+            return
+        labeled = self._current_item.is_labeled()
+        if labeled:
+            self.status_chip.setText(f"✓  {self._current_item.label}")
+            self.status_chip.setStyleSheet(chip_labeled())
+        else:
+            self.status_chip.setText("Sin etiquetar")
+            self.status_chip.setStyleSheet(chip_unlabeled())
+        self.label_panel.set_current_label(
+            self._current_item.label if labeled else None
+        )
+        self.delete_label_btn.setEnabled(labeled)
+ 
+    def _update_position_display(self) -> None:
+        if self._navigation_service:
+            current, total = self._navigation_service.get_position()
+            self.position_label.setText(f"{current} / {total}")
+            self.position_label.setVisible(True)
+        else:
+            self.position_label.setVisible(False)
+ 
+    def _clear_display(self) -> None:
+        self.breadcrumb_label.setText("")
+        self.id_label.setText("—")
+        self.status_chip.setText("Sin etiquetar")
+        self.status_chip.setStyleSheet(chip_unlabeled())
+        self.position_label.setVisible(False)
+        self.delete_label_btn.setEnabled(False)
+        
+        
+    # --------------------------------------
+    # Convenience
+    # --------------------------------------
+    
+    @staticmethod
+    def _info_row(
+        key: str,
+        value_attr: str,
+        info_layout: QVBoxLayout
+    ) -> QLabel:
+        """
+        Build and add standard key/value row to info_layout
+        Returns the value QLabel so the subclass can update it
+        """
+        
+        row = QHBoxLayout()
+        key_lbl = QLabel(key)
+        key_lbl.setStyleSheet(text_section_header())
+        
+        val_lbl = QLabel(value_attr)
+        val_lbl.setStyleSheet(
+            f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY};"
+        )
+        val_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        
+        row.addWidget(key_lbl)
+        row.addStretch()
+        row.addWidget(val_lbl)
+        info_layout.addLayout(row)
+        
+        return val_lbl
