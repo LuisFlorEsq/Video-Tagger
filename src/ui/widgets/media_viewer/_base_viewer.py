@@ -525,6 +525,8 @@ class BaseViewer(QWidget):
     def get_current_item(self) -> MediaItem | None:
         return self._current_item
     
+    # Backward-compatible alias used on ViewerStack and MainWindow
+    
     def reset(self) -> None:
         """
         Clear all project related state
@@ -550,6 +552,7 @@ class BaseViewer(QWidget):
         
     
     # TODO: Implement Backward compatibility
+    stop_video = stop
     
     def focus_label_list(self) -> None:
         self.label_panel.label_list.setFocus()
