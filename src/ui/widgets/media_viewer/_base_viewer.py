@@ -60,6 +60,9 @@ class BaseViewer(QWidget):
         self._project_service = project_service
         self._navigation_service: NavigationService = None
         
+        self._current_item: MediaItem | None = None
+        self._current_project: Project | None = None
+        
         self.available_labels = (available_labels or DEFAULT_LABELS).copy()
         
         self._auto_save_timer = QTimer()
@@ -300,3 +303,172 @@ class BaseViewer(QWidget):
         # Label management
         self.delete_label_btn.clicked.connect(self._on_delete_clicked)
         self.label_panel.label_assigned.connect(self._on_label_assigned)
+        
+        
+    # --------------------------------------
+    # Keyboard shortcuts
+    # --------------------------------------
+    
+    def _setup_shortcuts(self) -> None:
+        # Helpers
+        def _action(shortcut: str, slot) -> None:
+            """Create an action scoped for this widget subtree"""
+            act = QAction(self)
+            act.setShortcut(shortcut)
+            
+            act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+            act.triggered.connect(slot)
+            self.addAction(act)
+        
+        # Navigation
+        _action("Left", self._on_prev_clicked)
+        _action("Right", self._on_next_clicked)
+        _action("Escape", self._on_back_clicked)
+        
+        # Subclass specific shortcuts (Space for video/audio)
+        self._setup_extra_shortcuts(_action)
+        
+        self._register_label_shortcuts()
+        self.label_panel.label_list.installEventFilter(self)
+        self.label_panel.label_list.viewport().installEventFilter(self)
+        
+    def _setup_extra_shortcuts(self, action_factory) -> None:
+        """
+        Hook: register additional shortcuts using *action_factory(shortcut, slot)*.
+        Default: no-op.
+        """
+        ...
+        
+    def _register_label_shortcuts(self) -> None:
+        for act in self.actions():
+            if getattr(act, "_is_label_shortcut", False):
+                self.removeAction(act)
+        
+        # Label assignation shortcuts
+        for i in range(min(9, len(self.available_labels))):
+            act = QAction(self)
+            act.setShortcut(str(i + 1))
+            act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
+            act.triggered.connect(
+                lambda checked=False, idx=i: self._assign_label_by_index(idx)
+            )
+            act._is_label_shortcut = True
+            self.addAction(act)
+            
+            
+    def eventFilter(self, watched, event: QEvent) -> bool:
+        """
+        Intercepts keys that QListWidget before QAction shortcuts fire
+        """
+        
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
+            
+            if self._handle_extra_key(key):
+                return True
+            
+            if key == Qt.Key_Delete:
+                self._on_delete_clicked(); return True
+                
+            if key == Qt.Key_Right:
+                self._on_next_clicked(); return True
+                
+            if key == Qt.Key_Escape:
+                self._on_back_clicked(); return True
+                
+            if Qt.Key_1 <= key <= Qt.Key_9:
+                self._assign_label_by_index(key - Qt.Key_1); return True
+            
+        return super().eventFilter(watched, event)
+    
+    
+    def _handle_extra_key(self, key: int) -> bool:
+        """
+        Hook: handle aditional keys inside the eventFilter
+        Return True if the key was consumed, False to let base handling run
+        Default: no-op returning False
+        """
+        return False
+    
+    # --------------------------------------
+    # Command Handlers
+    # --------------------------------------
+    
+    def _on_label_assigned(self, label: str) -> None:
+        if not self._current_item:
+            return
+        
+        try:
+            self._labeling_service.assign_label(
+                self._current_item, self._current_project, label
+            )
+            
+        except ValueError as e:
+            QMessageBox(self, "No se pudo etiquetar", str(e))
+        
+        finally:
+            self.label_panel.label_list.setFocus()
+            
+    def _on_prev_clicked(self) -> None:
+        if not self._current_item:
+            return
+        self._force_save()
+        if not self._current_item.is_labeled() and self._ask_skip() == QMessageBox.No:
+            return
+        self.prev_requested.emit()
+        
+    def _on_next_clicked(self) -> None:
+        if not self._current_item:
+            return
+        self._force_save()
+        if not self._current_item.is_labeled() and self._ask_skip() == QMessageBox.No:
+            return
+        self.next_requested.emit()
+        
+    def _on_delete_clicked(self) -> None:
+        if not self._current_item or not self._current_item.is_labeled():
+            return
+        try:
+            self._labeling_service.clear_label(
+                self._current_item, self._current_project
+            )
+            self._has_unsaved_changes = True
+            self._schedule_auto_save()
+            self._update_item_status()
+            self.item_labeled.emit(self._current_item)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error",  str(e))
+        
+        finally:
+            self.label_panel.label_list.setFocus()
+            
+    def _on_back_clicked(self) -> None:
+        self._on_before_back()
+        self._force_save()
+        if self._current_item and not self._current_item.is_labeled():
+            noun = self.item_type_label()
+            reply = QMessageBox.question(
+                self, f"{noun.capitalize()} sin etiquetar",
+                f"Este {noun} no tiene etiqueta. ¿Seguro que deseas regresar?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+        self.back_requested.emit()
+        
+    def _on_before_back(self) -> None:
+        """Hook called at the start of _on_back_clicked (e.g. stop video)"""
+        ...
+        
+    def _assign_label_by_index(self, index: int) -> None:
+        if 0 <= index < len(self.available_labels):
+            self._on_label_assigned(self.available_labels[index])
+    
+    def _ask_skip(self) -> int:
+        noun = self.item_type_label()
+        return QMessageBox.question(
+            self, f"{noun.capitalize()} sin etiquetar",
+            f"Este {noun} aún no tiene etiqueta. ¿Deseas saltarlo?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
