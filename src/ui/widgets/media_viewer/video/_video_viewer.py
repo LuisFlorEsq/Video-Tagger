@@ -56,7 +56,7 @@ class VideoViewer(BaseViewer):
         if not Path(item.video_path).exists():
             QMessageBox.critical(
                 self, "Archivo no encontrado",
-                f"No se encontró el archivo de video:\{item.video_path}"
+                f"No se encontró el archivo de video:\n{item.video_path}"
             )
             return
         self.video_player.load_video(item.video_path)

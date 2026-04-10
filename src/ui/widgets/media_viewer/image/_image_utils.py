@@ -4,10 +4,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QSizePolicy
 )
-from src.domain.models.media.media_item import MediaItem
-from src.domain.models.media.image_item import ImageItem
 
-class _ZoomableImageLabel(QLabel):
+class ZoomableImageLabel(QLabel):
     """QLabel that supports Ctrl + Wheel zoom."""
     
     def __init__(self, text, parent = None) -> None:
