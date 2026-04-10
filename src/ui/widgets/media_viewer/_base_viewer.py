@@ -29,7 +29,7 @@ from src.ui.styles import (
     chip_labeled, chip_unlabeled,
     text_breadcrumb, text_section_header
 )
-from src.ui.widgets.fragment_viewer._label_panel import LabelPanel
+from ._label_panel import LabelPanel
 
 
 
