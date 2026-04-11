@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
@@ -11,7 +10,6 @@ from PySide6.QtWidgets import (
     QSlider,
     QStyle
 )
-
 from src.ui.styles import AppTheme, btn_primary
 
 
