@@ -497,14 +497,31 @@ def media_card(accent: str) -> str:
     t = AppTheme
     return f"""
         QWidget {{
-        background-color: {AppTheme.BG_SUBTLE};"
-        border: 1px solid {AppTheme.BORDER};"
-        border-radius: {AppTheme.RADIUS_MD};"
+        background-color: {t.BG_SUBTLE};"
+        border: 1px solid {t.BORDER};"
+        border-radius: {t.RADIUS_MD};"
         }}
         
         QWidget:hover {{
-        background-color: {AppTheme.BG_APP};"
+        background-color: {t.BG_APP};"
         border-color: {accent};"
+        }}
+        """
+        
+# ─────────────────────────────────────────────
+# Text viewer related styles
+# ─────────────────────────────────────────────
+
+def editor() -> str:
+    t = AppTheme
+    return f"""
+        QPlainTextEdit {{
+            background-color: {t.BG_PANEL};"
+            color: {t.TEXT_PRIMARY};"
+            border: none;"
+            font-family: 'Consolas', 'Menlo', monospace;"
+            font-size: {t.FONT_BASE};"
+            padding: 16px;"
         }}
         """
 
@@ -583,17 +600,25 @@ def text_success_bold() -> str:
 def text_label() -> str:
     t = AppTheme
     return (
-        f"font-size: {AppTheme.FONT_BASE}; font-weight: bold;" 
-        f"color: {AppTheme.TEXT_PRIMARY}; background: transparent; border: none;"
-        )
-    
+        f"font-size: {t.FONT_BASE}; font-weight: bold;" 
+        f"color: {t.TEXT_PRIMARY}; background: transparent; border: none;"
+    )
 
 def text_desc() -> str:
     t = AppTheme
     return (
-        f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY};" 
+        f"font-size: {t.FONT_SM}; color: {t.TEXT_SECONDARY};" 
         f"background: transparent; border: none;"
         )
+    
+def text_wc() -> str:
+    t = AppTheme
+    return (
+        f"background-color: {AppTheme.BG_SUBTLE}; "
+        f"border-top: 1px solid {AppTheme.BORDER}; "
+        f"padding: 4px 16px; font-size: {AppTheme.FONT_XS}; "
+        f"color: {AppTheme.TEXT_MUTED};"
+    )
 
 def divider() -> str:
     """Thin horizontal rule as a QFrame or QWidget background."""
