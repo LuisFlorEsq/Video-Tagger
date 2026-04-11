@@ -8,11 +8,13 @@ from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
 from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.project import Project
- 
-from src.ui.widgets.fragment_viewer import FragmentViewer
-from src.ui.widgets.media_viewer import ImageViewer        
-from src.ui.widgets.media_viewer import AudioViewer         
-from src.ui.widgets.media_viewer import TextViewer
+
+from src.ui.widgets.media_viewer import (
+    ImageViewer,
+    AudioViewer,
+    TextViewer,
+    VideoViewer
+)
 
 
 class ViewerStack(QStackedWidget):
@@ -55,7 +57,7 @@ class ViewerStack(QStackedWidget):
             available_labels = self._available_labels or None
         )
         
-        video_viewer = FragmentViewer(**kwargs)
+        video_viewer = VideoViewer(**kwargs)
         image_viewer = ImageViewer(**kwargs)
         audio_viewer = AudioViewer(**kwargs)
         text_viewer = TextViewer(**kwargs)
@@ -71,8 +73,8 @@ class ViewerStack(QStackedWidget):
             self._wire_viewer(viewer)
             
         # Start on video viewer
-        self.setCurrentWidget(video_viewer)
         self._current_viewer = video_viewer
+        self.setCurrentWidget(video_viewer)
         
         
     def _wire_viewer(self, viewer) -> None:

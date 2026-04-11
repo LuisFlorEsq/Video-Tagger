@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QFileDialog, QMessageBox, QStackedWidget
@@ -11,7 +10,7 @@ from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 
 from src.domain.models.project import Project
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.media_item import MediaItem, MediaType
 
 from src.ui.helpers.dividers import make_vline
 from src.ui.styles import (
@@ -19,7 +18,8 @@ from src.ui.styles import (
     topbar_panel, chip_warning, chip_info,
     text_title, text_secondary, text_breadcrumb,
 )
-from src.ui.widgets.label_config_dialog import LabelConfigDialog
+from src.ui.widgets.dialogs.label_config_dialog import LabelConfigDialog
+from src.ui.widgets.dialogs.media_type_dialog import MediaTypeDialog
 from src.core.config import VIEW_WELCOME, VIEW_LIST
 
 from ._sidebar import SidebarPanel
@@ -33,7 +33,7 @@ class ProjectBrowser(QWidget):
     """
 
     project_loaded    = Signal(Project)
-    fragment_selected = Signal(Fragment)
+    fragment_selected = Signal(object)
     project_closed    = Signal()
     labels_changed    = Signal(list)
 
@@ -86,6 +86,12 @@ class ProjectBrowser(QWidget):
         tb.addWidget(self.topbar_project_label)
 
         tb.addStretch()
+        
+        # --- MediaType badge, shown when a project is loaded
+        self._type_badge = QLabel("")
+        self._type_badge.setStyleSheet(chip_info())
+        self._type_badge.setVisible(False)
+        tb.addWidget(self._type_badge)
 
         self.sync_badge = QLabel("")
         self.sync_badge.setStyleSheet(chip_warning())
@@ -155,7 +161,7 @@ class ProjectBrowser(QWidget):
 
         # Switch to fragment viewer (fragment selected)
         self._fragment_list.fragment_activated.connect(
-            lambda f: self.fragment_selected.emit(f)
+            lambda item: self.fragment_selected.emit(item)
         )
 
     # ─────────────────────────────────────────────
@@ -179,11 +185,20 @@ class ProjectBrowser(QWidget):
     # ─────────────────────────────────────────────
 
     def _on_new_project_clicked(self):
+        
+        # Step 1: Ask which media type
+        dlg = MediaTypeDialog(parent=self)
+        if dlg.exec() != dlg.Accepted:
+            return
+        media_type = dlg.chosen
+        
+        # Step 2: Pick the folder
         folder_path = self._select_folder()
         if not folder_path:
             return
         try:
-            project = self._project_service.create_project_from_folder(folder_path)
+            project = self._project_service.create_project_from_folder(
+                folder_path=folder_path, media_type=media_type)
             self._load_project(project)
             self.project_loaded.emit(project)
         except ValueError as e:
@@ -234,7 +249,7 @@ class ProjectBrowser(QWidget):
             self._show_error("Sin proyecto", "No hay proyecto cargado para exportar.")
             return
         if self._current_project.get_total_count() == 0:
-            self._show_error("Sin datos", "No hay fragmentos para exportar.")
+            self._show_error("Sin datos", "No hay elementos para exportar.")
             return
         file_path = self._select_save_path(
             f"{self._current_project.name}_export.csv",
@@ -247,7 +262,7 @@ class ProjectBrowser(QWidget):
             summary = self._project_service.get_project_summary(self._current_project)
             self._show_info(
                 "Exportación exitosa",
-                f"{summary['total_fragments']} fragmentos exportados.\n"
+                f"{summary['total_fragments']} elementos exportados.\n"
                 f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}\n"
                 f"Archivo: {file_path.name}"
             )
@@ -277,6 +292,16 @@ class ProjectBrowser(QWidget):
     def _on_sync_clicked(self):
         if not self._current_project:
             return
+        
+        # TODO: Change current logic to allow new elements for each MediaType project
+        if self._current_project.media_type != MediaType.VIDEO:
+            self._show_info(
+                "No disponible",
+                "La sincronización de archivos nuevos solo está disponible "
+                "para proyectos de video."
+            )
+            return
+        
         new_videos = self._project_service.get_new_videos(self._current_project)
         if not new_videos:
             self._show_info("Sin cambios", "No hay videos nuevos para sincronizar.")
@@ -307,7 +332,8 @@ class ProjectBrowser(QWidget):
     def refresh(self):
         if self._current_project:
             self._fragment_list.refresh(self._current_project)
-            self._check_for_new_videos()
+            if self._current_project.media_type == MediaType.VIDEO:
+                self._check_for_new_videos()
             
     def set_focus(self):
         self._fragment_list.set_focus()
@@ -339,16 +365,27 @@ class ProjectBrowser(QWidget):
         self.topbar_project_label.setText(project.name)
         self.topbar_project_label.setVisible(True)
         self._topbar_sep.setVisible(True)
+        
+        # Media type badge
+        self._type_badge.setText(f"  {project.media_type.label()}  ")
+        self._type_badge.setVisible(True)
+        
         self._sidebar.show_project_state(project.name)
         
+        is_video = project.media_type == MediaType.VIDEO
+        self._sidebar.sync_btn.setVisible(is_video)
+ 
         self._stack.setCurrentIndex(VIEW_LIST)
         self._fragment_list.load(project)
-        self._check_for_new_videos()
+ 
+        if is_video:
+            self._check_for_new_videos()
 
     def _show_welcome(self):
         self.topbar_project_label.setVisible(False)
         self._topbar_sep.setVisible(False)
         self.sync_badge.setVisible(False)
+        self._type_badge.setVisible(False)
         
         self._sidebar.show_welcome_state()
         self._sidebar.set_sync_idle()
