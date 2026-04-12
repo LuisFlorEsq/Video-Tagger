@@ -14,12 +14,12 @@ from src.application.services.export_service import ExportService
 from src.application.services.navigation_service import NavigationService
 
 from src.ui.widgets.project_browser import ProjectBrowser
-from src.ui.widgets.fragment_viewer import FragmentViewer
+from src.ui.widgets.media_viewer._viewer_stack import ViewerStack
 from src.ui.styles import app_stylesheet
 from src.ui.helpers.project_formatter import format_project_progress
 
 from src.domain.models.project import Project
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.media_item import MediaItem
 
 
 class MainWindow(QMainWindow):
@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
         self._navigation_service: NavigationService = None
 
         self._project_browser: ProjectBrowser = None
-        self._fragment_viewer: FragmentViewer = None
+        self._viewer_stack: ViewerStack = None
 
         # Apply global design system to the whole application
         QApplication.instance().setStyleSheet(app_stylesheet())
@@ -78,13 +78,14 @@ class MainWindow(QMainWindow):
             project_service=self._project_service,
             export_service=self._export_service
         )
-        self._fragment_viewer = FragmentViewer(
+        
+        self._viewer_stack = ViewerStack(
             labeling_service=self._labeling_service,
             project_service=self._project_service
         )
 
         self.stacked_widget.addWidget(self._project_browser)
-        self.stacked_widget.addWidget(self._fragment_viewer)
+        self.stacked_widget.addWidget(self._viewer_stack)
 
         layout.addWidget(self.stacked_widget)
         self._safe_switch_view(VIEW_PROJECT)
@@ -143,12 +144,12 @@ class MainWindow(QMainWindow):
         self._project_browser.project_closed.connect(self._on_project_closed)
         self._project_browser.labels_changed.connect(self._on_labels_changed)
         
-        # Fragment viewer signals
-        self._fragment_viewer.fragment_labeled.connect(self._on_fragment_labeled)
-        self._fragment_viewer.prev_requested.connect(self._on_prev_requested)
-        self._fragment_viewer.next_requested.connect(self._on_next_requested)
-        self._fragment_viewer.back_requested.connect(self._show_browser)
-        self._fragment_viewer.auto_saved.connect(self._on_auto_saved)
+        # Fragment viewer signals        
+        self._viewer_stack.fragment_labeled.connect(self._on_fragment_labeled)
+        self._viewer_stack.prev_requested.connect(self._on_prev_requested)
+        self._viewer_stack.next_requested.connect(self._on_next_requested)
+        self._viewer_stack.back_requested.connect(self._show_browser)
+        self._viewer_stack.auto_saved.connect(self._on_auto_saved)
 
     # ─────────────────────────────────────────────
     # Event handlers
@@ -157,11 +158,11 @@ class MainWindow(QMainWindow):
     def _on_project_loaded(self, project: Project):
         self._reset_project_state()
         
-        self._current_project    = project
+        self._current_project = project
         self._navigation_service = NavigationService(project)
 
-        self._fragment_viewer.set_navigation_service(self._navigation_service)
-        self._fragment_viewer.update_labels(project.get_labels())
+        self._viewer_stack.set_navigation_service(self._navigation_service)
+        self._viewer_stack.update_labels(project.get_labels())
         self._safe_switch_view(VIEW_PROJECT)
         
         summary = self._project_service.get_project_summary(project=project)
@@ -171,35 +172,35 @@ class MainWindow(QMainWindow):
         self._reset_project_state()
         self._update_status("Listo, - selecciona una carpeta para iniciar")
 
-    def _on_fragment_selected(self, fragment: Fragment):
+    def _on_fragment_selected(self, item: MediaItem):
         if not self._current_project or not self._navigation_service:
             return
 
-        self._navigation_service.set_current_fragment(fragment.fragment_id)
-        self._fragment_viewer.load_fragment(fragment, self._current_project)
+        self._navigation_service.set_current_fragment(item.item_id)
+        self._viewer_stack.load_fragment(item, self._current_project)
         
         self._safe_switch_view(VIEW_FRAGMENT)
-        self._fragment_viewer.focus_label_list()
+        self._viewer_stack.focus_label_list()
         
         current, total = self._navigation_service.get_position()
         self._update_status(
-            f"{fragment.get_video_name()}  —  {current}/{total}"
+            f"{item.get_filename()}  —  {current}/{total}"
         )
 
-    def _on_fragment_labeled(self, fragment: Fragment):
+    def _on_fragment_labeled(self, item: MediaItem):
         self._project_browser.refresh()
-        if fragment.is_labeled():
+        if item.is_labeled():
             self._update_status(
-                f"Etiquetado: '{fragment.label}'  —  {fragment.fragment_id}"
+                f"Etiquetado: '{item.label}'  —  {item.item_id}"
             )
         else:
             self._update_status(
-                f"Etiqueta eliminada  —  {fragment.fragment_id}"
+                f"Etiqueta eliminada  —  {item.item_id}"
             )
             
     def _on_labels_changed(self, new_labels: list):
         """Propagate updated label set to the fragment viewer."""
-        self._fragment_viewer.update_labels(new_labels)
+        self._viewer_stack.update_labels(new_labels)
         label_count = len(new_labels)
         self._update_status(
             f"Etiquetas actualizadas — {label_count} etiqueta"
@@ -216,10 +217,10 @@ class MainWindow(QMainWindow):
         if not self._navigation_service:
             return
         
-        prev_fragment = self._navigation_service.move_to_previous()
+        prev_item = self._navigation_service.move_to_previous()
         
-        if prev_fragment:
-            QTimer.singleShot(50, lambda: self._load_fragment_safe(prev_fragment))
+        if prev_item:
+            QTimer.singleShot(50, lambda: self._load_item_safe(prev_item))
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
@@ -234,10 +235,10 @@ class MainWindow(QMainWindow):
         if not self._navigation_service:
             return
         
-        next_fragment = self._navigation_service.move_to_next()
+        next_item = self._navigation_service.move_to_next()
         
-        if next_fragment:
-            QTimer.singleShot(50, lambda: self._load_fragment_safe(next_fragment))
+        if next_item:
+            QTimer.singleShot(50, lambda: self._load_item_safe(next_item))
         else:
             summary = self._project_service.get_project_summary(self._current_project)
             QMessageBox.information(
@@ -255,12 +256,12 @@ class MainWindow(QMainWindow):
     def _reset_project_state(self):
         self._current_project = None
         self._navigation_service = None
-        self._fragment_viewer.reset()
+        self._viewer_stack.reset()
         
-    def _load_fragment_safe(self, fragment: Fragment):
-        self._fragment_viewer.load_fragment(fragment, self._current_project)
+    def _load_item_safe(self, item: MediaItem):
+        self._viewer_stack.load_fragment(item, self._current_project)
         current, total = self._navigation_service.get_position()
-        self._update_status(f"{fragment.get_video_name()}  —  {current}/{total}")
+        self._update_status(f"{item.get_filename()}  —  {current}/{total}")
 
     def _show_browser(self):
         self._project_browser.refresh()
@@ -275,7 +276,7 @@ class MainWindow(QMainWindow):
 
     def _safe_switch_view(self, index: int):
         if index != VIEW_FRAGMENT:
-            self._fragment_viewer.stop_video()
+            self._viewer_stack.stop_video()
         self.stacked_widget.setCurrentIndex(index)
     
     def _restore_contextual_status(self):
@@ -286,10 +287,10 @@ class MainWindow(QMainWindow):
             self._update_status("Listo - Selecciona una carpeta para continuar")
             return
         
-        fragment = self._fragment_viewer.get_current_fragment()
-        if fragment and self._navigation_service:
+        item = self._viewer_stack.get_current_fragment()
+        if item and self._navigation_service:
             current, total = self._navigation_service.get_position()
-            self._update_status(f"{fragment.get_video_name()}  —  {current}/{total}")
+            self._update_status(f"{item.get_filename()}  —  {current}/{total}")
             
         else:
             summary = self._project_service.get_project_summary(self._current_project)
@@ -302,12 +303,14 @@ class MainWindow(QMainWindow):
     def _show_about(self):
         QMessageBox.about(
             self, "Acerca de",
-            "<h2>Herramienta de etiquetado v1.0</h2>"
-            "<p>Etiqueta fragmentos de video para conjuntos de datos de entrenamiento.</p>"
+            "<h2>Herramienta de etiquetado v2.0</h2>"
+            "<p>Etiqueta fragmentos de video, imágenes, audio y texto "
+            "para conjuntos de datos de entrenamiento.</p>"
+            "<p><b>Tipos de medio soportados:</b> Video, Imagen, Audio, Texto</p>"
             "<p><b>Instrucciones:</b></p>"
             "<ol>"
-            "<li>Selecciona la carpeta que contenga los fragmentos</li>"
-            "<li>Haz doble clic en un fragmento para abrirlo</li>"
+            "<li>Selecciona el tipo de medio y la carpeta que contenga los archivos</li>"
+            "<li>Haz doble clic en un elemento para abrirlo</li>"
             "<li>Asigna una etiqueta desde el panel lateral</li>"
             "<li>Exporta a CSV al finalizar</li>"
             "</ol>"
@@ -323,7 +326,7 @@ class MainWindow(QMainWindow):
             if unlabeled > 0:
                 reply = QMessageBox.question(
                     self, "Trabajo incompleto",
-                    f"Tienes {unlabeled} fragmentos sin etiquetar.\n\n"
+                    f"Tienes {unlabeled} elementos sin etiquetar.\n\n"
                     f"¿Deseas guardar tu progreso antes de salir?",
                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
                 )

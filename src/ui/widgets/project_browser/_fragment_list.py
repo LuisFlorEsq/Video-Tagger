@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 
 from src.domain.models.project import Project
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.media_item import MediaItem
 
 from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
 from src.ui.helpers.project_formatter import format_project_badge, format_project_stats
@@ -21,7 +21,7 @@ from src.ui.styles import (
 class FragmentListPanel(QWidget):
     """Displays the project's fragment list with search and filter controls."""
 
-    fragment_activated = Signal(Fragment)   # user double-clicks / enters a row
+    fragment_activated = Signal(object)   # user double-clicks / enters a row
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -50,7 +50,7 @@ class FragmentListPanel(QWidget):
         filter_layout.setSpacing(8)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Buscar fragmento…")
+        self.search_input.setPlaceholderText("Buscar elemento…")
         self.search_input.setFixedHeight(30)
         self.search_input.setFixedWidth(220)
         self.search_input.setStyleSheet(input_field())
@@ -109,12 +109,13 @@ class FragmentListPanel(QWidget):
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setFixedHeight(6)
         self.progress_bar.setStyleSheet(progress_bar())
+        
         layout.addWidget(self.progress_bar)
 
-        # ── Fragment tree ─────────────────────────
+        # ── Item tree ─────────────────────────
         self.tree = QTreeWidget()
         self.tree.setColumnCount(3)
-        self.tree.setHeaderLabels(["Video", "Etiqueta", "ID"])
+        self.tree.setHeaderLabels(["Archivo", "Etiqueta", "ID"])
         self.tree.setRootIsDecorated(False)
         self.tree.setAlternatingRowColors(True)
         self.tree.setItemsExpandable(False)
@@ -203,17 +204,17 @@ class FragmentListPanel(QWidget):
         if not self._project:
             return
         
-        for fragment in self._project.fragments:
-            status = fragment.label if fragment.is_labeled() else "Sin etiquetar"
-            item = QTreeWidgetItem(
-                [fragment.get_video_name(), status, fragment.fragment_id]
+        for media_item in self._project.items:
+            status = media_item.label if media_item.is_labeled() else "Sin etiquetar"
+            tree_item = QTreeWidgetItem(
+                [media_item.get_video_name(), status, media_item.item_id]
             )
-            item.setData(0, Qt.UserRole, fragment.fragment_id)
-            item.setToolTip(0, fragment.video_path)
+            tree_item.setData(0, Qt.UserRole, media_item.item_id)
+            tree_item.setToolTip(0, media_item.file_path)
             
-            color = AppTheme.SUCCESS if fragment.is_labeled() else AppTheme.TEXT_MUTED
-            item.setForeground(1, QColor(color))
-            self.tree.addTopLevelItem(item)
+            color = AppTheme.SUCCESS if media_item.is_labeled() else AppTheme.TEXT_MUTED
+            tree_item.setForeground(1, QColor(color))
+            self.tree.addTopLevelItem(tree_item)
 
     def _update_stats(self):
         if not self._project:
@@ -241,39 +242,39 @@ class FragmentListPanel(QWidget):
         total   = self.tree.topLevelItemCount()
 
         for i in range(total):
-            item        = self.tree.topLevelItem(i)
-            fragment_id = item.data(0, Qt.UserRole)
-            fragment    = self._project.get_fragment(fragment_id)
+            tree_item = self.tree.topLevelItem(i)
+            item_id = tree_item.data(0, Qt.UserRole)
+            media_item = self._project.get_fragment(item_id)
 
-            if fragment is None:
-                item.setHidden(True)
+            if media_item is None:
+                tree_item.setHidden(True)
                 continue
 
-            if self._active_filter == FILTER_LABELED and not fragment.is_labeled():
-                item.setHidden(True)
+            if self._active_filter == FILTER_LABELED and not media_item.is_labeled():
+                tree_item.setHidden(True)
                 continue
-            if self._active_filter == FILTER_UNLABELED and fragment.is_labeled():
-                item.setHidden(True)
+            if self._active_filter == FILTER_UNLABELED and media_item.is_labeled():
+                tree_item.setHidden(True)
                 continue
 
             if search:
                 haystack = (
-                    fragment.get_video_name().lower()
-                    + (fragment.label or "").lower()
-                    + fragment.fragment_id.lower()
+                    media_item.get_video_name().lower()
+                    + (media_item.label or "").lower()
+                    + media_item.item_id.lower()
                 )
                 if search not in haystack:
-                    item.setHidden(True)
+                    tree_item.setHidden(True)
                     continue
 
-            item.setHidden(False)
+            tree_item.setHidden(False)
             visible += 1
 
         grand_total = self._project.get_total_count()
         if visible == grand_total and not search and self._active_filter == FILTER_ALL:
-            self.count_label.setText(f"{grand_total} fragmentos")
+            self.count_label.setText(f"{grand_total} elementos")
         else:
-            self.count_label.setText(f"{visible} / {grand_total} fragmentos")
+            self.count_label.setText(f"{visible} / {grand_total} elementos")
 
     def _on_filter_clicked(self, mode: str):
         self._active_filter = mode
@@ -284,14 +285,15 @@ class FragmentListPanel(QWidget):
         if not self._project:
             return
         
-        fragment = self._project.get_fragment(item.data(0, Qt.UserRole))
-        if fragment:
-            self.fragment_activated.emit(fragment)
+        media_item = self._project.get_item(item.data(0, Qt.UserRole))
+        if media_item:
+            self.fragment_activated.emit(media_item)
 
     def _update_pill_styles(self):
         for mode, btn in self._filter_btns.items():
             btn.setStyleSheet(self._pill_style(active=(mode == self._active_filter)))
 
+    # TODO: Move this method to styles file
     @staticmethod
     def _pill_style(active: bool) -> str:
         t = AppTheme
