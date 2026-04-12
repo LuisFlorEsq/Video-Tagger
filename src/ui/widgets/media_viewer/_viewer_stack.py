@@ -57,24 +57,20 @@ class ViewerStack(QStackedWidget):
             available_labels = self._available_labels or None
         )
         
-        video_viewer = VideoViewer(**kwargs)
-        image_viewer = ImageViewer(**kwargs)
-        audio_viewer = AudioViewer(**kwargs)
-        text_viewer = TextViewer(**kwargs)
-        
-        for mt, viewer in [
-            (MediaType.VIDEO, video_viewer),
-            (MediaType.IMAGE, image_viewer),
-            (MediaType.AUDIO, audio_viewer),
-            (MediaType.TEXT,  text_viewer),
+        for mt, cls in [
+            (MediaType.VIDEO, VideoViewer),
+            (MediaType.IMAGE, ImageViewer),
+            (MediaType.AUDIO, AudioViewer),
+            (MediaType.TEXT,  TextViewer),
         ]:
+            viewer = cls(**kwargs)
             self._viewers[mt] = viewer
             self.addWidget(viewer)
             self._wire_viewer(viewer)
             
         # Start on video viewer
-        self._current_viewer = video_viewer
-        self.setCurrentWidget(video_viewer)
+        self._current_viewer = self._viewers[MediaType.VIDEO]
+        self.setCurrentWidget(self._current_viewer)
         
         
     def _wire_viewer(self, viewer) -> None:
@@ -153,7 +149,7 @@ class ViewerStack(QStackedWidget):
             self._current_viewer.focus_label_list()
             
     def reset(self) -> None:
-        for viewer in self._viewers.values:
+        for viewer in self._viewers.values():
             viewer.reset()
     
     def stop_video(self) -> None:

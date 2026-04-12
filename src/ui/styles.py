@@ -4,51 +4,52 @@
 
 class AppTheme:
     # Brand
-    PRIMARY         = "#0078D4"
-    PRIMARY_HOVER   = "#106EBE"
-    PRIMARY_LIGHT   = "#EFF6FF"
+    PRIMARY = "#0078D4"
+    PRIMARY_HOVER = "#106EBE"
+    PRIMARY_LIGHT = "#EFF6FF"
 
-    SUCCESS         = "#10893E"
-    SUCCESS_HOVER   = "#0E7B38"
-    SUCCESS_LIGHT   = "#D1FAE5"
-    SUCCESS_TEXT    = "#065F46"
+    SUCCESS = "#10893E"
+    SUCCESS_HOVER = "#0E7B38"
+    SUCCESS_LIGHT = "#D1FAE5"
+    SUCCESS_TEXT = "#065F46"
 
-    WARNING         = "#F59E0B"
-    WARNING_HOVER   = "#D97706"
-    WARNING_LIGHT   = "#FEF3C7"
-    WARNING_TEXT    = "#92400E"
+    WARNING = "#F59E0B"
+    WARNING_HOVER = "#D97706"
+    WARNING_LIGHT = "#FEF3C7"
+    WARNING_TEXT = "#92400E"
 
-    DANGER          = "#D13438"
-    DANGER_HOVER    = "#B02A2E"
-    DANGER_LIGHT    = "#FEE2E2"
-    DANGER_TEXT     = "#7F1D1D"
+    DANGER = "#D13438"
+    DANGER_HOVER = "#B02A2E"
+    DANGER_LIGHT = "#FEE2E2"
+    DANGER_TEXT = "#7F1D1D"
 
-    NEUTRAL         = "#6C757D"
-    NEUTRAL_HOVER   = "#5A6268"
+    NEUTRAL = "#6C757D"
+    NEUTRAL_HOVER = "#5A6268"
 
     # Surfaces
-    BG_APP          = "#F1F3F5"
-    BG_PANEL        = "#FFFFFF"
-    BG_SUBTLE       = "#F8F9FA"
-    BORDER          = "#DEE2E6"
-    BORDER_FOCUS    = "#0078D4"
+    BG_APP = "#F1F3F5"
+    BG_PANEL = "#FFFFFF"
+    BG_SUBTLE = "#F8F9FA"
+    BORDER = "#DEE2E6"
+    BORDER_FOCUS = "#0078D4"
 
     # Text
-    TEXT_PRIMARY    = "#1A1D21"
-    TEXT_SECONDARY  = "#6C757D"
-    TEXT_MUTED      = "#ADB5BD"
+    TEXT_PRIMARY = "#1A1D21"
+    TEXT_SECONDARY = "#6C757D"
+    TEXT_MUTED = "#ADB5BD"
 
     # Shape
-    RADIUS_SM       = "4px"
-    RADIUS_MD       = "6px"
-    RADIUS_LG       = "10px"
+    RADIUS_SM = "4px"
+    RADIUS_MD = "6px"
+    RADIUS_LG = "10px"
 
     # Typography
-    FONT_XS         = "10px"
-    FONT_SM         = "11px"
-    FONT_BASE       = "13px"
-    FONT_LG         = "15px"
-    FONT_TITLE      = "20px"
+    FONT_XS = "10px"
+    FONT_SM = "11px"
+    FONT_BASE = "13px"
+    FONT_LG = "15px"
+    FONT_TITLE = "20px"
+
 
 def app_stylesheet() -> str:
     t = AppTheme
@@ -152,6 +153,8 @@ def topbar_panel() -> str:
             border-bottom: 1px solid {t.BORDER};
         }}
     """
+
+
 def progress_bar() -> str:
     t = AppTheme
     return f"""
@@ -165,7 +168,8 @@ def progress_bar() -> str:
             border-radius: 3px;
         }}
     """
-    
+
+
 def input_field() -> str:
     t = AppTheme
     return f"""
@@ -183,7 +187,8 @@ def input_field() -> str:
             background-color: {t.BG_PANEL};
         }}
     """
-    
+
+
 def info_strip() -> str:
     t = AppTheme
     return (
@@ -205,6 +210,7 @@ def sidebar_panel() -> str:
         }}
     """
 
+
 def sidebar_section_label() -> str:
     t = AppTheme
     return (
@@ -212,6 +218,7 @@ def sidebar_section_label() -> str:
         f"letter-spacing: 0.08em; text-transform: uppercase; "
         f"padding: 8px 8px 4px 8px;"
     )
+
 
 def sidebar_btn() -> str:
     t = AppTheme
@@ -234,6 +241,7 @@ def sidebar_btn() -> str:
             margin-right: 8px;
         }}
     """
+
 
 def sidebar_btn_active() -> str:
     t = AppTheme
@@ -259,6 +267,7 @@ def sidebar_btn_active() -> str:
         }}
     """
 
+
 def sidebar_btn_warning() -> str:
     t = AppTheme
     return f"""
@@ -282,7 +291,8 @@ def sidebar_btn_warning() -> str:
             margin-right: 8px;
         }}
     """
-    
+
+
 def sidebar_btn_danger() -> str:
     t = AppTheme
     return f"""
@@ -310,6 +320,7 @@ def sidebar_btn_danger() -> str:
 # Buttons
 # ─────────────────────────────────────────────
 
+
 def btn_primary() -> str:
     t = AppTheme
     return f"""
@@ -325,6 +336,7 @@ def btn_primary() -> str:
         QPushButton:hover:enabled {{ background-color: {t.PRIMARY_HOVER}; }}
         QPushButton:disabled {{ background-color: {t.BORDER}; color: {t.TEXT_MUTED}; }}
     """
+
 
 def btn_primary_sm() -> str:
     """Compact primary button for top-bar navigation."""
@@ -342,6 +354,7 @@ def btn_primary_sm() -> str:
         QPushButton:hover:enabled {{ background-color: {t.PRIMARY_HOVER}; }}
         QPushButton:disabled {{ background-color: {t.BORDER}; color: {t.TEXT_MUTED}; }}
     """
+
 
 def btn_ghost() -> str:
     """Outlined/ghost button — secondary actions."""
@@ -363,6 +376,7 @@ def btn_ghost() -> str:
         QPushButton:disabled {{ color: {t.TEXT_MUTED}; border-color: {t.BORDER}; }}
     """
 
+
 def btn_success() -> str:
     t = AppTheme
     return f"""
@@ -379,6 +393,7 @@ def btn_success() -> str:
         QPushButton:disabled {{ background-color: {t.BORDER}; color: {t.TEXT_MUTED}; }}
     """
 
+
 def btn_warning() -> str:
     t = AppTheme
     return f"""
@@ -393,6 +408,7 @@ def btn_warning() -> str:
         QPushButton:hover:enabled {{ background-color: {t.WARNING_HOVER}; }}
         QPushButton:disabled {{ background-color: #FDE68A; color: {t.TEXT_MUTED}; }}
     """
+
 
 def btn_danger() -> str:
     """Understated delete/danger action — link style, turns red on hover."""
@@ -457,6 +473,7 @@ def fragment_list() -> str:
         }}
     """
 
+
 def label_list() -> str:
     t = AppTheme
     return f"""
@@ -488,46 +505,53 @@ def label_list() -> str:
             color: {t.TEXT_MUTED};
         }}
     """
-    
+
 # ─────────────────────────────────────────────
 # Media Card
 # ─────────────────────────────────────────────
+
 
 def media_card(accent: str) -> str:
     t = AppTheme
     return f"""
         QWidget {{
-        background-color: {t.BG_SUBTLE};"
-        border: 1px solid {t.BORDER};"
-        border-radius: {t.RADIUS_MD};"
+        background-color: {t.BG_SUBTLE};
+        border: 1px solid {t.BORDER};
+        border-radius: {t.RADIUS_MD};
         }}
         
         QWidget:hover {{
-        background-color: {t.BG_APP};"
-        border-color: {accent};"
+        background-color: {t.BG_APP};
+        border-color: {accent};
         }}
         """
-        
+
+
+def radio() -> str:
+    ...
+
 # ─────────────────────────────────────────────
 # Text viewer related styles
 # ─────────────────────────────────────────────
+
 
 def editor() -> str:
     t = AppTheme
     return f"""
         QPlainTextEdit {{
-            background-color: {t.BG_PANEL};"
-            color: {t.TEXT_PRIMARY};"
-            border: none;"
-            font-family: 'Consolas', 'Menlo', monospace;"
+            background-color: {t.BG_PANEL};
+            color: {t.TEXT_PRIMARY};
+            border: none;
+            font-family: 'Consolas', 'Menlo', 'monospace';
             font-size: {t.FONT_BASE};"
-            padding: 16px;"
+            padding: 16px;
         }}
         """
 
 # ─────────────────────────────────────────────
 # Info / status chips (used on QLabel)
 # ─────────────────────────────────────────────
+
 
 def chip_labeled() -> str:
     t = AppTheme
@@ -537,6 +561,7 @@ def chip_labeled() -> str:
         f"color: {t.SUCCESS_TEXT};"
     )
 
+
 def chip_unlabeled() -> str:
     t = AppTheme
     return (
@@ -545,6 +570,7 @@ def chip_unlabeled() -> str:
         f"font-size: {t.FONT_SM}; color: {t.TEXT_MUTED};"
     )
 
+
 def chip_warning() -> str:
     t = AppTheme
     return (
@@ -552,6 +578,7 @@ def chip_warning() -> str:
         f"border-radius: 10px; font-size: {t.FONT_SM}; font-weight: bold; "
         f"color: {t.WARNING_TEXT};"
     )
+
 
 def chip_info() -> str:
     t = AppTheme
@@ -565,9 +592,11 @@ def chip_info() -> str:
 # Text helpers (used on QLabel)
 # ─────────────────────────────────────────────
 
+
 def text_title() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_TITLE}; font-weight: bold; color: {t.TEXT_PRIMARY};"
+
 
 def text_section_header() -> str:
     t = AppTheme
@@ -576,21 +605,26 @@ def text_section_header() -> str:
         f"letter-spacing: 0.08em; text-transform: uppercase;"
     )
 
+
 def text_body() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_BASE}; color: {t.TEXT_PRIMARY};"
+
 
 def text_secondary() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_SM}; color: {t.TEXT_SECONDARY};"
 
+
 def text_muted() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_SM}; color: {t.TEXT_MUTED};"
 
+
 def text_breadcrumb() -> str:
     t = AppTheme
     return f"font-size: {t.FONT_BASE}; color: {t.TEXT_MUTED};"
+
 
 def text_success_bold() -> str:
     t = AppTheme
@@ -600,17 +634,19 @@ def text_success_bold() -> str:
 def text_label() -> str:
     t = AppTheme
     return (
-        f"font-size: {t.FONT_BASE}; font-weight: bold;" 
+        f"font-size: {t.FONT_BASE}; font-weight: bold;"
         f"color: {t.TEXT_PRIMARY}; background: transparent; border: none;"
     )
+
 
 def text_desc() -> str:
     t = AppTheme
     return (
-        f"font-size: {t.FONT_SM}; color: {t.TEXT_SECONDARY};" 
+        f"font-size: {t.FONT_SM}; color: {t.TEXT_SECONDARY};"
         f"background: transparent; border: none;"
-        )
-    
+    )
+
+
 def text_wc() -> str:
     t = AppTheme
     return (
@@ -619,6 +655,7 @@ def text_wc() -> str:
         f"padding: 4px 16px; font-size: {AppTheme.FONT_XS}; "
         f"color: {AppTheme.TEXT_MUTED};"
     )
+
 
 def divider() -> str:
     """Thin horizontal rule as a QFrame or QWidget background."""

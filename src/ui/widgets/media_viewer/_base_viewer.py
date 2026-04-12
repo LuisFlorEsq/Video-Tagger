@@ -50,7 +50,7 @@ class BaseViewer(QWidget):
         self,
         labeling_service: LabelingService,
         project_service: ProjectService,
-        available_labels: list = None,
+        available_labels: list | None = None,
         parent = None
     ) -> None:
         
@@ -58,7 +58,7 @@ class BaseViewer(QWidget):
         
         self._labeling_service = labeling_service
         self._project_service = project_service
-        self._navigation_service: NavigationService = None
+        self._navigation_service: NavigationService | None = None
         
         self._current_item: MediaItem | None = None
         self._current_project: Project | None = None
@@ -128,10 +128,15 @@ class BaseViewer(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-
-        root.addWidget(self._build_topbar())
+        
+        # Construct each widget
+        body_widget = self._build_body()
+        topbar_widget = self._build_topbar()
+        
+        root.addWidget(topbar_widget)
         root.addWidget(make_hline())
         root.addWidget(self._build_body(), stretch=1)
+        root.addWidget(body_widget, stretch=1)
     
     def _build_topbar(self) -> QWidget:
         topbar = QWidget()
@@ -534,7 +539,7 @@ class BaseViewer(QWidget):
         
         self._auto_save_timer.stop()
         self._force_save()
-        self._on_reset()
+        self.on_reset()
         
         # Clean class attributes
         self._current_item = None

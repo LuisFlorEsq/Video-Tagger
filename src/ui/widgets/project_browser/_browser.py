@@ -1,7 +1,7 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QFileDialog, QMessageBox, QStackedWidget
+    QLabel, QFileDialog, QMessageBox, QStackedWidget, QDialog
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction
@@ -32,10 +32,10 @@ class ProjectBrowser(QWidget):
     Business logic delegated to services (SRP + DIP).
     """
 
-    project_loaded    = Signal(Project)
+    project_loaded = Signal(Project)
     fragment_selected = Signal(object)
-    project_closed    = Signal()
-    labels_changed    = Signal(list)
+    project_closed = Signal()
+    labels_changed = Signal(list)
 
     def __init__(
         self,
@@ -44,8 +44,8 @@ class ProjectBrowser(QWidget):
         parent=None
     ):
         super().__init__(parent)
-        self._project_service  = project_service
-        self._export_service   = export_service
+        self._project_service = project_service
+        self._export_service = export_service
         self._current_project: Project = None
 
         self._init_ui()
@@ -86,7 +86,7 @@ class ProjectBrowser(QWidget):
         tb.addWidget(self.topbar_project_label)
 
         tb.addStretch()
-        
+
         # --- MediaType badge, shown when a project is loaded
         self._type_badge = QLabel("")
         self._type_badge.setStyleSheet(chip_info())
@@ -133,7 +133,7 @@ class ProjectBrowser(QWidget):
 
         self._fragment_list = FragmentListPanel()
 
-        self._stack.addWidget(welcome)             
+        self._stack.addWidget(welcome)
         self._stack.addWidget(self._fragment_list)
 
         body_layout.addWidget(self._stack, stretch=1)
@@ -144,17 +144,17 @@ class ProjectBrowser(QWidget):
     # ─────────────────────────────────────────────
 
     def _connect_signals(self):
-        
+
         s = self._sidebar
         # Project Selection
         s.new_project_btn.clicked.connect(self._on_new_project_clicked)
         s.load_project_btn.clicked.connect(self._on_load_project_clicked)
-        
+
         # Project management
         s.save_project_btn.clicked.connect(self._on_save_clicked)
         s.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
         s.config_labels_btn.clicked.connect(self._on_config_labels_clicked)
-        
+
         # Sync new videos and return to Main Window
         s.sync_btn.clicked.connect(self._on_sync_clicked)
         s.back_btn.clicked.connect(self._on_back_clicked)
@@ -185,13 +185,13 @@ class ProjectBrowser(QWidget):
     # ─────────────────────────────────────────────
 
     def _on_new_project_clicked(self):
-        
+
         # Step 1: Ask which media type
         dlg = MediaTypeDialog(parent=self)
-        if dlg.exec() != dlg.Accepted:
+        if dlg.exec() != QDialog.Accepted:
             return
         media_type = dlg.chosen
-        
+
         # Step 2: Pick the folder
         folder_path = self._select_folder()
         if not folder_path:
@@ -204,7 +204,8 @@ class ProjectBrowser(QWidget):
         except ValueError as e:
             self._show_error("Error al crear proyecto", str(e))
         except Exception as e:
-            self._show_error("Error inesperado", f"No se pudo crear el proyecto:\n{str(e)}")
+            self._show_error("Error inesperado",
+                             f"No se pudo crear el proyecto:\n{str(e)}")
 
     def _on_load_project_clicked(self):
         file_path = self._select_project_file()
@@ -217,7 +218,8 @@ class ProjectBrowser(QWidget):
         except ValueError as e:
             self._show_error("No se pudo cargar el proyecto", str(e))
         except Exception as e:
-            self._show_error("Error inesperado", f"No se pudo cargar el proyecto:\n{str(e)}")
+            self._show_error("Error inesperado",
+                             f"No se pudo cargar el proyecto:\n{str(e)}")
 
     def _on_back_clicked(self):
         self._current_project = None
@@ -233,8 +235,10 @@ class ProjectBrowser(QWidget):
         if not file_path:
             return
         try:
-            self._project_service.save_project(self._current_project, file_path)
-            summary = self._project_service.get_project_summary(self._current_project)
+            self._project_service.save_project(
+                self._current_project, file_path)
+            summary = self._project_service.get_project_summary(
+                self._current_project)
             self._show_info(
                 "Proyecto guardado",
                 f"Guardado correctamente.\n\n"
@@ -246,7 +250,8 @@ class ProjectBrowser(QWidget):
 
     def _on_export_csv_clicked(self):
         if not self._current_project:
-            self._show_error("Sin proyecto", "No hay proyecto cargado para exportar.")
+            self._show_error(
+                "Sin proyecto", "No hay proyecto cargado para exportar.")
             return
         if self._current_project.get_total_count() == 0:
             self._show_error("Sin datos", "No hay elementos para exportar.")
@@ -258,8 +263,10 @@ class ProjectBrowser(QWidget):
         if not file_path:
             return
         try:
-            self._export_service.export(self._current_project, file_path, 'csv')
-            summary = self._project_service.get_project_summary(self._current_project)
+            self._export_service.export(
+                self._current_project, file_path, 'csv')
+            summary = self._project_service.get_project_summary(
+                self._current_project)
             self._show_info(
                 "Exportación exitosa",
                 f"{summary['total_fragments']} elementos exportados.\n"
@@ -267,7 +274,8 @@ class ProjectBrowser(QWidget):
                 f"Archivo: {file_path.name}"
             )
         except Exception as e:
-            self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(e)}")
+            self._show_error("Error al exportar",
+                             f"No se pudo exportar a CSV:\n{str(e)}")
 
     def _on_config_labels_clicked(self):
         if not self._current_project:
@@ -292,7 +300,7 @@ class ProjectBrowser(QWidget):
     def _on_sync_clicked(self):
         if not self._current_project:
             return
-        
+
         # TODO: Change current logic to allow new elements for each MediaType project
         if self._current_project.media_type != MediaType.VIDEO:
             self._show_info(
@@ -301,10 +309,12 @@ class ProjectBrowser(QWidget):
                 "para proyectos de video."
             )
             return
-        
-        new_videos = self._project_service.get_new_videos(self._current_project)
+
+        new_videos = self._project_service.get_new_videos(
+            self._current_project)
         if not new_videos:
-            self._show_info("Sin cambios", "No hay videos nuevos para sincronizar.")
+            self._show_info(
+                "Sin cambios", "No hay videos nuevos para sincronizar.")
             return
         reply = QMessageBox.question(
             self, "Sincronizar videos",
@@ -334,7 +344,7 @@ class ProjectBrowser(QWidget):
             self._fragment_list.refresh(self._current_project)
             if self._current_project.media_type == MediaType.VIDEO:
                 self._check_for_new_videos()
-            
+
     def set_focus(self):
         self._fragment_list.set_focus()
 
@@ -365,19 +375,19 @@ class ProjectBrowser(QWidget):
         self.topbar_project_label.setText(project.name)
         self.topbar_project_label.setVisible(True)
         self._topbar_sep.setVisible(True)
-        
+
         # Media type badge
         self._type_badge.setText(f"  {project.media_type.label()}  ")
         self._type_badge.setVisible(True)
-        
+
         self._sidebar.show_project_state(project.name)
-        
+
         is_video = project.media_type == MediaType.VIDEO
         self._sidebar.sync_btn.setVisible(is_video)
- 
+
         self._stack.setCurrentIndex(VIEW_LIST)
         self._fragment_list.load(project)
- 
+
         if is_video:
             self._check_for_new_videos()
 
@@ -386,7 +396,7 @@ class ProjectBrowser(QWidget):
         self._topbar_sep.setVisible(False)
         self.sync_badge.setVisible(False)
         self._type_badge.setVisible(False)
-        
+
         self._sidebar.show_welcome_state()
         self._sidebar.set_sync_idle()
         self._fragment_list.reset()
@@ -395,7 +405,8 @@ class ProjectBrowser(QWidget):
     def _check_for_new_videos(self):
         if not self._current_project:
             return
-        new_videos = self._project_service.get_new_videos(self._current_project)
+        new_videos = self._project_service.get_new_videos(
+            self._current_project)
         if new_videos:
             self._sidebar.set_sync_pending(len(new_videos))
             self.sync_badge.setText(f"{len(new_videos)} videos nuevos")
@@ -410,7 +421,7 @@ class ProjectBrowser(QWidget):
 
     def _select_folder(self) -> Path:
         folder = QFileDialog.getExistingDirectory(
-            self, "Selecciona la carpeta con los fragmentos",
+            self, "Selecciona la carpeta raiz (proyecto)",
             "", QFileDialog.ShowDirsOnly
         )
         return Path(folder) if folder else None

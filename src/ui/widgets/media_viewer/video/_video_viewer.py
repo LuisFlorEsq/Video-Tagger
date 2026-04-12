@@ -21,7 +21,7 @@ class VideoViewer(BaseViewer):
     # Backward-compatible signal alias used by ViewerStack
     @property
     def fragment_labeled(self):
-        return self.item_labeled()
+        return self.item_labeled
     
     def item_type_label(self) -> str:
         return "fragmento"
