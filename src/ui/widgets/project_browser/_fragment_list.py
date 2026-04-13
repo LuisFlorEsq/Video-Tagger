@@ -209,7 +209,7 @@ class FragmentListPanel(QWidget):
         for media_item in self._project.items:
             status = media_item.label if media_item.is_labeled() else "Sin etiquetar"
             tree_item = QTreeWidgetItem(
-                [media_item.get_video_name(), status, media_item.item_id]
+                [media_item.get_filename(), status, media_item.item_id]
             )
             tree_item.setData(0, Qt.UserRole, media_item.item_id)
             tree_item.setToolTip(0, media_item.file_path)
@@ -246,7 +246,7 @@ class FragmentListPanel(QWidget):
         for i in range(total):
             tree_item = self.tree.topLevelItem(i)
             item_id = tree_item.data(0, Qt.UserRole)
-            media_item = self._project.get_fragment(item_id)
+            media_item = self._project.get_item(item_id)
 
             if media_item is None:
                 tree_item.setHidden(True)
@@ -261,7 +261,7 @@ class FragmentListPanel(QWidget):
 
             if search:
                 haystack = (
-                    media_item.get_video_name().lower()
+                    media_item.get_filename().lower()
                     + (media_item.label or "").lower()
                     + media_item.item_id.lower()
                 )

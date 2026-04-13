@@ -25,11 +25,11 @@ class ZoomableImageLabel(QLabel):
     def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.ControlModifier:
             factor = 1.15 if event.angleDelta().y() > 0 else (1 / 1.15)
-            self._zoom = max(0.1, min(self._zoom * factor), 8.0)
+            self._zoom = max(0.1, min(self._zoom * factor, 8.0))
             self._render()
             event.accept()
         else:
-            super.wheelEvent(event)
+            super().wheelEvent(event)
 
     def adjust_zoom(self, factor: float) -> None:
         self._zoom = max(0.1, min(self._zoom * factor, 8.0))

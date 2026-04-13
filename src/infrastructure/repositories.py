@@ -30,11 +30,11 @@ class JsonProjectRepository(IProjectRepository):
             'save_path': project.save_path,
             'media_type': project.media_type.value,
             'custom_labels': project.custom_labels,
-            'items': [self._item_to_dic(it) for it in project.items],
+            'items': [self._item_to_dict(it) for it in project.items],
             'created_at': project.created_at.isoformat(),
             'modified_at': project.modified_at.isoformat()
         }
-        
+                
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     

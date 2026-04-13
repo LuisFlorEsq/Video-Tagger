@@ -515,7 +515,7 @@ class BaseViewer(QWidget):
         self._update_position_display()
         self.label_panel.set_enabled(True)
 
-        self._on_item_loaded(item, project)
+        self.on_item_loaded(item, project)
 
     def set_navigation_service(self, nav: NavigationService) -> None:
         self._navigation_service = nav
