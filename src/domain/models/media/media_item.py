@@ -1,4 +1,5 @@
 from enum import Enum
+from os import PathLike
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
@@ -66,9 +67,15 @@ class MediaItem:
     def __post_init__(self) -> None:
         if not self.item_id or not self.item_id.strip():
             raise ValueError("item_id cannot be empty")
-        
+
+        self.file_path = self._normalize_path(self.file_path)
+
         if not self.file_path or not self.file_path.strip():
             raise ValueError("file_path cannot be empty")
+
+    @staticmethod
+    def _normalize_path(path: str | PathLike[str]) -> str:
+        return str(path)
         
     # ----- Label operations ------
     

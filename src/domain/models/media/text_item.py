@@ -31,6 +31,16 @@ class TextItem(MediaItem):
         modified_at: Optional[datetime] = None,
     ) -> None:
         
+        super().__init__(
+            item_id=item_id,
+            file_path=file_path,
+            media_type=MediaType.TEXT,
+            label=label,
+            notes=notes,
+            created_at=created_at or datetime.now(),
+            modified_at=modified_at or datetime.now()
+        )
+        
         self.content = content
         self.encoding = encoding
         

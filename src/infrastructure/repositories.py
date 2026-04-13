@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any
 
+from src.core.logger import logger
 from src.domain.interfaces import IProjectRepository
 
 from src.domain.models.media.media_item import MediaItem, MediaType
@@ -22,21 +23,29 @@ class JsonProjectRepository(IProjectRepository):
     
     def save(self, project: Project, file_path: Path) -> None:
         """Save project to JSON file."""
-        project.set_save_path(file_path)
-        
-        data = {
-            'name': project.name,
-            'folder_path': project.folder_path,
-            'save_path': project.save_path,
-            'media_type': project.media_type.value,
-            'custom_labels': project.custom_labels,
-            'items': [self._item_to_dict(it) for it in project.items],
-            'created_at': project.created_at.isoformat(),
-            'modified_at': project.modified_at.isoformat()
-        }
+        try:
+            logger.info(f"Iniciando guardado de proyecto: {project.name} en {file_path}")
+            project.set_save_path(file_path)
+            
+            data = {
+                'name': project.name,
+                'folder_path': project.folder_path,
+                'save_path': project.save_path,
+                'media_type': project.media_type.value,
+                'custom_labels': project.custom_labels,
+                'items': [self._item_to_dict(it) for it in project.items],
+                'created_at': project.created_at.isoformat(),
+                'modified_at': project.modified_at.isoformat()
+            }
                 
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                
+            logger.info(f"Proyecto '{project.name}' guardado exitosamente.")
+            
+        except Exception as e:
+            logger.error(f"Error crítico al guardar proyecto {project.name}: {str(e)}", exc_info=True)
+            raise
     
     def load(self, file_path: Path) -> Project:
         """Load project from JSON file."""
@@ -146,6 +155,7 @@ class JsonProjectRepository(IProjectRepository):
     
     @staticmethod
     def _fragment_extra(f: Fragment) -> dict:
+    
         return {
             "fragment_id": f.fragment_id,
             "video_path":  f.video_path,

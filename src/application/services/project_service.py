@@ -57,7 +57,7 @@ class ProjectService:
         
         project = Project(
             name = folder_path.name,
-            folder_path = folder_path,
+            folder_path = str(folder_path),
             media_type= MediaType.VIDEO
         )
         
@@ -78,7 +78,6 @@ class ProjectService:
     def save_project(self, project: Project, file_path: Path) -> None:
         """Save a project to file."""
         self._repository.save(project, file_path)
-        print("Proyecto guardado")
     
     def auto_save_project(self, project: Project) -> bool:
         """

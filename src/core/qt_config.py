@@ -49,7 +49,7 @@ def install_qt_message_handler(verbose: bool = False):
         if not verbose:
             for suppressed in SUPPRESSED_MESSAGES:
                 if suppressed.lower() in message.lower():
-                    return  # Don't print this message
+                    return
         
         # Print important messages
         if msg_type == QtMsgType.QtDebugMsg:
@@ -63,9 +63,9 @@ def install_qt_message_handler(verbose: bool = False):
             if verbose:
                 print(f"[Qt Warning] {message}")
         elif msg_type == QtMsgType.QtCriticalMsg:
-            print(f"❌ [Qt Critical] {message}", file=sys.stderr)
+            print(f"[Qt Critical] {message}", file=sys.stderr)
         elif msg_type == QtMsgType.QtFatalMsg:
-            print(f"💀 [Qt Fatal] {message}", file=sys.stderr)
+            print(f"[Qt Fatal] {message}", file=sys.stderr)
     
     qInstallMessageHandler(message_handler)
 

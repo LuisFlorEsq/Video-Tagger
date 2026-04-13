@@ -1,4 +1,5 @@
 from datetime import datetime
+from os import PathLike
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -23,8 +24,8 @@ class Project:
             raise ValueError("Project name cannot be empty")
         
         self.name = name.strip()
-        self.folder_path = folder_path
-        self.save_path = save_path
+        self.folder_path = self._normalize_path(folder_path)
+        self.save_path = self._normalize_path(save_path)
         self.media_type = media_type
         
         self.custom_labels: List[str] = (
@@ -36,6 +37,12 @@ class Project:
         
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
+
+    @staticmethod
+    def _normalize_path(path: Optional[str | PathLike[str]]) -> Optional[str]:
+        if path is None:
+            return None
+        return str(path)
         
     # ─────────────────────────────────────────────
     # Label management
@@ -185,8 +192,8 @@ class Project:
     # Save path helpers
     # ─────────────────────────────────────────────
     
-    def set_save_path(self, save_path: Path) -> None:
-        self.save_path = str(save_path)
+    def set_save_path(self, save_path: Path | PathLike[str] | str) -> None:
+        self.save_path = self._normalize_path(save_path)
         self.modified_at = datetime.now()
         
     

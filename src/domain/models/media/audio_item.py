@@ -36,8 +36,8 @@ class AudioItem(MediaItem):
             media_type=MediaType.AUDIO,
             label=label,
             notes=notes,
-            created_at=created_at,
-            modified_at=modified_at
+            created_at=created_at or datetime.now(),
+            modified_at=modified_at or datetime.now()
         )
         
         if duration_s is not None and duration_s < 0:

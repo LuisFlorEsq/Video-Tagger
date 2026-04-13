@@ -35,8 +35,8 @@ class ImageItem(MediaItem):
             media_type=MediaType.IMAGE,
             label=label,
             notes=notes,
-            created_at=created_at,
-            modified_at=modified_at
+            created_at=created_at or datetime.now(),
+            modified_at=modified_at or datetime.now()
         )
         self.width = width
         self.height = height
