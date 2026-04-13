@@ -17,41 +17,41 @@ from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 
 class VideoViewer(BaseViewer):
     """Video fragment viewer"""
-    
+
     # Backward-compatible signal alias used by ViewerStack
     @property
     def fragment_labeled(self):
         return self.item_labeled
-    
+
     def item_type_label(self) -> str:
         return "fragmento"
-    
+
     # --- Hooks ----
     def build_media_area(self) -> QWidget:
         area = QWidget()
         area.setStyleSheet(f"background-color: {AppTheme.BG_APP};")
-        
+
         layout = QVBoxLayout(area)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
-        
+
         self.video_player = VideoPlayer()
         layout.addWidget(self.video_player, stretch=1)
-        
+
         return area
-    
+
     def _setup_extra_shortcuts(self, action_factory) -> None:
         action_factory("Space", self.video_player.toggle_playback)
-        
+
     def _handle_extra_key(self, key: int) -> bool:
         if key == Qt.Key_Space:
             self.video_player.toggle_playback()
             return True
         return False
-    
+
     def _on_before_back(self) -> None:
         self.video_player.force_stop()
-        
+
     def on_item_loaded(self, item: Fragment, project: Project) -> None:
         if not Path(item.video_path).exists():
             QMessageBox.critical(
@@ -60,34 +60,35 @@ class VideoViewer(BaseViewer):
             )
             return
         self.video_player.load_video(item.video_path)
-        
+
     def on_reset(self) -> None:
         self.video_player.force_stop()
-        
+
     def stop(self) -> None:
         self.video_player.force_stop()
-    
-    stop_video = stop # ViewerStack calls stop_video
-    
-    
+
+    stop_video = stop  # ViewerStack calls stop_video
+
     # Connect Video Player signals
+
     def _connect_base_signals(self) -> None:
         super()._connect_base_signals()
         # Signals only present on FragmentViewer
         self.video_player.ready.connect(self._on_video_ready)
         self.video_player.load_failed.connect(
-            lambda msg: QMessageBox.critical(self, "Error al cargar el video", msg)
+            lambda msg: QMessageBox.critical(
+                self, "Error al cargar el video", msg)
         )
-        
+
     def _on_video_ready(self) -> None:
         if self._current_item:
             pos = int(self._current_item.start_time * 1000)
             QTimer.singleShot(50, lambda: self.video_player.seek_position(pos))
-            
+
     # --- Backward compatible public API
     def load_fragment(self, fragment: Fragment, project: Project = None) -> None:
         """Preserved entry point called by ViewerStack for video items"""
         self.load_item(fragment, project)
-        
+
     def get_current_fragment(self) -> Fragment | None:
         return self._current_item

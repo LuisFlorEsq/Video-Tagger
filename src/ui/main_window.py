@@ -36,11 +36,11 @@ class MainWindow(QMainWindow):
     ):
         super().__init__()
 
-        self._project_service   = project_service
-        self._labeling_service  = labeling_service
-        self._export_service    = export_service
+        self._project_service = project_service
+        self._labeling_service = labeling_service
+        self._export_service = export_service
 
-        self._current_project:    Project           = None
+        self._current_project:    Project = None
         self._navigation_service: NavigationService = None
 
         self._project_browser: ProjectBrowser = None
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
     # ─────────────────────────────────────────────
 
     def _init_ui(self):
-                
+
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
             project_service=self._project_service,
             export_service=self._export_service
         )
-        
+
         self._viewer_stack = ViewerStack(
             labeling_service=self._labeling_service,
             project_service=self._project_service
@@ -102,21 +102,24 @@ class MainWindow(QMainWindow):
 
         load_action = QAction("&Cargar proyecto", self)
         load_action.setShortcut("Ctrl+O")
-        load_action.triggered.connect(self._project_browser.trigger_load_project)
+        load_action.triggered.connect(
+            self._project_browser.trigger_load_project)
         file_menu.addAction(load_action)
 
         file_menu.addSeparator()
 
         save_action = QAction("&Guardar proyecto", self)
         save_action.setShortcut("Ctrl+S")
-        save_action.triggered.connect(self._project_browser.trigger_save_project)
+        save_action.triggered.connect(
+            self._project_browser.trigger_save_project)
         file_menu.addAction(save_action)
 
         file_menu.addSeparator()
 
         export_action = QAction("&Exportar a formato CSV", self)
         export_action.setShortcut("Ctrl+E")
-        export_action.triggered.connect(self._project_browser.trigger_export_project)
+        export_action.triggered.connect(
+            self._project_browser.trigger_export_project)
         file_menu.addAction(export_action)
 
         file_menu.addSeparator()
@@ -140,11 +143,12 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         # Project signals
         self._project_browser.project_loaded.connect(self._on_project_loaded)
-        self._project_browser.fragment_selected.connect(self._on_fragment_selected)
+        self._project_browser.fragment_selected.connect(
+            self._on_fragment_selected)
         self._project_browser.project_closed.connect(self._on_project_closed)
         self._project_browser.labels_changed.connect(self._on_labels_changed)
-        
-        # Fragment viewer signals        
+
+        # Fragment viewer signals
         self._viewer_stack.fragment_labeled.connect(self._on_fragment_labeled)
         self._viewer_stack.prev_requested.connect(self._on_prev_requested)
         self._viewer_stack.next_requested.connect(self._on_next_requested)
@@ -157,17 +161,18 @@ class MainWindow(QMainWindow):
 
     def _on_project_loaded(self, project: Project):
         self._reset_project_state()
-        
+
         self._current_project = project
         self._navigation_service = NavigationService(project)
 
         self._viewer_stack.set_navigation_service(self._navigation_service)
         self._viewer_stack.update_labels(project.get_labels())
         self._safe_switch_view(VIEW_PROJECT)
-        
+
         summary = self._project_service.get_project_summary(project=project)
-        self._update_status(format_project_progress(project=project, summary=summary))
-    
+        self._update_status(format_project_progress(
+            project=project, summary=summary))
+
     def _on_project_closed(self):
         self._reset_project_state()
         self._update_status("Listo, - selecciona una carpeta para iniciar")
@@ -178,10 +183,10 @@ class MainWindow(QMainWindow):
 
         self._navigation_service.set_current_fragment(item.item_id)
         self._viewer_stack.load_fragment(item, self._current_project)
-        
+
         self._safe_switch_view(VIEW_FRAGMENT)
         self._viewer_stack.focus_label_list()
-        
+
         current, total = self._navigation_service.get_position()
         self._update_status(
             f"{item.get_filename()}  —  {current}/{total}"
@@ -197,7 +202,7 @@ class MainWindow(QMainWindow):
             self._update_status(
                 f"Etiqueta eliminada  —  {item.item_id}"
             )
-            
+
     def _on_labels_changed(self, new_labels: list):
         """Propagate updated label set to the fragment viewer."""
         self._viewer_stack.update_labels(new_labels)
@@ -208,21 +213,22 @@ class MainWindow(QMainWindow):
             f"{'s' if label_count != 1 else ''}"
         )
         QTimer.singleShot(3000, self._restore_contextual_status)
-            
+
     def _on_auto_saved(self):
         self._update_status("Guardado automaticamente")
         QTimer.singleShot(3000, self._restore_contextual_status)
-        
+
     def _on_prev_requested(self):
         if not self._navigation_service:
             return
-        
+
         prev_item = self._navigation_service.move_to_previous()
-        
+
         if prev_item:
             QTimer.singleShot(50, lambda: self._load_item_safe(prev_item))
         else:
-            summary = self._project_service.get_project_summary(self._current_project)
+            summary = self._project_service.get_project_summary(
+                self._current_project)
             QMessageBox.information(
                 self, "Inicio del proyecto",
                 f"Has llegado al inicio del proyecto.\n\n"
@@ -234,13 +240,14 @@ class MainWindow(QMainWindow):
     def _on_next_requested(self):
         if not self._navigation_service:
             return
-        
+
         next_item = self._navigation_service.move_to_next()
-        
+
         if next_item:
             QTimer.singleShot(50, lambda: self._load_item_safe(next_item))
         else:
-            summary = self._project_service.get_project_summary(self._current_project)
+            summary = self._project_service.get_project_summary(
+                self._current_project)
             QMessageBox.information(
                 self, "¡Proyecto completado!",
                 f"Has llegado al final del proyecto.\n\n"
@@ -248,16 +255,16 @@ class MainWindow(QMainWindow):
                 f"({summary['progress_percentage']:.1f}%)"
             )
             self._show_browser()
-            
+
     # ─────────────────────────────────────────────
     # Private handlers/helpers
     # ─────────────────────────────────────────────
-    
+
     def _reset_project_state(self):
         self._current_project = None
         self._navigation_service = None
         self._viewer_stack.reset()
-        
+
     def _load_item_safe(self, item: MediaItem):
         self._viewer_stack.load_fragment(item, self._current_project)
         current, total = self._navigation_service.get_position()
@@ -267,10 +274,12 @@ class MainWindow(QMainWindow):
         self._project_browser.refresh()
         self._safe_switch_view(VIEW_PROJECT)
         self._project_browser.set_focus()
-        
+
         if self._current_project:
-            summary = self._project_service.get_project_summary(self._current_project)
-            self._update_status(format_project_progress(project=self._current_project, summary=summary))
+            summary = self._project_service.get_project_summary(
+                self._current_project)
+            self._update_status(format_project_progress(
+                project=self._current_project, summary=summary))
         else:
             self._update_status("Listo.")
 
@@ -278,22 +287,24 @@ class MainWindow(QMainWindow):
         if index != VIEW_FRAGMENT:
             self._viewer_stack.stop_video()
         self.stacked_widget.setCurrentIndex(index)
-    
+
     def _restore_contextual_status(self):
         """
         Rebuild the current context message after a transient notification
         """
         if not self._current_project:
-            self._update_status("Listo - Selecciona una carpeta para continuar")
+            self._update_status(
+                "Listo - Selecciona una carpeta para continuar")
             return
-        
+
         item = self._viewer_stack.get_current_fragment()
         if item and self._navigation_service:
             current, total = self._navigation_service.get_position()
             self._update_status(f"{item.get_filename()}  —  {current}/{total}")
-            
+
         else:
-            summary = self._project_service.get_project_summary(self._current_project)
+            summary = self._project_service.get_project_summary(
+                self._current_project)
             self._update_status(
                 format_project_progress(
                     project=self._current_project, summary=summary
@@ -341,6 +352,8 @@ class MainWindow(QMainWindow):
         event.accept()
 
 # Factory function for creating MainWindow
+
+
 def create_main_window(
     project_service: ProjectService,
     labeling_service: LabelingService,
@@ -348,12 +361,12 @@ def create_main_window(
 ) -> MainWindow:
     """
     Factory function for creating MainWindow with injected dependencies.
-    
+
     Args:
         project_service: Service for project operations
         labeling_service: Service for labeling operations
         export_service: Service for export operations
-    
+
     Returns:
         Configured MainWindow instance
     """

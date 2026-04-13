@@ -15,29 +15,29 @@ from src.ui.widgets.media_viewer.audio._audio_utils import AudioPlayerWidget
 
 class AudioViewer(BaseViewer):
     """Audio clip viewer with playback controls."""
- 
+
     def item_type_label(self) -> str:
         return "audio"
- 
+
     def build_media_area(self) -> QWidget:
         self._audio_player = AudioPlayerWidget()
         return self._audio_player
- 
+
     def build_info_rows(self, info_layout: QVBoxLayout) -> None:
         self.dur_label = self._info_row("DURACIÓN", "—", info_layout)
- 
+
     def _setup_extra_shortcuts(self, action_factory) -> None:
         action_factory("Space", self._audio_player.toggle_playback)
- 
+
     def _handle_extra_key(self, key: int) -> bool:
         if key == Qt.Key_Space:
             self._audio_player.toggle_playback()
             return True
         return False
- 
+
     def _on_before_back(self) -> None:
         self._audio_player.stop()
- 
+
     def on_item_loaded(self, item: AudioItem, project: Project) -> None:
         if not Path(item.file_path).exists():
             QMessageBox.critical(
@@ -47,10 +47,10 @@ class AudioViewer(BaseViewer):
             return
         self._audio_player.load(item.file_path, item.get_filename())
         self.dur_label.setText(item.duration_label)
- 
+
     def on_reset(self) -> None:
         self._audio_player.stop()
         self.dur_label.setText("—")
- 
+
     def stop(self) -> None:
         self._audio_player.stop()

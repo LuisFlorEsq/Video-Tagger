@@ -13,7 +13,7 @@ class VideoPlayer(QWidget):
 
     ready = Signal()
     load_failed = Signal(str)
-    
+
     position_changed = Signal(int)
     duration_changed = Signal(int)
 
@@ -57,19 +57,21 @@ class VideoPlayer(QWidget):
 
         controls_layout = QHBoxLayout()
         self.play_button = QPushButton()
-        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay))
         controls_layout.addWidget(self.play_button)
-        
+
         controls_layout.addSpacing(20)
         controls_layout.addStretch()
-        
+
         layout.addLayout(controls_layout)
 
     def _connect_signals(self):
         # Video player metadata
         self.media_player.positionChanged.connect(self._on_position_changed)
         self.media_player.durationChanged.connect(self._on_duration_changed)
-        self.media_player.playbackStateChanged.connect(self._on_playback_state_changed)
+        self.media_player.playbackStateChanged.connect(
+            self._on_playback_state_changed)
 
         # Control buttons and position tracker
         self.play_button.clicked.connect(self.toggle_playback)
@@ -88,20 +90,22 @@ class VideoPlayer(QWidget):
         self.video_path = str(path)
         self._load_token += 1
 
-
         if self._media_ready_connected:
             try:
-                self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
+                self.media_player.mediaStatusChanged.disconnect(
+                    self._on_media_status_changed)
             except RuntimeError:
                 pass
             self._media_ready_connected = False
 
-        self.media_player.mediaStatusChanged.connect(self._on_media_status_changed)
+        self.media_player.mediaStatusChanged.connect(
+            self._on_media_status_changed)
         self._media_ready_connected = True
         self.media_player.setSource(QUrl.fromLocalFile(str(path.absolute())))
 
         # UI reset
-        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay))
         self.timeline_slider.setValue(0)
         self.time_label.setText("00:00 / 00:00")
 
@@ -110,10 +114,11 @@ class VideoPlayer(QWidget):
     def _on_media_status_changed(self, status):
         if status != QMediaPlayer.LoadedMedia:
             return
-        
+
         if self._media_ready_connected:
             try:
-                self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
+                self.media_player.mediaStatusChanged.disconnect(
+                    self._on_media_status_changed)
             except RuntimeError:
                 pass
             self._media_ready_connected = False
@@ -124,7 +129,8 @@ class VideoPlayer(QWidget):
         self.media_player.pause()
         self.media_player.setPosition(0)
 
-        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay))
 
         QTimer.singleShot(0, lambda: self._finalize_load(token))
 
@@ -140,10 +146,12 @@ class VideoPlayer(QWidget):
     def toggle_playback(self):
         if self.media_player.playbackState() != QMediaPlayer.PlayingState:
             self.media_player.play()
-            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
+            self.play_button.setIcon(
+                self.style().standardIcon(QStyle.SP_MediaPause))
         else:
             self.media_player.pause()
-            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+            self.play_button.setIcon(
+                self.style().standardIcon(QStyle.SP_MediaPlay))
 
     def seek_position(self, position: int):
         self.media_player.setPosition(position)
@@ -169,8 +177,9 @@ class VideoPlayer(QWidget):
 
     def _on_playback_state_changed(self, state):
         if state == QMediaPlayer.StoppedState:
-            self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-            
+            self.play_button.setIcon(
+                self.style().standardIcon(QStyle.SP_MediaPlay))
+
             if self.media_player.mediaStatus() not in (
                 QMediaPlayer.NoMedia,
                 QMediaPlayer.InvalidMedia,
@@ -188,4 +197,5 @@ class VideoPlayer(QWidget):
     def force_stop(self):
         self._load_token += 1
         self.media_player.stop()
-        self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.play_button.setIcon(
+            self.style().standardIcon(QStyle.SP_MediaPlay))

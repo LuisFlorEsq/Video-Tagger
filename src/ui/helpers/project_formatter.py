@@ -1,5 +1,6 @@
 from src.domain.models.project import Project
 
+
 def format_project_progress(project: Project, summary: dict) -> str:
     return (
         f"{project.name} — "
