@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QLabel,
@@ -13,9 +13,14 @@ class ZoomableImageLabel(QLabel):
         super().__init__(parent)
         self._pixmap_orig: QPixmap | None = None
         self._zoom = 1.0
+        self._viewport = None
         self.setAlignment(Qt.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setMinimumSize(200, 200)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setMinimumSize(1, 1)
+
+    def set_viewport(self, viewport) -> None:
+        self._viewport = viewport
+        self._viewport.installEventFilter(self)
 
     def set_pix_map(self, px: QPixmap) -> None:
         self._pixmap_orig = px
@@ -40,12 +45,38 @@ class ZoomableImageLabel(QLabel):
         if self._pixmap_orig:
             self._render()
 
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if self._pixmap_orig and self._zoom == 1.0:
+            self._render()
+
+    def eventFilter(self, watched, event) -> bool:
+        if watched is self._viewport and event.type() == QEvent.Resize:
+            if self._pixmap_orig and self._zoom == 1.0:
+                self._render()
+        return super().eventFilter(watched, event)
+
+    def _fit_scale(self) -> float:
+        if self._pixmap_orig is None or self._viewport is None:
+            return 1.0
+
+        viewport_size = self._viewport.size()
+        if viewport_size.width() <= 0 or viewport_size.height() <= 0:
+            return 1.0
+
+        width_scale = viewport_size.width() / self._pixmap_orig.width()
+        height_scale = viewport_size.height() / self._pixmap_orig.height()
+        return min(width_scale, height_scale, 1.0)
+
     def _render(self) -> None:
         if self._pixmap_orig is None:
             return
-        w = int(self._pixmap_orig.width() * self._zoom)
-        h = int(self._pixmap_orig.height() * self._zoom)
-        self.setPixmap(
-            self._pixmap_orig.scaled(
-                w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+        scale = max(0.1, self._fit_scale() * self._zoom)
+        w = max(1, int(self._pixmap_orig.width() * scale))
+        h = max(1, int(self._pixmap_orig.height() * scale))
+        scaled = self._pixmap_orig.scaled(
+            w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
+        self.setPixmap(scaled)
+        self.resize(scaled.size())

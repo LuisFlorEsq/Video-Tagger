@@ -29,13 +29,14 @@ class ImageViewer(BaseViewer):
     # --- Hooks ----
     def build_media_area(self) -> QWidget:
         self._scroll = QScrollArea()
-        self._scroll.setWidgetResizable(True)
+        self._scroll.setWidgetResizable(False)
         self._scroll.setAlignment(Qt.AlignCenter)
         self._scroll.setStyleSheet(
             f"QScrollArea {{ background-color: {AppTheme.BG_APP}; border: none; }}"
         )
 
         self._image_label = ZoomableImageLabel()
+        self._image_label.set_viewport(self._scroll.viewport())
         self._image_label.setStyleSheet(
             f"background-color: {AppTheme.BG_APP};"
         )
@@ -55,7 +56,7 @@ class ImageViewer(BaseViewer):
             ("+", 1.25, "Ampliar zoom (Ctrl++)"),
         ]:
             btn = QPushButton(text)
-            btn.setFixedSize(36 if text == "1:1" else 28, 28)
+            btn.setFixedSize(40 if text == "1:1" else 32, 32)
             btn.setStyleSheet(btn_ghost())
             btn.setToolTip(tip)
 
@@ -94,6 +95,7 @@ class ImageViewer(BaseViewer):
         if item.has_dimensions:
             self.dim_label.setText(f"{item.width} x {item.height} px")
 
-    def _on_reset(self) -> None:
+    def on_reset(self) -> None:
         self._image_label.clear()
+        self._image_label.resize(1, 1)
         self.dim_label.setText("--")
