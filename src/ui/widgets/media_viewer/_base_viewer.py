@@ -131,7 +131,6 @@ class BaseViewer(QWidget):
 
         root.addWidget(topbar_widget)
         root.addWidget(make_hline())
-        root.addWidget(self._build_body(), stretch=1)
         root.addWidget(body_widget, stretch=1)
 
     def _build_topbar(self) -> QWidget:
@@ -402,9 +401,13 @@ class BaseViewer(QWidget):
             self._labeling_service.assign_label(
                 self._current_item, self._current_project, label
             )
+            self._has_unsaved_changes = True
+            self._schedule_auto_save()
+            self._update_item_status()
+            self.item_labeled.emit(self._current_item)
 
         except ValueError as e:
-            QMessageBox(self, "No se pudo etiquetar", str(e))
+            QMessageBox.warning(self, "No se pudo etiquetar", str(e))
 
         finally:
             self.label_panel.label_list.setFocus()

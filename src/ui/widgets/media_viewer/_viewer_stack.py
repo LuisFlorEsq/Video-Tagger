@@ -111,12 +111,15 @@ class ViewerStack(QStackedWidget):
             self._current_viewer = viewer
             self.setCurrentWidget(viewer)
 
-            # Call the correct load method
-            if item.media_type == MediaType.VIDEO:
-                viewer.load_fragment(item, project)
+        if self._current_viewer is None:
+            self._current_viewer = viewer
+            self.setCurrentWidget(viewer)
 
-            else:
-                viewer.load_item(item, project)
+        # Always load the requested item, even when the active viewer stays the same.
+        if item.media_type == MediaType.VIDEO:
+            viewer.load_fragment(item, project)
+        else:
+            viewer.load_item(item, project)
 
     def set_navigation_service(self, nav: NavigationService) -> None:
         for viewer in self._viewers.values():

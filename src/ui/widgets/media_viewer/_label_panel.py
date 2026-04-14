@@ -48,6 +48,7 @@ class LabelPanel(QWidget):
         self.label_list.setStyleSheet(label_list())
         self.label_list.setMouseTracking(True)
         self.label_list.viewport().setCursor(Qt.PointingHandCursor)
+        self.label_list.itemClicked.connect(self._on_label_selected)
         self.label_list.itemActivated.connect(self._on_label_selected)
 
         layout.addWidget(self.label_list)
@@ -97,7 +98,7 @@ class LabelPanel(QWidget):
             for i in range(self.label_list.count()):
                 item = self.label_list.item(i)
                 if item.data(Qt.UserRole) == label:
-                    self.label_list.setCurrentRow(i)
+                    self.label_list.setCurrentItem(item)
                     return
         else:
             self.current_label_chip.setText("Sin etiqueta asignada")
