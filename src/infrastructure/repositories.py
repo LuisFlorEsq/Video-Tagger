@@ -24,7 +24,7 @@ class JsonProjectRepository(IProjectRepository):
     def save(self, project: Project, file_path: Path) -> None:
         """Save project to JSON file."""
         try:
-            logger.info(f"Iniciando guardado de proyecto: {project.name} en {file_path}")
+            # logger.info(f"Iniciando guardado de proyecto: {project.name} en {file_path}")
             project.set_save_path(file_path)
             
             data = {
@@ -41,7 +41,7 @@ class JsonProjectRepository(IProjectRepository):
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
                 
-            logger.info(f"Proyecto '{project.name}' guardado exitosamente.")
+            # logger.info(f"Proyecto '{project.name}' guardado exitosamente.")
             
         except Exception as e:
             logger.error(f"Error crítico al guardar proyecto {project.name}: {str(e)}", exc_info=True)
@@ -61,8 +61,8 @@ class JsonProjectRepository(IProjectRepository):
         )
         
         # ----- Media type ------
-        media_type = MediaType.from_str(data.get("media_type", "video"))  
-
+        media_type = MediaType.from_str(data.get("media_type", "video"))
+        
         project = Project(
             name=data['name'],
             folder_path=data['folder_path'],

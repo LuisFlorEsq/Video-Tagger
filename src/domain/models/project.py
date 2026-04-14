@@ -15,7 +15,7 @@ class Project:
         name: str, 
         folder_path: str,
         save_path: Optional[str] = None,
-        media_type: MediaType = MediaType.VIDEO, # Default for compatibility
+        media_type: MediaType = None,
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None,
         custom_labels: Optional[List[str]] = None

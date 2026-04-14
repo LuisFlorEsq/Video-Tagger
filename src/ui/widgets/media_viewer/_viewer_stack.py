@@ -95,11 +95,11 @@ class ViewerStack(QStackedWidget):
 
         Dispatches to the correct viewer based on item.media_type
         """
-
+        
         viewer = self._viewers.get(item.media_type)
         if viewer is None:
             viewer = self._viewers[MediaType.VIDEO]
-
+            
         # Stop the previously active viewer before switching
 
         if self._current_viewer is not None and self._current_viewer is not viewer:

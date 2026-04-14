@@ -10,9 +10,9 @@ from datetime import datetime
 # ---------------------------------------------
 
 class MediaType(Enum):
-    VIDEO = "video",
-    IMAGE = "image",
-    AUDIO = "audio",
+    VIDEO = "video"
+    IMAGE = "image"
+    AUDIO = "audio"
     TEXT = "text"
     
     @classmethod

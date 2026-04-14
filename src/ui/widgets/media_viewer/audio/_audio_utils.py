@@ -139,7 +139,7 @@ class AudioPlayerWidget(QWidget):
             self._slider.blockSignals(False)
 
             self._time_label.setText(
-                f"{self._fmt(pos)} / {self._fmt(self._player.duration())}"
+                f"{self.fmt(pos)} / {self.fmt(self._player.duration())}"
             )
 
     def _on_duration(self, dur: int) -> None:
