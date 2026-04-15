@@ -1,5 +1,5 @@
 from pathlib import Path
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QMessageBox,
@@ -13,12 +13,15 @@ from PySide6.QtWidgets import (
 from src.ui.styles import AppTheme, btn_ghost
 from src.ui.helpers.dividers import make_vline
 
+from src.core.logger import logger
 from src.domain.models.media.image_item import ImageItem
 from src.domain.models.project import Project
 
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 from src.ui.widgets.media_viewer.image._image_utils import ZoomableImageLabel
 
+from src.core.config import ICON_SIZE
+from src.core.resources import icon
 
 class ImageViewer(BaseViewer):
     """Static image viewer with Ctrl+Wheel zoom."""
@@ -51,14 +54,16 @@ class ImageViewer(BaseViewer):
         """Inject zoom controls between the breadcrumb stretch and position counter"""
 
         for text, factor, tip in [
-            ("-", 0.8,  "Reducir zoom (Ctrl+-)"),
-            ("1:1", None, "Restablecer zoom (Ctrl+0)"),
-            ("+", 1.25, "Ampliar zoom (Ctrl++)"),
+            ("zoom_out", 0.8,  "Reducir zoom (Ctrl+-)"),
+            ("reset", None, "Restablecer zoom (Ctrl+0)"),
+            ("zoom_in", 1.25, "Ampliar zoom (Ctrl++)"),
         ]:
-            btn = QPushButton(text)
-            btn.setFixedSize(40 if text == "1:1" else 32, 32)
+            btn = QPushButton("")
+            btn.setFixedSize(36, 36)
             btn.setStyleSheet(btn_ghost())
             btn.setToolTip(tip)
+            btn.setIcon(icon(f"zoom_controls/{text}.png"))
+            btn.setIconSize(QSize(*ICON_SIZE))
 
             if factor is None:
                 btn.clicked.connect(self._image_label.reset_zoom)
@@ -96,6 +101,7 @@ class ImageViewer(BaseViewer):
             self.dim_label.setText(f"{item.width} x {item.height} px")
 
     def on_reset(self) -> None:
+        # logger.debug("ImageViewer.on_reset")
         self._image_label.clear()
         self._image_label.resize(1, 1)
         self.dim_label.setText("--")

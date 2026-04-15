@@ -19,6 +19,7 @@ from src.ui.styles import (
     btn_ghost
 )
 
+from src.core.logger import logger
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.project import Project
 
@@ -122,6 +123,7 @@ class TextViewer(BaseViewer):
         self._search_input.clear()
 
     def on_reset(self) -> None:
+        # logger.debug("TextViewer.on_reset")
         self._editor.clear()
         self._wc_label.setText("")
         self._search_bar.setVisible(False)

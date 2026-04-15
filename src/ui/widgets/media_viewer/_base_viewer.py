@@ -123,7 +123,7 @@ class BaseViewer(QWidget):
     def _init_ui(self) -> None:
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        root.setSpacing(5)
 
         # Construct each widget
         body_widget = self._build_body()
@@ -143,7 +143,7 @@ class BaseViewer(QWidget):
 
         self.back_btn = QPushButton("Volver")
         self.back_btn.setStyleSheet(btn_ghost())
-        self.back_btn.setFixedHeight(30)
+        self.back_btn.setFixedHeight(28)
         self.back_btn.setIcon(icon("navigation/left.png"))
         tb.addWidget(self.back_btn)
 
@@ -169,14 +169,14 @@ class BaseViewer(QWidget):
 
         self.prev_btn = QPushButton("")
         self.prev_btn.setStyleSheet(btn_ghost())
-        self.prev_btn.setFixedSize(40, 30)
+        self.prev_btn.setFixedSize(36, 26)
         self.prev_btn.setIcon(icon("navigation/left.png"))
         self.prev_btn.setIconSize(QSize(*ICON_SIZE))
         tb.addWidget(self.prev_btn)
 
         self.next_btn = QPushButton("")
         self.next_btn.setStyleSheet(btn_primary_sm())
-        self.next_btn.setFixedSize(40, 30)
+        self.next_btn.setFixedSize(36, 26)
         self.next_btn.setIcon(icon("navigation/right.png"))
         self.next_btn.setIconSize(QSize(*ICON_SIZE))
         tb.addWidget(self.next_btn)

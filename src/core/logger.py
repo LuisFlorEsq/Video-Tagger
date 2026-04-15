@@ -17,12 +17,12 @@ def setup_logger(name: str = "labeling_app"):
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        # Log en archivo (persistente)
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
-        file_handler = logging.FileHandler(log_dir / "app.log", encoding='utf-8')
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        # # Log en archivo (persistente)
+        # log_dir = Path("logs")
+        # log_dir.mkdir(exist_ok=True)
+        # file_handler = logging.FileHandler(log_dir / "app.log", encoding='utf-8')
+        # file_handler.setFormatter(formatter)
+        # logger.addHandler(file_handler)
 
     return logger
 

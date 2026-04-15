@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
@@ -13,8 +14,8 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.logger import logger
+from src.core.resources import image
 from src.ui.styles import AppTheme, btn_primary
-
 
 class AudioPlayerWidget(QWidget):
     """
@@ -43,10 +44,22 @@ class AudioPlayerWidget(QWidget):
         # Metadata
         # -------------------------------------
 
-        self._waveform = QLabel("Music")
+        self._waveform = QLabel()
         self._waveform.setAlignment(Qt.AlignCenter)
+        waveform_pixmap = image("zoom_controls/music_notes.png")
+        
+        # Scale the pixmap to fit well inside the widget (adjust dimensions as needed)
+        if not waveform_pixmap.isNull():
+            scaled_pixmap = waveform_pixmap.scaled(
+                400, 200,
+                Qt.KeepAspectRatio, 
+                Qt.SmoothTransformation
+            )
+            self._waveform.setPixmap(scaled_pixmap)
+        else:
+            logger.warning("Waveform image could not be loaded.")
+
         self._waveform.setStyleSheet(
-            f"font-size: 64px; color: {AppTheme.BORDER}; "
             f"background-color: {AppTheme.BG_SUBTLE}; border-radius: 12px;"
         )
         self._waveform.setMinimumHeight(180)
@@ -198,7 +211,10 @@ class AudioPlayerWidget(QWidget):
         self._load_token += 1
 
         # logger.debug(
-        #     "AudioPlayerWidget.stop | new_token=%s", self._load_token
+        #     "AudioPlayerWidget.stop | token=%s | state=%s | has_source=%s",
+        #     self._load_token,
+        #     self._player.playbackState(),
+        #     self._player.source().isValid(),
         # )
 
         # Disconnect any pending status listener
@@ -211,8 +227,10 @@ class AudioPlayerWidget(QWidget):
                 pass
             self._media_ready_connected = False
 
+        self._player.pause()
         self._player.stop()
         self._player.setPosition(0)
+        self._player.setSource(QUrl())
         self._reset_ui()
 
     # -------------------------------------

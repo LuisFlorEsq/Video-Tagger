@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 
 from src.ui.styles import AppTheme
 
+from src.core.logger import logger
 from src.domain.models.fragment import Fragment
 from src.domain.models.project import Project
 
@@ -62,6 +63,7 @@ class VideoViewer(BaseViewer):
         self.video_player.load_video(item.video_path)
 
     def on_reset(self) -> None:
+        # logger.debug("VideoViewer.on_reset")
         self.video_player.force_stop()
 
     def stop(self) -> None:

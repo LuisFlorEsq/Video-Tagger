@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from src.core.config import ICONS_PATH
 
 
@@ -25,3 +25,6 @@ def resource_path(relative: str) -> str:
 # Elements specific methods
 def icon(name: str) -> QIcon:
     return QIcon(resource_path(str(ICONS_PATH / name)))
+
+def image(name:str) -> QPixmap:
+    return QPixmap(resource_path(str(ICONS_PATH / name)))

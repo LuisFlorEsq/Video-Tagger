@@ -76,13 +76,13 @@ class AudioViewer(BaseViewer):
         self.dur_label.setText(item.duration_label)
 
     def on_reset(self) -> None:
-        logger.debug("AudioViewer.on_reset")
+        # logger.debug("AudioViewer.on_reset")
         self._audio_player.stop()
         self.dur_label.setText("—")
 
     def stop(self) -> None:
-        logger.debug(
-            "AudioViewer.stop | item_id=%s",
-            getattr(self._current_item, "item_id", None),
-        )
+        # logger.debug(
+        #     "AudioViewer.stop | item_id=%s",
+        #     getattr(self._current_item, "item_id", None),
+        # )
         self._audio_player.stop()
