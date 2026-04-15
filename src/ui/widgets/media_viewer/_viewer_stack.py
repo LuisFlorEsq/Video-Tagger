@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QStackedWidget
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
+from src.core.logger import logger
 from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.project import Project
 
@@ -89,6 +90,10 @@ class ViewerStack(QStackedWidget):
 
     # --------- Public API ---------
 
+    @staticmethod
+    def _viewer_name(viewer) -> str:
+        return viewer.__class__.__name__
+
     def load_fragment(self, item: MediaItem, project: Project) -> None:
         """
         Backward compatible entry point
@@ -104,10 +109,16 @@ class ViewerStack(QStackedWidget):
 
         if self._current_viewer is not None and self._current_viewer is not viewer:
             if hasattr(self._current_viewer, "stop_video"):
-                print("Stop_video load fragment")
+                logger.debug(
+                    "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
+                    self._viewer_name(self._current_viewer),
+                )
                 self._current_viewer.stop_video()
             elif hasattr(self._current_viewer, "stop"):
-                print("Stop load fragment")
+                logger.debug(
+                    "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
+                    self._viewer_name(self._current_viewer),
+                )
                 self._current_viewer.stop()
 
             self._current_viewer = viewer
@@ -153,11 +164,23 @@ class ViewerStack(QStackedWidget):
         for viewer in self._viewers.values():
             viewer.reset()
 
-    def stop_video(self) -> None:
+    def stop_all_media(self, reason: str = "leave_fragment_view") -> None:
         for viewer in self._viewers.values():
             if hasattr(viewer, "stop_video"):
-                print("Stop video ViewStack")
+                logger.debug(
+                    "ViewerStack stopping viewer | reason=%s | viewer=%s",
+                    reason,
+                    self._viewer_name(viewer),
+                )
                 viewer.stop_video()
             elif hasattr(viewer, "stop"):
-                print("Stop ViewStack")
+                logger.debug(
+                    "ViewerStack stopping viewer | reason=%s | viewer=%s",
+                    reason,
+                    self._viewer_name(viewer),
+                )
                 viewer.stop()
+
+    def stop_video(self) -> None:
+        """Backward-compatible alias for older callers."""
+        self.stop_all_media()

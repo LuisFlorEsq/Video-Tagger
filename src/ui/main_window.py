@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         if prev_item:
             QTimer.singleShot(50, lambda: self._load_item_safe(prev_item))
         else:
-            self._viewer_stack.stop_video()
+            self._viewer_stack.stop_all_media(reason="boundary_dialog")
             summary = self._project_service.get_project_summary(
                 self._current_project)
             QMessageBox.information(
@@ -247,7 +247,7 @@ class MainWindow(QMainWindow):
         if next_item:
             QTimer.singleShot(50, lambda: self._load_item_safe(next_item))
         else:
-            self._viewer_stack.stop_video()
+            self._viewer_stack.stop_all_media(reason="boundary_dialog")
             summary = self._project_service.get_project_summary(
                 self._current_project)
             QMessageBox.information(
@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
 
     def _safe_switch_view(self, index: int):
         if index != VIEW_FRAGMENT:
-            self._viewer_stack.stop_video()
+            self._viewer_stack.stop_all_media(reason="leave_fragment_view")
         self.stacked_widget.setCurrentIndex(index)
 
     def _restore_contextual_status(self):
