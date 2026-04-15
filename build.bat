@@ -8,7 +8,7 @@ REM ─────────────────────────�
 
 set VENV_DIR=.venv
 set SPEC_FILE=app.spec
-set BUILD_LOG=build.log
+set BUILD_LOG=logs\build.log
 set OUTPUT_EXE=dist\VideoTagger\VideoTagger.exe
 
 echo.

@@ -104,8 +104,10 @@ class ViewerStack(QStackedWidget):
 
         if self._current_viewer is not None and self._current_viewer is not viewer:
             if hasattr(self._current_viewer, "stop_video"):
+                print("Stop_video load fragment")
                 self._current_viewer.stop_video()
             elif hasattr(self._current_viewer, "stop"):
+                print("Stop load fragment")
                 self._current_viewer.stop()
 
             self._current_viewer = viewer
@@ -154,6 +156,8 @@ class ViewerStack(QStackedWidget):
     def stop_video(self) -> None:
         for viewer in self._viewers.values():
             if hasattr(viewer, "stop_video"):
+                print("Stop video ViewStack")
                 viewer.stop_video()
             elif hasattr(viewer, "stop"):
+                print("Stop ViewStack")
                 viewer.stop()

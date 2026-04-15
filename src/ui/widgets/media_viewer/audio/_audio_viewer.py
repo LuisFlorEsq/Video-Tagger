@@ -1,14 +1,15 @@
 from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
-    QMessageBox
+    QMessageBox,
 )
 
+from src.core.logger import logger
 from src.domain.models.media.audio_item import AudioItem
 from src.domain.models.project import Project
-
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 from src.ui.widgets.media_viewer.audio._audio_utils import AudioPlayerWidget
 
@@ -36,21 +37,52 @@ class AudioViewer(BaseViewer):
         return False
 
     def _on_before_back(self) -> None:
+        logger.debug(
+            "AudioViewer._on_before_back | item_id=%s",
+            getattr(self._current_item, "item_id", None),
+        )
         self._audio_player.stop()
 
     def on_item_loaded(self, item: AudioItem, project: Project) -> None:
+        logger.debug(
+            "AudioViewer.on_item_loaded | item_id=%s | filename=%s | path=%s",
+            item.item_id,
+            item.get_filename(),
+            item.file_path,
+        )
         if not Path(item.file_path).exists():
+            logger.warning(
+                "AudioViewer.on_item_loaded missing file | item_id=%s | path=%s",
+                item.item_id,
+                item.file_path,
+            )
             QMessageBox.critical(
-                self, "Archivo no encontrado",
-                f"No se encontró el audio:\n{item.file_path}"
+                self,
+                "Archivo no encontrado",
+                f"No se encontró el audio:\n{item.file_path}",
             )
             return
-        self._audio_player.load(item.file_path, item.get_filename())
+
+        try:
+            self._audio_player.load(item.file_path, item.get_filename())
+        except Exception:
+            logger.exception(
+                "AudioViewer.on_item_loaded failed during player load | item_id=%s | path=%s",
+                item.item_id,
+                item.file_path,
+            )
+            raise
+
         self.dur_label.setText(item.duration_label)
 
     def on_reset(self) -> None:
+        logger.debug("AudioViewer.on_reset")
         self._audio_player.stop()
         self.dur_label.setText("—")
 
     def stop(self) -> None:
+        logger.debug(
+            "AudioViewer.stop | item_id=%s",
+            getattr(self._current_item, "item_id", None),
+        )
         self._audio_player.stop()

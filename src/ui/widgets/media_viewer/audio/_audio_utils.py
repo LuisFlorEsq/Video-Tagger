@@ -1,5 +1,6 @@
 from pathlib import Path
-from PySide6.QtCore import Qt, QUrl
+
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
     QWidget,
@@ -8,20 +9,27 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QSlider,
-    QStyle
+    QStyle,
 )
+
+from src.core.logger import logger
 from src.ui.styles import AppTheme, btn_primary
 
 
 class AudioPlayerWidget(QWidget):
-    """Self-contained audio playback controls."""
+    """
+    Self-contained audio playback controls.
+    """
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._player = QMediaPlayer()
-        self._audio = QAudioOutput()
+
+        self._player = QMediaPlayer(self)
+        self._audio = QAudioOutput(self)
         self._player.setAudioOutput(self._audio)
-        self._status_connected = False
+
+        self._load_token = 0
+        self._media_ready_connected = False
 
         self._init_ui()
         self._connect_signals()
@@ -35,7 +43,7 @@ class AudioPlayerWidget(QWidget):
         # Metadata
         # -------------------------------------
 
-        self._waveform = QLabel("Musica")
+        self._waveform = QLabel("Music")
         self._waveform.setAlignment(Qt.AlignCenter)
         self._waveform.setStyleSheet(
             f"font-size: 64px; color: {AppTheme.BORDER}; "
@@ -55,6 +63,7 @@ class AudioPlayerWidget(QWidget):
         # -------------------------------------
         # Timeline and slider
         # -------------------------------------
+
         timeline = QHBoxLayout()
         self._time_label = QLabel("00:00 / 00:00")
         self._time_label.setStyleSheet(
@@ -74,6 +83,7 @@ class AudioPlayerWidget(QWidget):
 
         controls = QHBoxLayout()
         controls.addStretch()
+
         self._play_btn = QPushButton()
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self._play_btn.setFixedSize(40, 40)
@@ -89,48 +99,94 @@ class AudioPlayerWidget(QWidget):
         self._player.durationChanged.connect(self._on_duration)
 
         self._player.playbackStateChanged.connect(self._on_state)
-        self._play_btn.clicked.connect(self.toggle_playback)
+        self._player.errorOccurred.connect(self._on_error)
 
-        self._slider.sliderReleased.connect(
-            lambda: self._player.setPosition(self._slider.value())
-        )
+        self._play_btn.clicked.connect(self.toggle_playback)
+        self._slider.sliderReleased.connect(self._on_slider_released)
 
     def load(self, file_path: str, filename: str) -> None:
         path = Path(file_path)
+
+        self._load_token += 1
+        current_token = self._load_token
+
+        # logger.debug(
+        #     "AudioPlayerWidget.load | token=%s | file=%s",
+        #     current_token, path
+        # )
+
         if not path.exists():
-            self.stop()
+            # logger.warning(
+            #     "AudioPlayerWidget.load missing file | token=%s | path=%s",
+            #     current_token, path
+            # )
+            self._reset_ui()
             self._filename_lbl.setText(filename)
             return
 
-        self.stop()
-
-        if self._status_connected:
+        if self._media_ready_connected:
             try:
-                self._player.mediaStatusChanged.disconnect(self._on_status)
+                self._player.mediaStatusChanged.disconnect(
+                    self._on_media_status_changed
+                )
             except RuntimeError:
                 pass
-            self._status_connected = False
+            self._media_ready_connected = False
 
+        self._reset_ui()
         self._filename_lbl.setText(filename)
-        self._player.mediaStatusChanged.connect(self._on_status)
-        self._status_connected = True
 
+        self._player.mediaStatusChanged.connect(self._on_media_status_changed)
+        self._media_ready_connected = True
         self._player.setSource(QUrl.fromLocalFile(str(path.absolute())))
-        self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        self._slider.setRange(0, 0)
-        self._slider.setValue(0)
-        self._time_label.setText("00:00 / 00:00")
 
-    def _on_status(self, status) -> None:
-        if status in (
-            QMediaPlayer.LoadedMedia, QMediaPlayer.InvalidMedia, QMediaPlayer.NoMedia
-        ):
-            if self._status_connected:
-                try:
-                    self._player.mediaStatusChanged.disconnect(self._on_status)
-                except RuntimeError:
-                    pass
-                self._status_connected = False
+        # logger.debug(
+        #     "AudioPlayerWidget.load source set | token=%s", current_token
+        # )
+
+    def _on_media_status_changed(self, status) -> None:
+
+        if status != QMediaPlayer.LoadedMedia:
+            return
+
+        if self._media_ready_connected:
+            try:
+                self._player.mediaStatusChanged.disconnect(
+                    self._on_media_status_changed
+                )
+            except RuntimeError:
+                pass
+            self._media_ready_connected = False
+
+        token = self._load_token
+
+        # logger.debug(
+        #     "AudioPlayerWidget._on_media_status_changed LoadedMedia | token=%s",
+        #     token
+        # )
+
+        self._player.play()
+        self._player.pause()
+        self._player.setPosition(0)
+
+        self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        QTimer.singleShot(0, lambda: self._finalize_load(token))
+
+    def _finalize_load(self, token: int) -> None:
+        if token != self._load_token:
+            # logger.debug(
+            #     "AudioPlayerWidget._finalize_load stale token | token=%s | current=%s",
+            #     token, self._load_token
+            # )
+            return
+
+        # logger.debug(
+        #     "AudioPlayerWidget._finalize_load ready | token=%s", token
+        # )
+
+    # -------------------------------------
+    # Playback controls
+    # -------------------------------------
 
     def toggle_playback(self) -> None:
         if self._player.playbackState() == QMediaPlayer.PlayingState:
@@ -139,28 +195,56 @@ class AudioPlayerWidget(QWidget):
             self._player.play()
 
     def stop(self) -> None:
+        self._load_token += 1
+
+        # logger.debug(
+        #     "AudioPlayerWidget.stop | new_token=%s", self._load_token
+        # )
+
+        # Disconnect any pending status listener
+        if self._media_ready_connected:
+            try:
+                self._player.mediaStatusChanged.disconnect(
+                    self._on_media_status_changed
+                )
+            except RuntimeError:
+                pass
+            self._media_ready_connected = False
+
         self._player.stop()
         self._player.setPosition(0)
+        self._reset_ui()
+
+    # -------------------------------------
+    # UI helpers
+    # -------------------------------------
+
+    def _reset_ui(self) -> None:
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        
         self._slider.blockSignals(True)
+        self._slider.setRange(0, 0)
         self._slider.setValue(0)
+        
         self._slider.blockSignals(False)
-        self._time_label.setText(
-            f"{self.fmt(0)} / {self.fmt(self._player.duration())}"
-        )
+        self._time_label.setText("00:00 / 00:00")
+
+    def _on_slider_released(self) -> None:
+        self._player.setPosition(self._slider.value())
 
     def _on_position(self, pos: int) -> None:
         if not self._slider.isSliderDown():
             self._slider.blockSignals(True)
             self._slider.setValue(pos)
             self._slider.blockSignals(False)
-
-            self._time_label.setText(
-                f"{self.fmt(pos)} / {self.fmt(self._player.duration())}"
-            )
+        self._time_label.setText(
+            f"{self.fmt(pos)} / {self.fmt(self._player.duration())}"
+        )
 
     def _on_duration(self, dur: int) -> None:
-        self._slider.setRange(0, dur)
+        if dur > 0:
+            # logger.debug("AudioPlayerWidget._on_duration | dur=%s", dur)
+            self._slider.setRange(0, dur)
 
     def _on_state(self, state) -> None:
         playing = state == QMediaPlayer.PlayingState
@@ -168,6 +252,12 @@ class AudioPlayerWidget(QWidget):
             self.style().standardIcon(
                 QStyle.SP_MediaPause if playing else QStyle.SP_MediaPlay
             )
+        )
+
+    def _on_error(self, error, error_string) -> None:
+        logger.error(
+            "AudioPlayerWidget._on_error | error=%s | message=%s",
+            error, error_string
         )
 
     @staticmethod

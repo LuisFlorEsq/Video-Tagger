@@ -553,7 +553,6 @@ class BaseViewer(QWidget):
         """Stop any active media playback"""
 
     # TODO: Implement Backward compatibility
-    stop_video = stop
 
     def focus_label_list(self) -> None:
         self.label_panel.label_list.setFocus()
