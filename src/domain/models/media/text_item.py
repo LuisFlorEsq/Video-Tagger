@@ -10,15 +10,14 @@ from src.domain.models.media.media_item import MediaItem, MediaType
 class TextItem(MediaItem):
     """
     A text document / snippet to be labeled
-    
+
     content - in-memory text content (loaded from file_path on demand).
     encoding - file encoding, defaults to UTF-8 
     """
-    
+
     content: Optional[str] = None
     encoding: str = "utf-8"
-    
-    
+
     def __init__(
         self,
         item_id: str,
@@ -30,7 +29,7 @@ class TextItem(MediaItem):
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None,
     ) -> None:
-        
+
         super().__init__(
             item_id=item_id,
             file_path=file_path,
@@ -40,33 +39,34 @@ class TextItem(MediaItem):
             created_at=created_at or datetime.now(),
             modified_at=modified_at or datetime.now()
         )
-        
+
         self.content = content
         self.encoding = encoding
-        
+
     def get_text_name(self) -> str:
         return self.get_filename()
-    
+
     def load_content(self) -> str:
         """
         Read file content into memory if not already loaded.
         """
-        
+
         if self.content is None:
             path = Path(self.file_path)
-            
+
             if not path.exists():
-                raise FileNotFoundError(f"Text file not found: {self.file_path}")
+                raise FileNotFoundError(
+                    f"Text file not found: {self.file_path}")
             self.content = path.read_text(encoding=self.encoding)
-            
+
         return self.content
-    
+
     @property
     def word_count(self) -> Optional[int]:
         if self.content is None:
             return None
         return len(self.content.split())
-    
+
     @property
     def preview(self) -> str:
         """
