@@ -17,6 +17,7 @@ from src.core.logger import logger
 from src.core.resources import image
 from src.ui.styles import AppTheme, btn_primary
 
+
 class AudioPlayerWidget(QWidget):
     """
     Self-contained audio playback controls.
@@ -47,12 +48,12 @@ class AudioPlayerWidget(QWidget):
         self._waveform = QLabel()
         self._waveform.setAlignment(Qt.AlignCenter)
         waveform_pixmap = image("zoom_controls/music_notes.png")
-        
+
         # Scale the pixmap to fit well inside the widget (adjust dimensions as needed)
         if not waveform_pixmap.isNull():
             scaled_pixmap = waveform_pixmap.scaled(
                 400, 200,
-                Qt.KeepAspectRatio, 
+                Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
             self._waveform.setPixmap(scaled_pixmap)
@@ -121,7 +122,7 @@ class AudioPlayerWidget(QWidget):
         path = Path(file_path)
 
         self._load_token += 1
-        current_token = self._load_token
+        # current_token = self._load_token
 
         # logger.debug(
         #     "AudioPlayerWidget.load | token=%s | file=%s",
@@ -239,11 +240,11 @@ class AudioPlayerWidget(QWidget):
 
     def _reset_ui(self) -> None:
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        
+
         self._slider.blockSignals(True)
         self._slider.setRange(0, 0)
         self._slider.setValue(0)
-        
+
         self._slider.blockSignals(False)
         self._time_label.setText("00:00 / 00:00")
 

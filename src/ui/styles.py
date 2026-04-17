@@ -505,6 +505,32 @@ def label_list() -> str:
             color: {t.TEXT_MUTED};
         }}
     """
+    
+def pill_style(active: bool) -> str:
+    t = AppTheme
+    if active:
+        return (
+            f"QPushButton {{"
+            f"background-color: {t.PRIMARY_LIGHT};"
+            f"color: {t.PRIMARY};"
+            f"border: 1px solid {t.PRIMARY};"
+            f"border-radius: 10px;"
+            f"padding: 0 12px;"
+            f"font-size: {t.FONT_SM};"
+            f"font-weight: bold;"
+            f"}}"
+        )
+    else:
+        return (
+            f"QPushButton {{"
+            f"background-color: transparent; color: {t.TEXT_SECONDARY};"
+            f"border: 1px solid {t.BORDER}; border-radius: 10px;"
+            f"padding: 0 12px; font-size: {t.FONT_SM};"
+            f"}}"
+            f"QPushButton:hover {{"
+            f"background-color: {t.BG_APP}; color: {t.TEXT_PRIMARY};"
+            f"}}"
+        )
 
 # ─────────────────────────────────────────────
 # Media Card

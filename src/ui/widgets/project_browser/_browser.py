@@ -23,7 +23,7 @@ from src.ui.widgets.dialogs.media_type_dialog import MediaTypeDialog
 from src.core.config import VIEW_WELCOME, VIEW_LIST
 
 from ._sidebar import SidebarPanel
-from ._fragment_list import FragmentListPanel
+from ._fragment_list import MediaListPanel
 
 
 class ProjectBrowser(QWidget):
@@ -33,7 +33,7 @@ class ProjectBrowser(QWidget):
     """
 
     project_loaded = Signal(Project)
-    fragment_selected = Signal(object)
+    item_selected = Signal(MediaItem)
     project_closed = Signal()
     labels_changed = Signal(list)
 
@@ -131,11 +131,10 @@ class ProjectBrowser(QWidget):
         wl.addWidget(sub)
         wl.addStretch()
 
-        self._fragment_list = FragmentListPanel()
+        self._item_list = MediaListPanel()
 
         self._stack.addWidget(welcome)
-        self._stack.addWidget(self._fragment_list)
-
+        self._stack.addWidget(self._item_list)
         body_layout.addWidget(self._stack, stretch=1)
         root.addWidget(body, stretch=1)
 
@@ -159,10 +158,9 @@ class ProjectBrowser(QWidget):
         s.sync_btn.clicked.connect(self._on_sync_clicked)
         s.back_btn.clicked.connect(self._on_back_clicked)
 
-        # Switch to fragment viewer (fragment selected)
-        self._fragment_list.fragment_activated.connect(
-            lambda item: self.fragment_selected.emit(item)
-        )
+        # Switch to media viewer (item selected)
+        self._item_list.item_activated.connect(
+            lambda item: self.item_selected.emit(item))
 
     # ─────────────────────────────────────────────
     # Keyboard shortcuts
@@ -172,7 +170,7 @@ class ProjectBrowser(QWidget):
         for shortcut, slot in [
             ("Ctrl+R", self._on_sync_clicked),
             ("Escape", self._on_back_clicked),
-            ("Ctrl+F", self._fragment_list.focus_search),
+            ("Ctrl+F", self._item_list.focus_search),
         ]:
             action = QAction(self)
             action.setShortcut(shortcut)
@@ -341,12 +339,12 @@ class ProjectBrowser(QWidget):
 
     def refresh(self):
         if self._current_project:
-            self._fragment_list.refresh(self._current_project)
+            self._item_list.refresh(self._current_project)
             if self._current_project.media_type == MediaType.VIDEO:
                 self._check_for_new_videos()
 
     def set_focus(self):
-        self._fragment_list.set_focus()
+        self._item_list.set_focus()
 
     def get_current_project(self) -> Project:
         return self._current_project
@@ -386,7 +384,7 @@ class ProjectBrowser(QWidget):
         self._sidebar.sync_btn.setVisible(is_video)
 
         self._stack.setCurrentIndex(VIEW_LIST)
-        self._fragment_list.load(project)
+        self._item_list.load(project)
 
         if is_video:
             self._check_for_new_videos()
@@ -394,12 +392,13 @@ class ProjectBrowser(QWidget):
     def _show_welcome(self):
         self.topbar_project_label.setVisible(False)
         self._topbar_sep.setVisible(False)
-        self.sync_badge.setVisible(False)
+
         self._type_badge.setVisible(False)
+        self.sync_badge.setVisible(False)
 
         self._sidebar.show_welcome_state()
         self._sidebar.set_sync_idle()
-        self._fragment_list.reset()
+        self._item_list.reset()
         self._stack.setCurrentIndex(VIEW_WELCOME)
 
     def _check_for_new_videos(self):

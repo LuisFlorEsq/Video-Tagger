@@ -143,13 +143,13 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         # Project signals
         self._project_browser.project_loaded.connect(self._on_project_loaded)
-        self._project_browser.fragment_selected.connect(
-            self._on_fragment_selected)
+        self._project_browser.item_selected.connect(
+            self._on_item_selected)
         self._project_browser.project_closed.connect(self._on_project_closed)
         self._project_browser.labels_changed.connect(self._on_labels_changed)
 
         # Fragment viewer signals
-        self._viewer_stack.fragment_labeled.connect(self._on_fragment_labeled)
+        self._viewer_stack.item_labeled.connect(self._on_item_labeled)
         self._viewer_stack.prev_requested.connect(self._on_prev_requested)
         self._viewer_stack.next_requested.connect(self._on_next_requested)
         self._viewer_stack.back_requested.connect(self._show_browser)
@@ -177,12 +177,12 @@ class MainWindow(QMainWindow):
         self._reset_project_state()
         self._update_status("Listo, - selecciona una carpeta para iniciar")
 
-    def _on_fragment_selected(self, item: MediaItem):
+    def _on_item_selected(self, item: MediaItem):
         if not self._current_project or not self._navigation_service:
             return
 
-        self._navigation_service.set_current_fragment(item.item_id)
-        self._viewer_stack.load_fragment(item, self._current_project)
+        self._navigation_service.set_current_item(item.item_id)
+        self._viewer_stack.load_item(item, self._current_project)
 
         self._safe_switch_view(VIEW_FRAGMENT)
         self._viewer_stack.focus_label_list()
@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
             f"{item.get_filename()}  —  {current}/{total}"
         )
 
-    def _on_fragment_labeled(self, item: MediaItem):
+    def _on_item_labeled(self, item: MediaItem):
         self._project_browser.refresh()
         if item.is_labeled():
             self._update_status(
@@ -228,14 +228,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(50, lambda: self._load_item_safe(prev_item))
         else:
             self._viewer_stack.stop_all_media(reason="boundary_dialog")
-            summary = self._project_service.get_project_summary(
-                self._current_project)
-            QMessageBox.information(
-                self, "Inicio del proyecto",
-                f"Has llegado al inicio del proyecto.\n\n"
-                f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
-                f"({summary['progress_percentage']:.1f}%)"
-            )
+            self._end_of_list_dialog(start=True)
             self._show_browser()
 
     def _on_next_requested(self):
@@ -248,14 +241,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(50, lambda: self._load_item_safe(next_item))
         else:
             self._viewer_stack.stop_all_media(reason="boundary_dialog")
-            summary = self._project_service.get_project_summary(
-                self._current_project)
-            QMessageBox.information(
-                self, "¡Proyecto completado!",
-                f"Has llegado al final del proyecto.\n\n"
-                f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
-                f"({summary['progress_percentage']:.1f}%)"
-            )
+            self._end_of_list_dialog(start=False)
             self._show_browser()
 
     # ─────────────────────────────────────────────
@@ -268,7 +254,7 @@ class MainWindow(QMainWindow):
         self._viewer_stack.reset()
 
     def _load_item_safe(self, item: MediaItem):
-        self._viewer_stack.load_fragment(item, self._current_project)
+        self._viewer_stack.load_item(item, self._current_project)
         current, total = self._navigation_service.get_position()
         self._update_status(f"{item.get_filename()}  —  {current}/{total}")
 
@@ -299,7 +285,7 @@ class MainWindow(QMainWindow):
                 "Listo - Selecciona una carpeta para continuar")
             return
 
-        item = self._viewer_stack.get_current_fragment()
+        item = self._viewer_stack.get_current_item()
         if item and self._navigation_service:
             current, total = self._navigation_service.get_position()
             self._update_status(f"{item.get_filename()}  —  {current}/{total}")
@@ -312,6 +298,17 @@ class MainWindow(QMainWindow):
                     project=self._current_project, summary=summary
                 )
             )
+
+    def _end_of_list_dialog(self, start: bool) -> None:
+        summary = self._project_service.get_project_summary(
+            self._current_project)
+        title = "Inicio del proyecto" if start else "¡Proyecto completado!"
+        QMessageBox.information(
+            self, title,
+            f"Has llegado al {'inicio' if start else 'final'} del proyecto.\n\n"
+            f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
+            f"({summary['progress_percentage']:.1f}%)"
+        )
 
     def _show_about(self):
         QMessageBox.about(

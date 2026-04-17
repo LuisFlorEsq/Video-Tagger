@@ -1,10 +1,11 @@
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
+
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QProgressBar,
     QLineEdit, QTreeWidget, QTreeWidgetItem
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor
 
 from src.domain.models.project import Project
 from src.domain.models.media.media_item import MediaItem
@@ -13,16 +14,16 @@ from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
 from src.ui.helpers.project_formatter import format_project_badge, format_project_stats
 from src.ui.styles import (
     AppTheme,
-    progress_bar, fragment_list,
+    progress_bar, fragment_list, pill_style,
     text_secondary, text_muted,
     chip_info, input_field
 )
 
 
-class FragmentListPanel(QWidget):
-    """Displays the project's fragment list with search and filter controls."""
+class MediaListPanel(QWidget):
+    """Displays the project's items with search and filter controls."""
 
-    fragment_activated = Signal(object)   # user double-clicks / enters a row
+    item_activated = Signal(MediaItem)  # emits MediaItem
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -68,7 +69,7 @@ class FragmentListPanel(QWidget):
             btn = QPushButton(label)
             btn.setFixedHeight(28)
             btn.setCheckable(True)
-            btn.setStyleSheet(self._pill_style(active=(mode == FILTER_ALL)))
+            btn.setStyleSheet(pill_style(active=(mode == FILTER_ALL)))
             btn.clicked.connect(
                 lambda checked, m=mode: self._on_filter_clicked(m))
             filter_layout.addWidget(btn)
@@ -265,6 +266,7 @@ class FragmentListPanel(QWidget):
                     + (media_item.label or "").lower()
                     + media_item.item_id.lower()
                 )
+
                 if search not in haystack:
                     tree_item.setHidden(True)
                     continue
@@ -283,46 +285,15 @@ class FragmentListPanel(QWidget):
         self._update_pill_styles()
         self._apply_filter()
 
-    def _on_item_activated(self, item: QTreeWidgetItem):
+    def _on_item_activated(self, item: QTreeWidgetItem) -> None:
         if not self._project:
             return
 
         media_item = self._project.get_item(item.data(0, Qt.UserRole))
         if media_item:
-            self.fragment_activated.emit(media_item)
+            self.item_activated.emit(media_item)
 
     def _update_pill_styles(self):
         for mode, btn in self._filter_btns.items():
-            btn.setStyleSheet(self._pill_style(
+            btn.setStyleSheet(pill_style(
                 active=(mode == self._active_filter)))
-
-    # TODO: Move this method to styles file
-    @staticmethod
-    def _pill_style(active: bool) -> str:
-        t = AppTheme
-        if active:
-            return (
-                f"QPushButton {{"
-                f"background-color: {t.PRIMARY_LIGHT};"
-                f"color: {t.PRIMARY};"
-                f"border: 1px solid {t.PRIMARY};"
-                f"border-radius: 10px;"
-                f"padding: 0 12px;"
-                f"font-size: {t.FONT_SM};"
-                f"font-weight: bold;"
-                f"}}"
-            )
-        return (
-            f"QPushButton {{"
-            f"background-color: transparent;"
-            f"color: {t.TEXT_SECONDARY};"
-            f"border: 1px solid {t.BORDER};"
-            f"border-radius: 10px;"
-            f"padding: 0 12px;"
-            f"font-size: {t.FONT_SM};"
-            f"}}"
-            f"QPushButton:hover {{"
-            f"background-color: {t.BG_APP};"
-            f"color: {t.TEXT_PRIMARY};"
-            f"}}"
-        )

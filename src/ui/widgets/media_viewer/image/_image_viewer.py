@@ -23,6 +23,7 @@ from src.ui.widgets.media_viewer.image._image_utils import ZoomableImageLabel
 from src.core.config import ICON_SIZE
 from src.core.resources import icon
 
+
 class ImageViewer(BaseViewer):
     """Static image viewer with Ctrl+Wheel zoom."""
 

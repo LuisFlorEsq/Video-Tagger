@@ -112,8 +112,35 @@ class BaseViewer(QWidget):
         """
         Short ui term for this media type, used in dialog messages.
 
-        e.g "Fragmento", "Image", etc.
+        e.g "Imagen", "Audio", etc.
         """
+        ...
+
+    def _populate_topbar_extras(self, tb: QHBoxLayout) -> None:
+        """
+        Optional Hook: injects widgets between the breadcrumb search stretch and the position 
+        counter (e.g. zoom controls for ImageViewer)
+        Default: no-op
+        """
+        ...
+
+    def _setup_extra_shortcuts(self, action_factory) -> None:
+        """
+        Hook: register additional shortcuts using *action_factory(shortcut, slot)*.
+        Default: no-op.
+        """
+        ...
+
+    def _handle_extra_key(self, key: int) -> bool:
+        """
+        Hook: handle aditional keys inside the eventFilter
+        Return True if the key was consumed, False to let base handling run
+        Default: no-op returning False
+        """
+        return False
+
+    def _on_before_back(self) -> None:
+        """Hook called at the start of _on_back_clicked (e.g. stop video)"""
         ...
 
     # --------------------------------------
@@ -144,15 +171,13 @@ class BaseViewer(QWidget):
         self.back_btn = QPushButton("Volver")
         self.back_btn.setStyleSheet(btn_ghost())
         self.back_btn.setFixedHeight(28)
-        self.back_btn.setIcon(icon("navigation/left.png"))
         tb.addWidget(self.back_btn)
-
+        self.back_btn.setIcon(icon("navigation/left.png"))
         tb.addWidget(make_vline())
 
         self.breadcrumb_label = QLabel("")
         self.breadcrumb_label.setStyleSheet(text_breadcrumb())
         tb.addWidget(self.breadcrumb_label)
-
         tb.addStretch()
 
         # Optional extra topbar widgets injected by subclass
@@ -182,13 +207,6 @@ class BaseViewer(QWidget):
         tb.addWidget(self.next_btn)
 
         return topbar
-
-    def _populate_topbar_extras(self, tb: QHBoxLayout) -> None:
-        """
-        Optional Hook: injects widgets between the breadcrumb search stretch and the position 
-        counter (e.g. zoom controls for ImageViewer)
-        Default: no-op
-        """
 
     def _build_body(self) -> QWidget:
         body = QWidget()
@@ -329,13 +347,6 @@ class BaseViewer(QWidget):
         self.label_panel.label_list.installEventFilter(self)
         self.label_panel.label_list.viewport().installEventFilter(self)
 
-    def _setup_extra_shortcuts(self, action_factory) -> None:
-        """
-        Hook: register additional shortcuts using *action_factory(shortcut, slot)*.
-        Default: no-op.
-        """
-        ...
-
     def _register_label_shortcuts(self) -> None:
         for act in self.actions():
             if getattr(act, "_is_label_shortcut", False):
@@ -381,14 +392,6 @@ class BaseViewer(QWidget):
 
         return super().eventFilter(watched, event)
 
-    def _handle_extra_key(self, key: int) -> bool:
-        """
-        Hook: handle aditional keys inside the eventFilter
-        Return True if the key was consumed, False to let base handling run
-        Default: no-op returning False
-        """
-        return False
-
     # --------------------------------------
     # Command Handlers
     # --------------------------------------
@@ -410,7 +413,7 @@ class BaseViewer(QWidget):
             QMessageBox.warning(self, "No se pudo etiquetar", str(e))
 
         finally:
-            self.label_panel.label_list.setFocus()
+            self.focus_label_list()
 
     def _on_prev_clicked(self) -> None:
         if not self._current_item:
@@ -444,7 +447,7 @@ class BaseViewer(QWidget):
             QMessageBox.critical(self, "Error",  str(e))
 
         finally:
-            self.label_panel.label_list.setFocus()
+            self.focus_label_list()
 
     def _on_back_clicked(self) -> None:
         self._on_before_back()
@@ -459,10 +462,6 @@ class BaseViewer(QWidget):
             if reply == QMessageBox.No:
                 return
         self.back_requested.emit()
-
-    def _on_before_back(self) -> None:
-        """Hook called at the start of _on_back_clicked (e.g. stop video)"""
-        ...
 
     def _assign_label_by_index(self, index: int) -> None:
         if 0 <= index < len(self.available_labels):
@@ -527,8 +526,6 @@ class BaseViewer(QWidget):
     def get_current_item(self) -> MediaItem | None:
         return self._current_item
 
-    # Backward-compatible alias used on ViewerStack and MainWindow
-
     def reset(self) -> None:
         """
         Clear all project related state
@@ -552,8 +549,6 @@ class BaseViewer(QWidget):
     def stop(self) -> None:
         """Stop any active media playback"""
 
-    # TODO: Implement Backward compatibility
-
     def focus_label_list(self) -> None:
         self.label_panel.label_list.setFocus()
 
@@ -561,7 +556,7 @@ class BaseViewer(QWidget):
         if not labels:
             return
         self.available_labels = labels.copy()
-        self.label_panel.set_labels(self.available_labels)
+        self.label_panel.set_labels(labels)
         self._register_label_shortcuts()
 
     # --------------------------------------

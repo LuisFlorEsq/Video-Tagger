@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 from src.ui.styles import AppTheme
 
 from src.core.logger import logger
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
 
 from src.ui.widgets.media_viewer.video._video_player import VideoPlayer
@@ -17,15 +17,10 @@ from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 
 
 class VideoViewer(BaseViewer):
-    """Video fragment viewer"""
-
-    # Backward-compatible signal alias used by ViewerStack
-    @property
-    def fragment_labeled(self):
-        return self.item_labeled
+    """Video clip viewer"""
 
     def item_type_label(self) -> str:
-        return "fragmento"
+        return "video"
 
     # --- Hooks ----
     def build_media_area(self) -> QWidget:
@@ -41,6 +36,9 @@ class VideoViewer(BaseViewer):
 
         return area
 
+    def build_info_rows(self, info_layout: QVBoxLayout) -> None:
+        self.duration_label = self._info_row("DURACIÓN", "—", info_layout)
+
     def _setup_extra_shortcuts(self, action_factory) -> None:
         action_factory("Space", self.video_player.toggle_playback)
 
@@ -53,23 +51,28 @@ class VideoViewer(BaseViewer):
     def _on_before_back(self) -> None:
         self.video_player.force_stop()
 
-    def on_item_loaded(self, item: Fragment, project: Project) -> None:
-        if not Path(item.video_path).exists():
+    def on_item_loaded(self, item: VideoItem, project: Project) -> None:
+        if not Path(item.file_path).exists():
             QMessageBox.critical(
                 self, "Archivo no encontrado",
-                f"No se encontró el archivo de video:\n{item.video_path}"
+                f"No se encontró el archivo de video:\n{item.file_path}"
             )
             return
-        self.video_player.load_video(item.video_path)
+        self.video_player.load_video(item.file_path)
+        mins = int(item.duration) // 60
+        secs = int(item.duration) % 60
+
+        self.duration_label.setText(f"{mins:02d}:{secs:02d}")
 
     def on_reset(self) -> None:
         # logger.debug("VideoViewer.on_reset")
         self.video_player.force_stop()
+        self.duration_label.setText("-")
 
     def stop(self) -> None:
         self.video_player.force_stop()
 
-    stop_video = stop  # ViewerStack calls stop_video
+    stop_video = stop
 
     # Connect Video Player signals
 
@@ -86,11 +89,3 @@ class VideoViewer(BaseViewer):
         if self._current_item:
             pos = int(self._current_item.start_time * 1000)
             QTimer.singleShot(50, lambda: self.video_player.seek_position(pos))
-
-    # --- Backward compatible public API
-    def load_fragment(self, fragment: Fragment, project: Project = None) -> None:
-        """Preserved entry point called by ViewerStack for video items"""
-        self.load_item(fragment, project)
-
-    def get_current_fragment(self) -> Fragment | None:
-        return self._current_item

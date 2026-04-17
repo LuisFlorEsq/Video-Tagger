@@ -23,7 +23,7 @@ class ViewerStack(QStackedWidget):
     Owns one media widget per MediaType    
     """
 
-    fragment_labeled = Signal(object)
+    item_labeled = Signal(object)  # emits MediaItem
     prev_requested = Signal()
     next_requested = Signal()
     back_requested = Signal()
@@ -77,12 +77,7 @@ class ViewerStack(QStackedWidget):
         Connect each viewer signal to the defined signals
         """
 
-        if hasattr(viewer, "fragment_labeled"):
-            viewer.fragment_labeled.connect(self.fragment_labeled)
-
-        if hasattr(viewer, "item_labeled"):
-            viewer.item_labeled.connect(self.fragment_labeled)
-
+        viewer.item_labeled.connect(self.item_labeled)
         viewer.prev_requested.connect(self.prev_requested)
         viewer.next_requested.connect(self.next_requested)
         viewer.back_requested.connect(self.back_requested)
@@ -94,33 +89,23 @@ class ViewerStack(QStackedWidget):
     def _viewer_name(viewer) -> str:
         return viewer.__class__.__name__
 
-    def load_fragment(self, item: MediaItem, project: Project) -> None:
+    def load_item(self, item: MediaItem, project: Project) -> None:
         """
-        Backward compatible entry point
-
         Dispatches to the correct viewer based on item.media_type
         """
-        
+
         viewer = self._viewers.get(item.media_type)
         if viewer is None:
             viewer = self._viewers[MediaType.VIDEO]
-            
+
         # Stop the previously active viewer before switching
-
         if self._current_viewer is not None and self._current_viewer is not viewer:
-            if hasattr(self._current_viewer, "stop_video"):
-                logger.debug(
-                    "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
-                    self._viewer_name(self._current_viewer),
-                )
-                self._current_viewer.stop_video()
-            elif hasattr(self._current_viewer, "stop"):
-                logger.debug(
-                    "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
-                    self._viewer_name(self._current_viewer),
-                )
-                self._current_viewer.stop()
+            logger.debug(
+                "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
+                self._viewer_name(self._current_viewer),
+            )
 
+            self._current_viewer.stop()
             self._current_viewer = viewer
             self.setCurrentWidget(viewer)
 
@@ -128,28 +113,15 @@ class ViewerStack(QStackedWidget):
             self._current_viewer = viewer
             self.setCurrentWidget(viewer)
 
-        # Always load the requested item, even when the active viewer stays the same.
-        if item.media_type == MediaType.VIDEO:
-            viewer.load_fragment(item, project)
-        else:
-            viewer.load_item(item, project)
+        viewer.load_item(item, project)
 
     def set_navigation_service(self, nav: NavigationService) -> None:
         for viewer in self._viewers.values():
             viewer.set_navigation_service(nav)
 
-    def get_current_fragment(self) -> MediaItem:
-        """Backward compatible, returns the active item regardless of type"""
-
-        if self._current_viewer is None:
-            return None
-
-        if hasattr(self._current_viewer, "get_current_fragment"):
-            return self._current_viewer.get_current_fragment()
-        if hasattr(self._current_viewer, "get_current_item"):
-            return self._current_viewer.get_current_item()
-
-        return None
+    def get_current_item(self) -> MediaItem:
+        """Returns the active item regardless of type"""
+        return self._current_viewer.get_current_item() if self._current_viewer else None
 
     def update_labels(self, labels: list) -> None:
         self._available_labels = list(labels)
@@ -180,7 +152,3 @@ class ViewerStack(QStackedWidget):
                     self._viewer_name(viewer),
                 )
                 viewer.stop()
-
-    def stop_video(self) -> None:
-        """Backward-compatible alias for older callers."""
-        self.stop_all_media()
