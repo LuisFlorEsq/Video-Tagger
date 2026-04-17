@@ -226,7 +226,7 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 ---
 
 ### CURRENT ITERATION
-
+- [ ] Implement the media sync feature for all Media Types (image, audio, text)
 - [ ] Numpy arrays (images and signals)
 - [ ] Show Audio (waveform)
 - [ ] Cloud connection for dataset and project loading (creation)

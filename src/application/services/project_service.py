@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Optional
 
 from src.domain.models.media.media_item import MediaItem, MediaType
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
 from src.domain.interfaces import (
-    IProjectRepository, 
-    IVideoSource, 
+    IProjectRepository,
+    IVideoSource,
     IFragmentScanner,
     IMediaScanner
 )
@@ -15,11 +15,12 @@ from src.domain.interfaces import (
 # Project Service
 # ---------------------------------------------
 
+
 class ProjectService:
     """Service for project-related operations (SRP)."""
-    
+
     def __init__(
-        self, 
+        self,
         repository: IProjectRepository,
         scanner: IFragmentScanner,
         video_source: IVideoSource,
@@ -29,87 +30,59 @@ class ProjectService:
         self._scanner = scanner
         self._video_source = video_source
         self._media_factory = media_factory
-        
+
     # ---- Project creation ----
-    
-    def create_project_from_folder(self, folder_path: Path, media_type: MediaType = MediaType.VIDEO) -> Project:
+
+    def create_project_from_folder(self, folder_path: Path, media_type: MediaType) -> Project:
         """Create a new project by scanning *folder_path*."""
         if not folder_path.exists():
             raise ValueError(f"La carpeta no existe: {folder_path}")
-        
-        if media_type == MediaType.VIDEO:
-            return self._create_video_project(folder_path)
-        
+
         if self._media_factory is None:
             raise RuntimeError(
                 "MediaTypeFactory is required for non-video projects"
                 "Register it in the service container"
             )
-        
+
         return self._media_factory.create_project(folder_path, media_type)
-    
-    def _create_video_project(self, folder_path: Path) -> Project:
-        """Original video project creation logic."""
-        video_files = self._scanner.scan_folder(folder_path=folder_path)
-        
-        if not video_files:
-            raise ValueError("No se encontraron archivos de video")
-        
-        project = Project(
-            name = folder_path.name,
-            folder_path = str(folder_path),
-            media_type= MediaType.VIDEO
-        )
-        
-        for i, video_file in enumerate(sorted(video_files)):
-            duration = self._video_source.get_duration(video_file)
-            fragment = Fragment(
-                fragment_id=f"fragment_{i + 1:03d}",
-                video_path=str(video_file),
-                start_time=0.0,
-                duration=min(1.0, duration)
-            )
-            project.add_fragment(fragment=fragment)
-            
-        return project
-    
-    # ---- Save / load ----
+
+    # ---- Persistence ----
 
     def save_project(self, project: Project, file_path: Path) -> None:
         """Save a project to file."""
         self._repository.save(project, file_path)
-    
+
     def auto_save_project(self, project: Project) -> bool:
         """
         Auto-save project to its saved location.
-        
+
         Args:
             project: Project to save
-            
+
         Returns:
             True if saved successfully, False otherwise
         """
         save_path = project.get_save_path()
-        
+
         if not save_path:
             return False
-        
+
         try:
             self._repository.save(project, save_path)
             return True
         except Exception as e:
             print(f"Auto-save failed: {e}")
             return False
-    
+
     def load_project(self, file_path: Path) -> Project:
         """Load a project from file."""
         if not self._repository.exists(file_path):
             raise ValueError(f"El proyecto no existe: {file_path}")
-        
+
         return self._repository.load(file_path)
-    
+
     # ---- Sync (video only) ----
-    
+
     def get_new_videos(self, project: Project) -> set[Path]:
         """Get the count of new videos in a project folder
 
@@ -120,16 +93,16 @@ class ProjectService:
             set: Set of new videos detected
         """
         folder_path = Path(project.folder_path)
-        
+
         if not folder_path.exists():
             return set()
-        
+
         all_videos = self._scanner.scan_folder(folder_path=folder_path)
-        existing_paths = {Path(f.video_path) for f in project.fragments}
+        existing_paths = {Path(it.file_path) for it in project.items}
         new_videos = set(all_videos) - existing_paths
-        
+
         return new_videos
-        
+
     def sync_new_videos(self, project: Project, new_videos: set[Path]) -> int:
         """
         Add new_videos detected as fragments for the current project
@@ -142,50 +115,47 @@ class ProjectService:
         """
         if not new_videos:
             return 0
-        
-        existing_ids = [f.fragment_id for f in project.fragments]
+
+        # Derive next numeric suffix from existing item_ids
         max_id = 0
-        
-        for fid in existing_ids:
+        for it in project.items:
             try:
-                num = int(fid.split('_')[-1])
-                max_id = max(max_id, num)
+                max_id = max(max_id, int(it.item_id.split("_")[-1]))
             except ValueError:
                 pass
         next_id = max_id + 1
-        
-        added = 0        
-        for video_path in new_videos:
+
+        added = 0
+        for video_path in sorted(new_videos):
             try:
                 duration = self._video_source.get_duration(video_path)
-                fragment = Fragment(
-                    fragment_id=f"fragment_{next_id:03d}",
-                    video_path=str(video_path),
+                item = VideoItem(
+                    item_id=f"video_{next_id:03d}",
+                    file_path=str(video_path),
                     start_time=0.0,
-                    duration=min(1.0, duration)
+                    duration=min(1.0, duration),
                 )
-                project.add_fragment(fragment)
+                project.add_item(item)
                 next_id += 1
                 added += 1
             except Exception as e:
                 print(f"Failed to add {video_path}: {e}")
-                continue
-            
         return added
-    
+
     # ---- Statistics ----
-    
+
     def get_project_summary(self, project: Project) -> dict:
         """Get a summary of project statistics."""
         return {
             'name': project.name,
+            'media_type': project.media_type.value,
             'total_fragments': project.get_total_count(),
             'labeled': project.get_labeled_count(),
             'unlabeled': project.get_unlabeled_count(),
             'progress_percentage': project.get_progress_percentage(),
             'label_statistics': project.get_label_statistics()
         }
-        
+
 
 # ---------------------------------------------
 # MediaTypeFactory
@@ -194,40 +164,40 @@ class ProjectService:
 class MediaTypeFactory:
     """
     Creates a project for non-video media types.
-    
+
     ProjectService delegates here when MediaType != VIDEO
-    
+
     Register one IMediaScanner per MediaType at startup via register_scanner()
     """
-    
+
     def __init__(self):
         self._scanners: dict[MediaType, IMediaScanner] = {}
-        
+
     def register_scanner(self, scanner: IMediaScanner) -> None:
         self._scanners[scanner.media_type] = scanner
-        
+
     def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
         scanner = self._scanners.get(media_type)
-        
+
         if scanner is None:
             raise ValueError(
                 f"No scanner registered for media type: {media_type.value}"
             )
-            
+
         items = scanner.scan_folder(folder_path=folder_path)
         if not items:
             label = media_type.label
             raise ValueError(
                 f"No se encontraron archivos de {label.lower()} en la carpeta"
             )
-            
+
         project = Project(
             name=folder_path.name,
             folder_path=str(folder_path),
             media_type=media_type
         )
-        
+
         for item in items:
             project.add_item(item)
-            
+
         return project
