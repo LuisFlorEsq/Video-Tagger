@@ -1,34 +1,39 @@
 from pathlib import Path
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QFileDialog, QMessageBox, QStackedWidget, QDialog
-)
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QFileDialog, QDialog,
+    QHBoxLayout, QLabel, QMessageBox,
+    QStackedWidget, QVBoxLayout, QWidget
+)
 
 from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
 
+from src.domain.models.media.media_item import MediaItem
 from src.domain.models.project import Project
-from src.domain.models.media.media_item import MediaItem, MediaType
 
 from src.ui.helpers.dividers import make_vline
 from src.ui.styles import (
     AppTheme,
-    topbar_panel, chip_warning, chip_info,
-    text_title, text_secondary, text_breadcrumb,
+    chip_info, chip_warning,
+    text_breadcrumb, text_secondary, text_title,
+    topbar_panel
 )
+
 from src.ui.widgets.dialogs.label_config_dialog import LabelConfigDialog
 from src.ui.widgets.dialogs.media_type_dialog import MediaTypeDialog
-from src.core.config import VIEW_WELCOME, VIEW_LIST
+from src.core.config import VIEW_LIST, VIEW_WELCOME
 
-from ._sidebar import SidebarPanel
+
 from ._fragment_list import MediaListPanel
+from ._sidebar import SidebarPanel
 
 
 class ProjectBrowser(QWidget):
     """
-    Project browser — UI coordination only.
+    Project browser - UI coordination only.
     Business logic delegated to services (SRP + DIP).
     """
 
@@ -53,16 +58,14 @@ class ProjectBrowser(QWidget):
         self._setup_shortcuts()
         self._show_welcome()
 
-    # ─────────────────────────────────────────────
-    # UI construction
-    # ─────────────────────────────────────────────
+    # ----- UI construction -----
 
     def _init_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Top bar ──────────────────────────────
+        # --- Topbar ---
         topbar = QWidget()
         topbar.setFixedHeight(48)
         topbar.setStyleSheet(topbar_panel())
@@ -100,7 +103,7 @@ class ProjectBrowser(QWidget):
 
         root.addWidget(topbar)
 
-        # ── Body ─────────────────────────────────
+        # --- Body contents ---
         body = QWidget()
         body_layout = QHBoxLayout(body)
         body_layout.setContentsMargins(0, 0, 0, 0)
@@ -109,15 +112,17 @@ class ProjectBrowser(QWidget):
         self._sidebar = SidebarPanel()
         body_layout.addWidget(self._sidebar)
 
-        # Main area — welcome screen or fragment list
         self._stack = QStackedWidget()
 
+        # Main area — welcome screen or fragment list
         welcome = QWidget()
         wl = QVBoxLayout(welcome)
         wl.setAlignment(Qt.AlignCenter)
+
         title = QLabel("Bienvenido")
         title.setStyleSheet(text_title())
         title.setAlignment(Qt.AlignCenter)
+
         sub = QLabel(
             "Crea un nuevo proyecto seleccionando una carpeta con videos,\n"
             "o abre un proyecto existente para continuar etiquetando."
@@ -125,6 +130,7 @@ class ProjectBrowser(QWidget):
         sub.setStyleSheet(text_secondary())
         sub.setAlignment(Qt.AlignCenter)
         sub.setWordWrap(True)
+
         wl.addStretch()
         wl.addWidget(title)
         wl.addSpacing(8)
@@ -138,33 +144,30 @@ class ProjectBrowser(QWidget):
         body_layout.addWidget(self._stack, stretch=1)
         root.addWidget(body, stretch=1)
 
-    # ─────────────────────────────────────────────
-    # Signal wiring
-    # ─────────────────────────────────────────────
+    # ----- Signal wiring -----
 
     def _connect_signals(self):
-
         s = self._sidebar
-        # Project Selection
+        
+        # Project selection
         s.new_project_btn.clicked.connect(self._on_new_project_clicked)
         s.load_project_btn.clicked.connect(self._on_load_project_clicked)
-
+        
         # Project management
         s.save_project_btn.clicked.connect(self._on_save_clicked)
         s.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
         s.config_labels_btn.clicked.connect(self._on_config_labels_clicked)
-
-        # Sync new videos and return to Main Window
+        
+        # Sync new content and return to Main Window
         s.sync_btn.clicked.connect(self._on_sync_clicked)
         s.back_btn.clicked.connect(self._on_back_clicked)
 
         # Switch to media viewer (item selected)
         self._item_list.item_activated.connect(
-            lambda item: self.item_selected.emit(item))
+            lambda item: self.item_selected.emit(item)
+        )
 
-    # ─────────────────────────────────────────────
-    # Keyboard shortcuts
-    # ─────────────────────────────────────────────
+    # ----- Keyboard shortcuts -----
 
     def _setup_shortcuts(self):
         for shortcut, slot in [
@@ -178,32 +181,34 @@ class ProjectBrowser(QWidget):
             action.triggered.connect(slot)
             self.addAction(action)
 
-    # ─────────────────────────────────────────────
-    # Command handlers
-    # ─────────────────────────────────────────────
+    # ----- Command handlers -----
 
     def _on_new_project_clicked(self):
-
-        # Step 1: Ask which media type
+        
+        # Ask for media type
         dlg = MediaTypeDialog(parent=self)
         if dlg.exec() != QDialog.Accepted:
             return
         media_type = dlg.chosen
 
-        # Step 2: Pick the folder
+        # Pick/select the folder
         folder_path = self._select_folder()
         if not folder_path:
             return
         try:
             project = self._project_service.create_project_from_folder(
-                folder_path=folder_path, media_type=media_type)
+                folder_path=folder_path,
+                media_type=media_type,
+            )
             self._load_project(project)
             self.project_loaded.emit(project)
-        except ValueError as e:
-            self._show_error("Error al crear proyecto", str(e))
-        except Exception as e:
-            self._show_error("Error inesperado",
-                             f"No se pudo crear el proyecto:\n{str(e)}")
+        except ValueError as exc:
+            self._show_error("Error al crear proyecto", str(exc))
+        except Exception as exc:
+            self._show_error(
+                "Error inesperado",
+                f"No se pudo crear el proyecto:\n{str(exc)}"
+            )
 
     def _on_load_project_clicked(self):
         file_path = self._select_project_file()
@@ -213,11 +218,13 @@ class ProjectBrowser(QWidget):
             project = self._project_service.load_project(file_path)
             self._load_project(project)
             self.project_loaded.emit(project)
-        except ValueError as e:
-            self._show_error("No se pudo cargar el proyecto", str(e))
-        except Exception as e:
-            self._show_error("Error inesperado",
-                             f"No se pudo cargar el proyecto:\n{str(e)}")
+        except ValueError as exc:
+            self._show_error("No se pudo cargar el proyecto", str(exc))
+        except Exception as exc:
+            self._show_error(
+                "Error inesperado",
+                f"No se pudo cargar el proyecto:\n{str(exc)}"
+            )
 
     def _on_back_clicked(self):
         self._current_project = None
@@ -227,57 +234,70 @@ class ProjectBrowser(QWidget):
     def _on_save_clicked(self):
         if not self._current_project:
             return
+
         file_path = self._select_save_path(
-            f"{self._current_project.name}.json", "JSON Files (*.json)"
+            f"{self._current_project.name}.json",
+            "JSON Files (*.json)"
         )
         if not file_path:
             return
+
         try:
             self._project_service.save_project(
                 self._current_project, file_path)
             summary = self._project_service.get_project_summary(
-                self._current_project)
+                self._current_project
+            )
             self._show_info(
                 "Proyecto guardado",
-                f"Guardado correctamente.\n\n"
+                "Guardado correctamente.\n\n"
                 f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
                 f"({summary['progress_percentage']:.1f}%)"
             )
-        except Exception as e:
-            self._show_error("Error al guardar", str(e))
+        except Exception as exc:
+            self._show_error("Error al guardar", str(exc))
 
     def _on_export_csv_clicked(self):
         if not self._current_project:
             self._show_error(
-                "Sin proyecto", "No hay proyecto cargado para exportar.")
+                "Sin proyecto",
+                "No hay proyecto cargado para exportar."
+            )
             return
+
         if self._current_project.get_total_count() == 0:
             self._show_error("Sin datos", "No hay elementos para exportar.")
             return
+
         file_path = self._select_save_path(
             f"{self._current_project.name}_export.csv",
             "CSV Files (*.csv);;All Files (*)"
         )
         if not file_path:
             return
+
         try:
             self._export_service.export(
-                self._current_project, file_path, 'csv')
+                self._current_project, file_path, "csv")
             summary = self._project_service.get_project_summary(
-                self._current_project)
+                self._current_project
+            )
             self._show_info(
-                "Exportación exitosa",
+                "Exportacion exitosa",
                 f"{summary['total_fragments']} elementos exportados.\n"
                 f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}\n"
                 f"Archivo: {file_path.name}"
             )
-        except Exception as e:
-            self._show_error("Error al exportar",
-                             f"No se pudo exportar a CSV:\n{str(e)}")
+        except Exception as exc:
+            self._show_error(
+                "Error al exportar",
+                f"No se pudo exportar a CSV:\n{str(exc)}"
+            )
 
     def _on_config_labels_clicked(self):
         if not self._current_project:
             return
+
         dlg = LabelConfigDialog(
             current_labels=self._current_project.get_labels(),
             parent=self,
@@ -291,6 +311,7 @@ class ProjectBrowser(QWidget):
     def _on_labels_confirmed(self, new_labels: list):
         if not self._current_project:
             return
+
         self._current_project.set_labels(new_labels)
         self._project_service.auto_save_project(self._current_project)
         self.labels_changed.emit(new_labels)
@@ -299,49 +320,43 @@ class ProjectBrowser(QWidget):
         if not self._current_project:
             return
 
-        # TODO: Change current logic to allow new elements for each MediaType project
-        if self._current_project.media_type != MediaType.VIDEO:
+        new_items = self._project_service.get_new_items(self._current_project)
+        if not new_items:
             self._show_info(
-                "No disponible",
-                "La sincronización de archivos nuevos solo está disponible "
-                "para proyectos de video."
+                "Sin cambios",
+                "No hay archivos nuevos para sincronizar."
             )
             return
 
-        new_videos = self._project_service.get_new_videos(
-            self._current_project)
-        if not new_videos:
-            self._show_info(
-                "Sin cambios", "No hay videos nuevos para sincronizar.")
-            return
         reply = QMessageBox.question(
-            self, "Sincronizar videos",
-            f"Se encontraron {len(new_videos)} videos nuevos.\n\n"
-            f"¿Deseas agregarlos al proyecto?",
-            QMessageBox.Yes | QMessageBox.No
+            self,
+            "Sincronizar archivos",
+            f"Se encontraron {len(new_items)} archivos nuevos.\n\n"
+            "Deseas agregarlos al proyecto?",
+            QMessageBox.Yes | QMessageBox.No,
         )
-        if reply == QMessageBox.Yes:
-            try:
-                count = self._project_service.sync_new_videos(
-                    self._current_project, new_videos
-                )
-                self.refresh()
-                self._show_info(
-                    "Sincronización exitosa",
-                    f"Se agregaron {count} videos nuevos al proyecto."
-                )
-            except Exception as e:
-                self._show_error("Error al sincronizar", str(e))
+        if reply != QMessageBox.Yes:
+            return
 
-    # ─────────────────────────────────────────────
-    # Public API
-    # ─────────────────────────────────────────────
+        try:
+            count = self._project_service.sync_new_items(
+                self._current_project,
+                new_items,
+            )
+            self.refresh()
+            self._show_info(
+                "Sincronizacion exitosa",
+                f"Se agregaron {count} archivos nuevos al proyecto."
+            )
+        except Exception as exc:
+            self._show_error("Error al sincronizar", str(exc))
+
+    # ----- Public API -----
 
     def refresh(self):
         if self._current_project:
             self._item_list.refresh(self._current_project)
-            if self._current_project.media_type == MediaType.VIDEO:
-                self._check_for_new_videos()
+            self._check_for_new_items()
 
     def set_focus(self):
         self._item_list.set_focus()
@@ -361,9 +376,7 @@ class ProjectBrowser(QWidget):
     def trigger_export_project(self):
         self._on_export_csv_clicked()
 
-    # ─────────────────────────────────────────────
-    # Private helpers
-    # ─────────────────────────────────────────────
+    # ----- Private helpers -----
 
     def _load_project(self, project: Project):
         self._current_project = project
@@ -374,25 +387,20 @@ class ProjectBrowser(QWidget):
         self.topbar_project_label.setVisible(True)
         self._topbar_sep.setVisible(True)
 
-        # Media type badge
         self._type_badge.setText(f"  {project.media_type.label()}  ")
         self._type_badge.setVisible(True)
 
         self._sidebar.show_project_state(project.name)
-
-        is_video = project.media_type == MediaType.VIDEO
-        self._sidebar.sync_btn.setVisible(is_video)
+        self._sidebar.sync_btn.setVisible(True)
 
         self._stack.setCurrentIndex(VIEW_LIST)
         self._item_list.load(project)
-
-        if is_video:
-            self._check_for_new_videos()
+        self._check_for_new_items()
 
     def _show_welcome(self):
         self.topbar_project_label.setVisible(False)
         self._topbar_sep.setVisible(False)
-
+        
         self._type_badge.setVisible(False)
         self.sync_badge.setVisible(False)
 
@@ -401,40 +409,45 @@ class ProjectBrowser(QWidget):
         self._item_list.reset()
         self._stack.setCurrentIndex(VIEW_WELCOME)
 
-    def _check_for_new_videos(self):
+    def _check_for_new_items(self):
         if not self._current_project:
             return
-        new_videos = self._project_service.get_new_videos(
-            self._current_project)
-        if new_videos:
-            self._sidebar.set_sync_pending(len(new_videos))
-            self.sync_badge.setText(f"{len(new_videos)} videos nuevos")
+
+        new_items = self._project_service.get_new_items(self._current_project)
+        if new_items:
+            self._sidebar.set_sync_pending(len(new_items))
+            self.sync_badge.setText(f"{len(new_items)} archivos nuevos")
             self.sync_badge.setVisible(True)
         else:
             self._sidebar.set_sync_idle()
             self.sync_badge.setVisible(False)
 
-    # ─────────────────────────────────────────────
-    # Dialogs
-    # ─────────────────────────────────────────────
+    # ----- Dialogs -----
 
     def _select_folder(self) -> Path:
         folder = QFileDialog.getExistingDirectory(
-            self, "Selecciona la carpeta raiz (proyecto)",
-            "", QFileDialog.ShowDirsOnly
+            self,
+            "Selecciona la carpeta raiz (proyecto)",
+            "",
+            QFileDialog.ShowDirsOnly,
         )
         return Path(folder) if folder else None
 
     def _select_project_file(self) -> Path:
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Cargar proyecto", "",
-            "JSON Files (*.json);;All Files (*)"
+            self,
+            "Cargar proyecto",
+            "",
+            "JSON Files (*.json);;All Files (*)",
         )
         return Path(file_path) if file_path else None
 
     def _select_save_path(self, default_name: str, filter: str) -> Path:
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar", default_name, filter
+            self,
+            "Guardar",
+            default_name,
+            filter,
         )
         return Path(file_path) if file_path else None
 
