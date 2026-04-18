@@ -1,10 +1,14 @@
 from pathlib import Path
 from typing import Optional
 
+from src.domain.models.media.audio_item import AudioItem
+from src.domain.models.media.image_item import ImageItem
 from src.domain.models.media.media_item import MediaItem, MediaType
+from src.domain.models.media.text_item import TextItem
 from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
 from src.domain.interfaces import (
+    IMediaPreviewSource,
     IProjectRepository,
     IVideoSource,
     IFragmentScanner,
@@ -22,13 +26,9 @@ class ProjectService:
     def __init__(
         self,
         repository: IProjectRepository,
-        scanner: IFragmentScanner,
-        video_source: IVideoSource,
         media_factory: Optional["MediaTypeFactory"] = None
     ):
         self._repository = repository
-        self._scanner = scanner
-        self._video_source = video_source
         self._media_factory = media_factory
 
     # ---- Project creation ----
@@ -81,42 +81,53 @@ class ProjectService:
 
         return self._repository.load(file_path)
 
-    # ---- Sync (video only) ----
+    # ---- Sync new MediaItems ----
 
-    def get_new_videos(self, project: Project) -> set[Path]:
-        """Get the count of new videos in a project folder
+    def get_new_items(self, project: Project) -> set[Path]:
+        """
+        Get the count of new MediaItems in a project folder
 
         Args:
-            project (Project): Projec to check
+            project (Project): Project to check
 
         Returns:
-            set: Set of new videos detected
+            set[Path]: Set of new MediaItems detected
         """
         folder_path = Path(project.folder_path)
 
         if not folder_path.exists():
             return set()
 
-        all_videos = self._scanner.scan_folder(folder_path=folder_path)
+        if self._media_factory is None:
+            raise RuntimeError("MediaTypeFactory is required for project sync")
+
+        all_paths = self._media_factory.scan_paths(
+            folder_path=folder_path,
+            media_type=project.media_type
+        )
         existing_paths = {Path(it.file_path) for it in project.items}
-        new_videos = set(all_videos) - existing_paths
+        new_items = set(all_paths) - existing_paths
 
-        return new_videos
+        return new_items
 
-    def sync_new_videos(self, project: Project, new_videos: set[Path]) -> int:
+    def sync_new_items(self, project: Project, new_items: set[Path]) -> int:
         """
-        Add new_videos detected as fragments for the current project
+        Add new MediaItems detected for the current project
+
         Args:
             project (Project): Project to sync
-            new_videos (set[Path]): The Paths of the detected new videos
+            new_items (set[Path]): New MediaItems detected by scanning the project's folder
 
         Returns:
-            int: Number of new fragments added
+            int: Number of new items added
         """
-        if not new_videos:
+        if not new_items:
             return 0
 
-        # Derive next numeric suffix from existing item_ids
+        if self._media_factory is None:
+            raise RuntimeError("MediaTypeFactory is required for project sync")
+
+        # Derive the next numeric id for the existing item_ids
         max_id = 0
         for it in project.items:
             try:
@@ -126,21 +137,23 @@ class ProjectService:
         next_id = max_id + 1
 
         added = 0
-        for video_path in sorted(new_videos):
+        for file_path in sorted(new_items):
             try:
-                duration = self._video_source.get_duration(video_path)
-                item = VideoItem(
-                    item_id=f"video_{next_id:03d}",
-                    file_path=str(video_path),
-                    start_time=0.0,
-                    duration=min(1.0, duration),
+                item = self._media_factory.create_item(
+                    media_type=project.media_type,
+                    item_id=self._make_item_id(project.media_type, next_id),
+                    file_path=file_path,
                 )
                 project.add_item(item)
                 next_id += 1
                 added += 1
             except Exception as e:
-                print(f"Failed to add {video_path}: {e}")
+                print(f"Failed to add {file_path}: {e}")
         return added
+
+    @staticmethod
+    def _make_item_id(media_type: MediaType, numeric_id: int) -> str:
+        return f"{media_type.value}_{numeric_id:03d}"
 
     # ---- Statistics ----
 
@@ -170,23 +183,95 @@ class MediaTypeFactory:
     Register one IMediaScanner per MediaType at startup via register_scanner()
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        video_scanner: IFragmentScanner,
+        video_source: IVideoSource,
+    ):
+        self._video_scanner = video_scanner
+        self._video_source = video_source
         self._scanners: dict[MediaType, IMediaScanner] = {}
+        self._preview_sources: dict[MediaType, IMediaPreviewSource] = {}
 
     def register_scanner(self, scanner: IMediaScanner) -> None:
         self._scanners[scanner.media_type] = scanner
 
-    def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
-        scanner = self._scanners.get(media_type)
+    def register_preview_source(self, preview_source: IMediaPreviewSource) -> None:
+        self._preview_sources[preview_source.media_type] = preview_source
 
+    def get_scanner(self, media_type: MediaType) -> Optional[IMediaScanner]:
+        return self._scanners.get(media_type)
+
+    def scan_paths(self, folder_path: Path, media_type: MediaType) -> list[Path]:
+        if media_type == MediaType.VIDEO:
+            return list(self._video_scanner.scan_folder(folder_path))
+
+        scanner = self.get_scanner(media_type)
         if scanner is None:
             raise ValueError(
                 f"No scanner registered for media type: {media_type.value}"
             )
 
-        items = scanner.scan_folder(folder_path=folder_path)
-        if not items:
-            label = media_type.label
+        return [Path(item.file_path) for item in scanner.scan_folder(folder_path)]
+
+    def create_item(
+        self,
+        media_type: MediaType,
+        item_id: str,
+        file_path: Path,
+    ) -> MediaItem:
+        file_path = Path(file_path)
+
+        if media_type == MediaType.VIDEO:
+            duration = self._video_source.get_duration(file_path)
+            return VideoItem(
+                item_id=item_id,
+                file_path=str(file_path),
+                start_time=0.0,
+                duration=min(1.0, duration) if duration > 0 else 1.0,
+            )
+
+        metadata = self._get_metadata(media_type, file_path)
+
+        if media_type == MediaType.IMAGE:
+            return ImageItem(
+                item_id=item_id,
+                file_path=str(file_path),
+                width=metadata.get("width"),
+                height=metadata.get("height"),
+            )
+
+        if media_type == MediaType.AUDIO:
+            return AudioItem(
+                item_id=item_id,
+                file_path=str(file_path),
+                duration_s=metadata.get("duration_s"),
+                sample_rate=metadata.get("sample_rate"),
+            )
+
+        if media_type == MediaType.TEXT:
+            return TextItem(
+                item_id=item_id,
+                file_path=str(file_path),
+                encoding=metadata.get("encoding", "utf-8"),
+            )
+
+        raise ValueError(f"Unsupported media type: {media_type.value}")
+
+    def _get_metadata(self, media_type: MediaType, file_path: Path) -> dict:
+        preview_source = self._preview_sources.get(media_type)
+        if preview_source is None:
+            return {}
+
+        try:
+            return preview_source.get_metadata(file_path)
+        except Exception:
+            return {}
+
+    def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
+        paths = self.scan_paths(folder_path=folder_path, media_type=media_type)
+        if not paths:
+            label = media_type.label()
             raise ValueError(
                 f"No se encontraron archivos de {label.lower()} en la carpeta"
             )
@@ -197,7 +282,12 @@ class MediaTypeFactory:
             media_type=media_type
         )
 
-        for item in items:
+        for index, file_path in enumerate(paths, start=1):
+            item = self.create_item(
+                media_type=media_type,
+                item_id=ProjectService._make_item_id(media_type, index),
+                file_path=file_path,
+            )
             project.add_item(item)
 
         return project
