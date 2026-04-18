@@ -1,7 +1,6 @@
 from typing import Dict, Any, Callable, TypeVar, Type
 
 from src.domain.interfaces import (
-    IFragmentScanner,
     ILabelValidator,
     IMediaPreviewSource,
     IMediaScanner,
@@ -30,7 +29,6 @@ from src.infrastructure.validators import SimpleLabelValidator
 from src.application.services.project_service import MediaTypeFactory, ProjectService
 from src.application.services.labeling_service import LabelingService
 from src.application.services.export_service import ExportService
-from src.application.services.navigation_service import NavigationService
 
 
 T = TypeVar('T')
@@ -70,10 +68,9 @@ class ServiceContainer:
         video_source = QtVideoSource()
         video_scanner = FileSystemFragmentScanner()
         self.register_singleton(IVideoSource, video_source)
-        self.register_singleton(IFragmentScanner, video_scanner)
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
 
-        # ------ Infrastructure layer - new scanners ---------
+        # ------ Infrastructure layer - scanners ---------
         image_scanner = ImageScanner()
         audio_scanner = AudioScanner()
         text_scanner = TextScanner()

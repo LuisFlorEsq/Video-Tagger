@@ -226,10 +226,11 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 ---
 
 ### CURRENT ITERATION
-- [ ] Implement the media sync feature for all Media Types (image, audio, text)
+- [x] Implement the media sync feature for all Media Types (image, audio, text)
   - [x] Change project service sync logic for all Media Types
-  - [ ] Implement the changes on browser methods
-  - [ ] Update current UI on sidebar file
+  - [x] Implement the changes on browser methods
+  - [x] Update current UI on sidebar file
+- [ ] Change Video classes on scanners and interfaces to adopt media type factory
 - [ ] Numpy arrays (images and signals)
 - [ ] Show Audio (waveform)
 - [ ] Cloud connection for dataset and project loading (creation)

@@ -6,10 +6,6 @@ from src.domain.models.project import Project
 from src.domain.models.media.media_item import MediaItem, MediaType
 
 
-# ---------------------------------------------
-# Original Interfaces (Backward compatibility)
-# ---------------------------------------------
-
 class IProjectRepository(ABC):
     """Interface for project persistence operations."""
 
