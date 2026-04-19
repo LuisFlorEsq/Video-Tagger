@@ -231,7 +231,8 @@ Centro de Investigación en Computación — IPN. All rights reserved.
   - [x] Implement the changes on browser methods
   - [x] Update current UI on sidebar file
 - [x] Refactor scanners and interfaces to adopt media type factory (delete video specific code)
-- [ ] Ensure project saving when user creates a new project from folder and after sync
+- [ ] Bugfix: Video and Audio duration doesnt update/displayed properly
+- [x] Project saving when user creates a new project from folder and after sync
 - [ ] Numpy arrays (images and signals)
 - [ ] Show Audio (waveform)
 - [ ] Cloud connection for dataset and project loading (creation)

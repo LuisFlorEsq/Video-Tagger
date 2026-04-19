@@ -148,16 +148,16 @@ class ProjectBrowser(QWidget):
 
     def _connect_signals(self):
         s = self._sidebar
-        
+
         # Project selection
         s.new_project_btn.clicked.connect(self._on_new_project_clicked)
         s.load_project_btn.clicked.connect(self._on_load_project_clicked)
-        
+
         # Project management
         s.save_project_btn.clicked.connect(self._on_save_clicked)
         s.export_csv_btn.clicked.connect(self._on_export_csv_clicked)
         s.config_labels_btn.clicked.connect(self._on_config_labels_clicked)
-        
+
         # Sync new content and return to Main Window
         s.sync_btn.clicked.connect(self._on_sync_clicked)
         s.back_btn.clicked.connect(self._on_back_clicked)
@@ -184,7 +184,7 @@ class ProjectBrowser(QWidget):
     # ----- Command handlers -----
 
     def _on_new_project_clicked(self):
-        
+
         # Ask for media type
         dlg = MediaTypeDialog(parent=self)
         if dlg.exec() != QDialog.Accepted:
@@ -201,6 +201,7 @@ class ProjectBrowser(QWidget):
                 media_type=media_type,
             )
             self._load_project(project)
+            self._prompt_initial_save(project)
             self.project_loaded.emit(project)
         except ValueError as exc:
             self._show_error("Error al crear proyecto", str(exc))
@@ -344,10 +345,19 @@ class ProjectBrowser(QWidget):
                 new_items,
             )
             self.refresh()
-            self._show_info(
-                "Sincronizacion exitosa",
-                f"Se agregaron {count} archivos nuevos al proyecto."
+            was_saved = self._persist_current_project(
+                ask_first_save=True,
+                success_title="Sincronizacion exitosa",
+                success_message=(
+                    f"Se agregaron {count} archivos nuevos al proyecto."
+                ),
             )
+            if not was_saved:
+                self._show_info(
+                    "Sincronizacion exitosa",
+                    f"Se agregaron {count} archivos nuevos al proyecto.\n\n"
+                    "El proyecto sigue en memoria, pero aun no se guardo."
+                )
         except Exception as exc:
             self._show_error("Error al sincronizar", str(exc))
 
@@ -400,7 +410,7 @@ class ProjectBrowser(QWidget):
     def _show_welcome(self):
         self.topbar_project_label.setVisible(False)
         self._topbar_sep.setVisible(False)
-        
+
         self._type_badge.setVisible(False)
         self.sync_badge.setVisible(False)
 
@@ -421,6 +431,80 @@ class ProjectBrowser(QWidget):
         else:
             self._sidebar.set_sync_idle()
             self.sync_badge.setVisible(False)
+
+    def _prompt_initial_save(self, project: Project):
+        reply = QMessageBox.question(
+            self,
+            "Guardar proyecto",
+            "El proyecto fue creado correctamente.\n\n"
+            "Deseas guardarlo ahora?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        self._persist_project(
+            project,
+            ask_first_save=True,
+            success_title="Proyecto guardado",
+            success_message="Proyecto creado y guardado correctamente.",
+        )
+
+    def _persist_current_project(
+        self,
+        ask_first_save: bool,
+        success_title: str | None = None,
+        success_message: str | None = None,
+    ) -> bool:
+        if not self._current_project:
+            return False
+
+        return self._persist_project(
+            self._current_project,
+            ask_first_save=ask_first_save,
+            success_title=success_title,
+            success_message=success_message,
+        )
+
+    def _persist_project(
+        self,
+        project: Project,
+        ask_first_save: bool,
+        success_title: str | None = None,
+        success_message: str | None = None,
+    ) -> bool:
+        if project.get_save_path():
+            return self._auto_save_with_feedback(
+                project,
+                success_title=success_title,
+                success_message=success_message,
+            )
+
+        if not ask_first_save:
+            return False
+
+        file_path = self._select_save_path(
+            f"{project.name}.json",
+            "JSON Files (*.json)",
+        )
+        if not file_path:
+            return False
+
+        self._project_service.save_project(project, file_path)
+        if success_title and success_message:
+            self._show_info(success_title, success_message)
+        return True
+
+    def _auto_save_with_feedback(
+        self,
+        project: Project,
+        success_title: str | None = None,
+        success_message: str | None = None,
+    ) -> bool:
+        saved = self._project_service.auto_save_project(project)
+        if saved and success_title and success_message:
+            self._show_info(success_title, success_message)
+        return saved
 
     # ----- Dialogs -----
 
