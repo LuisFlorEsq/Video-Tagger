@@ -12,11 +12,72 @@ from src.core.config import METADATA_TIMEOUT_MS
 
 
 # ---------------------------------------------
+# Auxiliar methods
+# ---------------------------------------------
+
+def read_qt_media_duration(file_path: Path) -> Optional[float]:
+    """Standalone utility function to extract exact duration using QMediaPlayer"""
+    try:
+        player = QMediaPlayer()
+        audio_output = QAudioOutput()
+        player.setAudioOutput(audio_output)
+        audio_output.setVolume(0)
+
+        loop = QEventLoop()
+        timer = QTimer()
+        timer.setSingleShot(True)
+        result: list = None
+
+        def on_status(status):
+            if status == QMediaPlayer.LoadedMedia:
+                dur_ms = player.duration()
+                if dur_ms > 0:
+                    result[0] = dur_ms / 1000.0
+                timer.stop()
+                loop.quit()
+            elif status in (QMediaPlayer.InvalidMedia, QMediaPlayer.NoMedia):
+                timer.stop()
+                loop.quit()
+
+        def on_error(*_):
+            timer.stop()
+            loop.quit()
+
+        player.mediaStatusChanged.connect(on_status)
+        player.errorOccurred.connect(on_error)
+        timer.timeout.connect(loop.quit)
+
+        player.setSource(QUrl.fromLocalFile(str(file_path.absolute())))
+        timer.start(METADATA_TIMEOUT_MS)
+        loop.exec()
+
+        player.mediaStatusChanged.disconnect(on_status)
+        player.errorOccurred.disconnect(on_error)
+        player.stop()
+
+        return result[0]
+
+    except Exception:
+        return None
+
+
+# ---------------------------------------------
 # VideoPreviewSource
 # ---------------------------------------------
 
 class VideoPreviewSource(IMediaPreviewSource):
     """Reads video duration using Qts MediaPlayer with an event loop"""
+
+    @property
+    def media_type(self):
+        return MediaType.VIDEO
+
+    def get_metadata(self, file_path: Path) -> dict:
+        duration_s = read_qt_media_duration(file_path)
+        return {"duration_s": duration_s}
+
+    def file_exists(self, file_path: Path) -> bool:
+        return file_path.exists() and file_path.is_file()
 
 # ---------------------------------------------
 # ImagePreviewSource
@@ -57,60 +118,16 @@ class AudioPreviewSource(IMediaPreviewSource):
         return MediaType.AUDIO
 
     def get_metadata(self, file_path: Path) -> dict:
-        duration_s = self._read_duration(file_path)
+        duration_s = read_qt_media_duration(file_path)
         return {"duration_s": duration_s, "sample_rate": None}
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
 
-    def _read_duration(self, file_path: Path) -> Optional[float]:
-        try:
-            player = QMediaPlayer()
-            audio_output = QAudioOutput()
-            player.setAudioOutput(audio_output)
-            audio_output.setVolume(0)
-
-            loop = QEventLoop()
-            timer = QTimer()
-            timer.setSingleShot(True)
-            result: list = None
-
-            def on_status(status):
-                if status == QMediaPlayer.LoadedMedia:
-                    dur_ms = player.duration()
-                    if dur_ms > 0:
-                        result[0] = dur_ms / 1000.0
-                    timer.stop()
-                    loop.quit()
-                elif status in (QMediaPlayer.InvalidMedia, QMediaPlayer.NoMedia):
-                    timer.stop()
-                    loop.quit()
-
-            def on_error(*_):
-                timer.stop()
-                loop.quit()
-
-            player.mediaStatusChanged.connect(on_status)
-            player.errorOccurred.connect(on_error)
-            timer.timeout.connect(loop.quit)
-
-            player.setSource(QUrl.fromLocalFile(str(file_path.absolute())))
-            timer.start(METADATA_TIMEOUT_MS)
-            loop.exec()
-
-            player.mediaStatusChanged.disconnect(on_status)
-            player.errorOccurred.disconnect(on_error)
-            player.stop()
-
-            return result[0]
-
-        except Exception:
-            return None
-
-
 # ---------------------------------------------
 # TextPreviewSource
 # ---------------------------------------------
+
 
 class TextPreviewSource(IMediaPreviewSource):
     """Sniffs the encoding of a text file and reports its byte size"""

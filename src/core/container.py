@@ -12,7 +12,6 @@ from src.domain.models.media.media_item import MediaType
 
 from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
-from src.infrastructure.video import QtVideoSource
 from src.infrastructure.scanners import (
     AudioScanner,
     FileSystemFragmentScanner,
@@ -65,9 +64,6 @@ class ServiceContainer:
         """Register default implementations."""
         # ------ Infrastructure layer - singletons ---------
         self.register_singleton(IProjectRepository, JsonProjectRepository())
-        video_source = QtVideoSource()
-        video_scanner = FileSystemFragmentScanner()
-        self.register_singleton(IVideoSource, video_source)
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
 
         # ------ Infrastructure layer - scanners ---------
