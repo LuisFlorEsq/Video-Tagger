@@ -230,7 +230,8 @@ Centro de Investigación en Computación — IPN. All rights reserved.
   - [x] Change project service sync logic for all Media Types
   - [x] Implement the changes on browser methods
   - [x] Update current UI on sidebar file
-- [ ] Change Video classes on scanners and interfaces to adopt media type factory
+- [x] Refactor scanners and interfaces to adopt media type factory (delete video specific code)
+- [ ] Ensure project saving when user creates a new project from folder and after sync
 - [ ] Numpy arrays (images and signals)
 - [ ] Show Audio (waveform)
 - [ ] Cloud connection for dataset and project loading (creation)

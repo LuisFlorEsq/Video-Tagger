@@ -5,6 +5,10 @@ from pathlib import Path
 from src.domain.models.project import Project
 from src.domain.models.media.media_item import MediaItem, MediaType
 
+# ---------------------------------------------
+# Persistence and validators
+# ---------------------------------------------
+
 
 class IProjectRepository(ABC):
     """Interface for project persistence operations."""
@@ -41,39 +45,6 @@ class IExporter(ABC):
     @abstractmethod
     def get_format_name(self) -> str:
         """Get the human-readable format name."""
-        pass
-
-
-class IVideoSource(ABC):
-    """Interface for video file operations."""
-
-    @abstractmethod
-    def get_duration(self, video_path: Path) -> float:
-        """Get video duration in seconds."""
-        pass
-
-    @abstractmethod
-    def get_fps(self, video_path: Path) -> float:
-        """Get video frames per second."""
-        pass
-
-    @abstractmethod
-    def exists(self, video_path: Path) -> bool:
-        """Check if video file exists."""
-        pass
-
-
-class IFragmentScanner(ABC):
-    """Interface for scanning folders for video fragments."""
-
-    @abstractmethod
-    def scan_folder(self, folder_path: Path) -> List[Path]:
-        """Scan a folder and return list of video file paths."""
-        pass
-
-    @abstractmethod
-    def get_supported_extensions(self) -> List[str]:
-        """Get list of supported video file extensions."""
         pass
 
 

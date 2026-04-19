@@ -26,7 +26,7 @@ def read_qt_media_duration(file_path: Path) -> Optional[float]:
         loop = QEventLoop()
         timer = QTimer()
         timer.setSingleShot(True)
-        result: list = None
+        result: list = [None]
 
         def on_status(status):
             if status == QMediaPlayer.LoadedMedia:

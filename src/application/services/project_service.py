@@ -1,17 +1,15 @@
 from pathlib import Path
 from typing import Optional
 
+from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.media.audio_item import AudioItem
 from src.domain.models.media.image_item import ImageItem
-from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
 from src.domain.interfaces import (
     IMediaPreviewSource,
     IProjectRepository,
-    IVideoSource,
-    IFragmentScanner,
     IMediaScanner
 )
 
@@ -184,12 +182,8 @@ class MediaTypeFactory:
     """
 
     def __init__(
-        self,
-        video_scanner: IFragmentScanner,
-        video_source: IVideoSource,
+        self
     ):
-        self._video_scanner = video_scanner
-        self._video_source = video_source
         self._scanners: dict[MediaType, IMediaScanner] = {}
         self._preview_sources: dict[MediaType, IMediaPreviewSource] = {}
 
@@ -203,8 +197,6 @@ class MediaTypeFactory:
         return self._scanners.get(media_type)
 
     def scan_paths(self, folder_path: Path, media_type: MediaType) -> list[Path]:
-        if media_type == MediaType.VIDEO:
-            return list(self._video_scanner.scan_folder(folder_path))
 
         scanner = self.get_scanner(media_type)
         if scanner is None:
@@ -222,16 +214,15 @@ class MediaTypeFactory:
     ) -> MediaItem:
         file_path = Path(file_path)
 
+        metadata = self._get_metadata(media_type, file_path)
+
         if media_type == MediaType.VIDEO:
-            duration = self._video_source.get_duration(file_path)
             return VideoItem(
                 item_id=item_id,
-                file_path=str(file_path),
-                start_time=0.0,
-                duration=min(1.0, duration) if duration > 0 else 1.0,
+                file_path=file_path,
+                start_time=0,
+                duration=metadata.get("duration_s")
             )
-
-        metadata = self._get_metadata(media_type, file_path)
 
         if media_type == MediaType.IMAGE:
             return ImageItem(

@@ -5,25 +5,26 @@ from src.domain.interfaces import (
     IMediaPreviewSource,
     IMediaScanner,
     IProjectRepository,
-    IVideoSource
 )
 
 from src.domain.models.media.media_item import MediaType
 
 from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
+from src.infrastructure.validators import SimpleLabelValidator
+
 from src.infrastructure.scanners import (
+    VideoScanner,
     AudioScanner,
-    FileSystemFragmentScanner,
     ImageScanner,
     TextScanner
 )
 from src.infrastructure.preview_sources import (
+    VideoPreviewSource,
     AudioPreviewSource,
     ImagePreviewSource,
     TextPreviewSource
 )
-from src.infrastructure.validators import SimpleLabelValidator
 
 from src.application.services.project_service import MediaTypeFactory, ProjectService
 from src.application.services.labeling_service import LabelingService
@@ -67,34 +68,45 @@ class ServiceContainer:
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
 
         # ------ Infrastructure layer - scanners ---------
+        video_scanner = VideoScanner()
         image_scanner = ImageScanner()
         audio_scanner = AudioScanner()
         text_scanner = TextScanner()
 
         # Register by MediaType
+        self.register_singleton(VideoScanner, video_scanner)
         self.register_singleton(ImageScanner, image_scanner)
         self.register_singleton(AudioScanner, audio_scanner)
         self.register_singleton(TextScanner, text_scanner)
 
         # ------ Infrastructure layer - preview sources ---------
+        video_preview = VideoPreviewSource()
         image_preview = ImagePreviewSource()
         audio_preview = AudioPreviewSource()
         text_preview = TextPreviewSource()
+        
+        # Register by MediaType
+        self.register_singleton(VideoPreviewSource, video_preview)
         self.register_singleton(ImagePreviewSource, image_preview)
         self.register_singleton(AudioPreviewSource, audio_preview)
         self.register_singleton(TextPreviewSource, text_preview)
 
         # ------ MediaTypeFactory ---------
-        media_factory = MediaTypeFactory(
-            video_scanner=video_scanner,
-            video_source=video_source,
-        )
+        media_factory = MediaTypeFactory()
+        
+        # Register scanners
+        media_factory.register_scanner(video_scanner)
         media_factory.register_scanner(image_scanner)
         media_factory.register_scanner(audio_scanner)
         media_factory.register_scanner(text_scanner)
+        
+        # Register previews
+        media_factory.register_preview_source(video_preview)
         media_factory.register_preview_source(image_preview)
         media_factory.register_preview_source(audio_preview)
         media_factory.register_preview_source(text_preview)
+        
+        # Singleton
         self.register_singleton(MediaTypeFactory, media_factory)
 
         # ------ Application services ---------
