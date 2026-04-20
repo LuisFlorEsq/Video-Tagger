@@ -7,6 +7,8 @@ from src.domain.interfaces import IProjectRepository
 from src.domain.models.project import Project
 from src.domain.models.fragment import Fragment
 
+from src.core.config import DEFAULT_LABELS
+
 
 class JsonProjectRepository(IProjectRepository):
     """JSON file-based project repository."""
@@ -19,25 +21,34 @@ class JsonProjectRepository(IProjectRepository):
             'name': project.name,
             'folder_path': project.folder_path,
             'save_path': project.save_path,
+            'custom_labels': project.custom_labels,
             'fragments': [self._fragment_to_dict(f) for f in project.fragments],
             'created_at': project.created_at.isoformat(),
             'modified_at': project.modified_at.isoformat()
         }
         
         with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, ensure_ascii=False)
     
     def load(self, file_path: Path) -> Project:
         """Load project from JSON file."""
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+            
+        raw_labels = data.get('custom_labels')
+        custom_labels = (
+            [lbl for lbl in raw_labels if lbl and lbl.strip()]
+            if raw_labels
+            else list()
+        )
         
         project = Project(
             name=data['name'],
             folder_path=data['folder_path'],
             save_path=data['save_path'],
             created_at=datetime.fromisoformat(data['created_at']),
-            modified_at=datetime.fromisoformat(data['modified_at'])
+            modified_at=datetime.fromisoformat(data['modified_at']),
+            custom_labels=custom_labels
         )
         
         for fragment_data in data.get('fragments', []):
@@ -49,6 +60,10 @@ class JsonProjectRepository(IProjectRepository):
     def exists(self, file_path: Path) -> bool:
         """Check if project file exists."""
         return file_path.exists() and file_path.is_file()
+    
+    # ─────────────────────────────────────────────
+    # Private helpers
+    # ─────────────────────────────────────────────
     
     @staticmethod
     def _fragment_to_dict(fragment: Fragment) -> dict:

@@ -92,17 +92,17 @@ class ProjectService:
             project (Project): Projec to check
 
         Returns:
-            int: Number of new videos not in project
+            set: Set of new videos detected
         """
         folder_path = Path(project.folder_path)
+        
         if not folder_path.exists():
-            return 0
+            return set()
         
         all_videos = self._scanner.scan_folder(folder_path=folder_path)
-        
         existing_paths = {Path(f.video_path) for f in project.fragments}
-        
         new_videos = set(all_videos) - existing_paths
+        
         return new_videos
         
     def sync_new_videos(self, project: Project, new_videos: set[Path]) -> int:
@@ -118,8 +118,18 @@ class ProjectService:
         if not new_videos:
             return 0
         
-        next_id = project.get_total_count() + 1
+        existing_ids = [f.fragment_id for f in project.fragments]
+        max_id = 0
         
+        for fid in existing_ids:
+            try:
+                num = int(fid.split('_')[-1])
+                max_id = max(max_id, num)
+            except ValueError:
+                pass
+        next_id = max_id + 1
+        
+        added = 0        
         for video_path in new_videos:
             try:
                 duration = self._video_source.get_duration(video_path)
@@ -131,12 +141,12 @@ class ProjectService:
                 )
                 project.add_fragment(fragment)
                 next_id += 1
+                added += 1
             except Exception as e:
                 print(f"Failed to add {video_path}: {e}")
                 continue
             
-        return len(new_videos)
-        
+        return added
     
     def get_project_summary(self, project: Project) -> dict:
         """Get a summary of project statistics."""
