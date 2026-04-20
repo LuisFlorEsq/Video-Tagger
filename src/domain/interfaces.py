@@ -115,6 +115,9 @@ class IMediaPreviewSource(ABC):
         Images  -> {"width": int, "height": int}
         Audio   -> {"duration_s": float, "sample_rate": int | None}
         Text    -> {"encoding": str, "size_bytes": int}
+        Signal  -> {"shape": list[int], "dtype": str, "channels": int | None,
+                    "sample_rate": int | None, "duration_s": float | None,
+                    "source_key": str | None}
         """
         pass
 

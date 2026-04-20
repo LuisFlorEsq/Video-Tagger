@@ -15,6 +15,7 @@ class MediaType(Enum):
     IMAGE = "image"
     AUDIO = "audio"
     TEXT = "text"
+    SIGNAL = "signal"
 
     @classmethod
     def from_str(cls, value: str) -> "MediaType":
@@ -35,6 +36,7 @@ class MediaType(Enum):
             MediaType.IMAGE: "Imagen",
             MediaType.AUDIO: "Audio",
             MediaType.TEXT: "Texto",
+            MediaType.SIGNAL: "Señal",
         }[self]
 
 

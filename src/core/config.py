@@ -53,6 +53,8 @@ METADATA_TIMEOUT_MS = 5_000
 VIDEO_EXTENSIONS = [".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"]
 IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png",
                     ".bmp", ".gif", ".tiff", ".tif", ".webp"]
+IMAGE_ARRAY_EXTENSIONS = [".npy", ".npz"]
 AUDIO_EXTENSIONS = [".mp3", ".wav", ".flac",
                     ".ogg", ".aac", ".m4a", ".wma", ".opus"]
 TEXT_EXTENSIONS = [".txt", ".csv", ".json", ".xml", ".md", ".rst", ".log"]
+SIGNAL_EXTENSIONS = [".npy", ".npz"]
