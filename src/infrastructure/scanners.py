@@ -2,12 +2,11 @@ from pathlib import Path
 from typing import List
 
 from src.domain.interfaces import IMediaScanner
-from src.domain.models.media.media_item import MediaItem, MediaType
-from src.domain.models.media.image_item import ImageItem
-from src.domain.models.media.audio_item import AudioItem
-from src.domain.models.media.signal_item import SignalItem
-from src.domain.models.media.text_item import TextItem
-from src.domain.models.media.video_item import VideoItem
+from src.domain.models.media import (
+    MediaItem, MediaType,
+    ImageItem, AudioItem, SignalItem,
+    VideoItem, TextItem
+)
 
 from src.core.config import (
     VIDEO_EXTENSIONS,

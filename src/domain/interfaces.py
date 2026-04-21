@@ -99,7 +99,9 @@ class IMediaPreviewSource(ABC):
 
     For images: pixel dimensions
     For audio: duration and sample rate
-    For text: encoding detection 
+    For text: encoding detection
+    For video: duration
+    For signals shape, dtype, etc
     """
 
     @property
@@ -120,7 +122,13 @@ class IMediaPreviewSource(ABC):
                     "source_key": str | None}
         """
         pass
+    
+    @abstractmethod
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> MediaItem:
+        """Creates an instance of the corresponding MediaItem"""
+        pass
 
     @abstractmethod
     def file_exists(self, file_path: str) -> bool:
         pass
+    

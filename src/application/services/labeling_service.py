@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from src.domain.models.project import Project
-from src.domain.models.media.media_item import MediaItem
+from src.domain.models.media import MediaItem
 from src.domain.interfaces import (
     ILabelValidator
 )

@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
 
 from src.ui.styles import AppTheme
 
-from src.core.logger import logger
 from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
 

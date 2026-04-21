@@ -6,7 +6,10 @@ from PySide6.QtCore import QEventLoop, QTimer, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
 from src.domain.interfaces import IMediaPreviewSource
-from src.domain.models.media.media_item import MediaType
+from src.domain.models.media import (
+    MediaType, AudioItem, ImageItem,
+    SignalItem, TextItem, VideoItem
+)
 
 from src.core.config import METADATA_TIMEOUT_MS
 from src.infrastructure.array_media import (
@@ -81,6 +84,14 @@ class VideoPreviewSource(IMediaPreviewSource):
     def get_metadata(self, file_path: Path) -> dict:
         duration_s = read_qt_media_duration(file_path)
         return {"duration_s": duration_s}
+    
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> VideoItem:
+        return VideoItem(
+            item_id=item_id,
+            file_path=str(file_path),
+            start_time=0,
+            duration=metadata.get("duration_s", 0)
+        )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
@@ -119,6 +130,15 @@ class ImagePreviewSource(IMediaPreviewSource):
 
         return {"width": 0, "height": 0}
 
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> ImageItem:
+        return ImageItem(
+            item_id=item_id,
+            file_path=str(file_path),
+            width=metadata.get("width"),
+            height=metadata.get("height"),
+            source_key=metadata.get("source_key")
+        )
+
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
 
@@ -137,6 +157,14 @@ class AudioPreviewSource(IMediaPreviewSource):
     def get_metadata(self, file_path: Path) -> dict:
         duration_s = read_qt_media_duration(file_path)
         return {"duration_s": duration_s, "sample_rate": None}
+    
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> AudioItem:
+        return AudioItem(
+            item_id=item_id,
+            file_path=str(file_path),
+            duration_s=metadata.get("duration_s"),
+            sample_rate=metadata.get("sample_rate")
+        )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
@@ -165,6 +193,13 @@ class TextPreviewSource(IMediaPreviewSource):
         encoding = self._detect_encoding(file_path)
         size_bytes = file_path.stat().st_size if file_path.exists() else 0
         return {"encoding": encoding, "size_bytes": size_bytes}
+    
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> TextItem:
+        return TextItem(
+            item_id=item_id,
+            file_path=str(file_path),
+            encoding=metadata.get("encoding", "utf-8")
+        )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
@@ -199,6 +234,18 @@ class SignalPreviewSource(IMediaPreviewSource):
     def get_metadata(self, file_path: Path) -> dict:
         _, metadata = load_signal_array(file_path)
         return metadata
+    
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> SignalItem:
+        return SignalItem(
+            item_id=item_id,
+            file_path=str(file_path),
+            shape=metadata.get("shape"),
+            dtype=metadata.get("dtype"),
+            sample_rate=metadata.get("sample_rate"),
+            channels=metadata.get("channels"),
+            duration_s=metadata.get("duration_s"),
+            source_key=metadata.get("source_key")
+        )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from src.domain.models.media.media_item import MediaItem, MediaType
+from src.domain.models.media import MediaItem, MediaType
 
 
 @dataclass
@@ -16,6 +16,7 @@ class ImageItem(MediaItem):
 
     width: Optional[int] = None
     height: Optional[int] = None
+    source_key: Optional[str] = None
 
     def __init__(
         self,
@@ -25,6 +26,7 @@ class ImageItem(MediaItem):
         notes: str = "",
         width: Optional[int] = None,
         height: Optional[int] = None,
+        source_key: Optional[str] = None,
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None
     ) -> None:
@@ -40,6 +42,7 @@ class ImageItem(MediaItem):
         )
         self.width = width
         self.height = height
+        self.source_key = source_key
 
     def get_image_name(self) -> str:
         return self.get_filename()

@@ -5,13 +5,11 @@ from datetime import datetime
 from src.core.logger import logger
 from src.domain.interfaces import IProjectRepository
 
-from src.domain.models.media.media_item import MediaItem, MediaType
-
-from src.domain.models.media.image_item import ImageItem
-from src.domain.models.media.audio_item import AudioItem
-from src.domain.models.media.signal_item import SignalItem
-from src.domain.models.media.text_item import TextItem
-from src.domain.models.media.video_item import VideoItem
+from src.domain.models.media import (
+    MediaItem, MediaType,
+    ImageItem, AudioItem, SignalItem,
+    VideoItem, TextItem
+)
 
 from src.domain.models.project import Project
 
