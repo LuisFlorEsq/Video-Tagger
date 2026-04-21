@@ -5,11 +5,18 @@ from src.domain.interfaces import IMediaScanner
 from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.media.image_item import ImageItem
 from src.domain.models.media.audio_item import AudioItem
+from src.domain.models.media.signal_item import SignalItem
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.media.video_item import VideoItem
 
 from src.core.config import (
-    VIDEO_EXTENSIONS, IMAGE_EXTENSIONS, AUDIO_EXTENSIONS, TEXT_EXTENSIONS)
+    VIDEO_EXTENSIONS,
+    IMAGE_EXTENSIONS,
+    IMAGE_ARRAY_EXTENSIONS,
+    AUDIO_EXTENSIONS,
+    TEXT_EXTENSIONS,
+    SIGNAL_EXTENSIONS,
+)
 
 
 class _BaseFileScanner(IMediaScanner):
@@ -76,7 +83,7 @@ class VideoScanner(_BaseFileScanner):
 class ImageScanner(_BaseFileScanner):
     """Scans a folder for image files and returns ImageItem instances."""
 
-    EXTENSIONS = IMAGE_EXTENSIONS
+    EXTENSIONS = IMAGE_EXTENSIONS + IMAGE_ARRAY_EXTENSIONS
 
     @property
     def media_type(self) -> MediaType:
@@ -124,6 +131,26 @@ class TextScanner(_BaseFileScanner):
 
     def _make_item(self, item_id: str, path: Path) -> TextItem:
         return TextItem(
+            item_id=item_id,
+            file_path=str(path)
+        )
+
+# ---------------------------------------------
+# Signal Scanner
+# ---------------------------------------------
+
+
+class SignalScanner(_BaseFileScanner):
+    """Scans a folder for numeric signal files and returns SignalItem instances."""
+
+    EXTENSIONS = SIGNAL_EXTENSIONS
+
+    @property
+    def media_type(self) -> MediaType:
+        return MediaType.SIGNAL
+
+    def _make_item(self, item_id: str, path: Path) -> SignalItem:
+        return SignalItem(
             item_id=item_id,
             file_path=str(path)
         )

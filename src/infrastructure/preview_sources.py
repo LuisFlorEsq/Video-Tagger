@@ -9,6 +9,12 @@ from src.domain.interfaces import IMediaPreviewSource
 from src.domain.models.media.media_item import MediaType
 
 from src.core.config import METADATA_TIMEOUT_MS
+from src.infrastructure.array_media import (
+    is_image_array,
+    is_numpy_media_path,
+    load_numpy_array,
+    load_signal_array
+)
 
 
 # ---------------------------------------------
@@ -92,6 +98,17 @@ class ImagePreviewSource(IMediaPreviewSource):
         return MediaType.IMAGE
 
     def get_metadata(self, file_path: Path) -> dict:
+        if is_numpy_media_path(file_path):
+            array, source_key, _ = load_numpy_array(file_path)
+            if not is_image_array(array):
+                raise ValueError(
+                    f"{file_path.name} does not contain an image-shaped NumPy array"
+                )
+            return {
+                "width": int(array.shape[1]),
+                "height": int(array.shape[0]),
+                "source_key": source_key,
+            }
         try:
             reader = QImageReader(str(file_path))
             size = reader.size()
@@ -166,3 +183,22 @@ class TextPreviewSource(IMediaPreviewSource):
                 return "latin-1"
         except Exception:
             return "utf-8"
+
+# ---------------------------------------------
+# SignalPreviewSource
+# ---------------------------------------------
+
+
+class SignalPreviewSource(IMediaPreviewSource):
+    """Reads metadata for NumPy-backed numeric signals."""
+
+    @property
+    def media_type(self) -> MediaType:
+        return MediaType.SIGNAL
+
+    def get_metadata(self, file_path: Path) -> dict:
+        _, metadata = load_signal_array(file_path)
+        return metadata
+
+    def file_exists(self, file_path: Path) -> bool:
+        return file_path.exists() and file_path.is_file()

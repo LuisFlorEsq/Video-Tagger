@@ -9,6 +9,7 @@ from src.domain.models.media.media_item import MediaItem, MediaType
 
 from src.domain.models.media.image_item import ImageItem
 from src.domain.models.media.audio_item import AudioItem
+from src.domain.models.media.signal_item import SignalItem
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.media.video_item import VideoItem
 
@@ -99,6 +100,8 @@ class JsonProjectRepository(IProjectRepository):
             base.update(self._image_extra(item))
         elif isinstance(item, AudioItem):
             base.update(self._audio_extra(item))
+        elif isinstance(item, SignalItem):
+            base.update(self._signal_extra(item))
         elif isinstance(item, TextItem):
             base.update(self._text_extra(item))
 
@@ -117,6 +120,8 @@ class JsonProjectRepository(IProjectRepository):
             return self._dict_to_image(data)
         elif mt == MediaType.AUDIO:
             return self._dict_to_audio(data)
+        elif mt == MediaType.SIGNAL:
+            return self._dict_to_signal(data)
         elif mt == MediaType.TEXT:
             return self._dict_to_text(data)
 
@@ -179,7 +184,8 @@ class JsonProjectRepository(IProjectRepository):
     def _image_extra(img: ImageItem) -> dict:
         return {
             "width": img.width,
-            "height": img.height
+            "height": img.height,
+            "source_key": img.source_key,
         }
 
     @staticmethod
@@ -188,6 +194,7 @@ class JsonProjectRepository(IProjectRepository):
         return ImageItem(
             width=data.get("width"),
             height=data.get("height"),
+            source_key=data.get("source_key"),
             **base
         )
 
@@ -208,6 +215,34 @@ class JsonProjectRepository(IProjectRepository):
         return AudioItem(
             duration_s=data.get("duration_s"),
             sample_rate=data.get("sample_rate"),
+            **base,
+        )
+
+    # ---------------------------------------------
+    # SignalItem
+    # ---------------------------------------------
+
+    @staticmethod
+    def _signal_extra(signal: SignalItem) -> dict:
+        return {
+            "shape": signal.shape,
+            "dtype": signal.dtype,
+            "sample_rate": signal.sample_rate,
+            "channels": signal.channels,
+            "duration_s": signal.duration_s,
+            "source_key": signal.source_key,
+        }
+
+    @staticmethod
+    def _dict_to_signal(data: dict) -> SignalItem:
+        base = JsonProjectRepository._base_from_dict(data)
+        return SignalItem(
+            shape=data.get("shape"),
+            dtype=data.get("dtype"),
+            sample_rate=data.get("sample_rate"),
+            channels=data.get("channels"),
+            duration_s=data.get("duration_s"),
+            source_key=data.get("source_key"),
             **base,
         )
 

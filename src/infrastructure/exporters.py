@@ -35,10 +35,16 @@ def _item_to_row(item: MediaItem) -> dict:
         # Image
         "width":      getattr(item, "width",       None),
         "height":     getattr(item, "height",      None),
+        "source_key": getattr(item, "source_key", None),
         
         # Audio
         "duration_s": getattr(item, "duration_s",  None),
         "sample_rate": getattr(item, "sample_rate", None),
+
+        # Signal
+        "shape": getattr(item, "shape", None),
+        "dtype": getattr(item, "dtype", None),
+        "channels": getattr(item, "channels", None),
         
         # Text
         "encoding":   getattr(item, "encoding",    None),

@@ -4,6 +4,7 @@ from typing import Optional
 from src.domain.models.media.media_item import MediaItem, MediaType
 from src.domain.models.media.audio_item import AudioItem
 from src.domain.models.media.image_item import ImageItem
+from src.domain.models.media.signal_item import SignalItem
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
@@ -211,10 +212,15 @@ class MediaTypeFactory:
         media_type: MediaType,
         item_id: str,
         file_path: Path,
+        strict_metadata: bool = False,
     ) -> MediaItem:
         file_path = Path(file_path)
 
-        metadata = self._get_metadata(media_type, file_path)
+        metadata = self._get_metadata(
+            media_type,
+            file_path,
+            strict=strict_metadata,
+        )
 
         if media_type == MediaType.VIDEO:
             return VideoItem(
@@ -230,6 +236,7 @@ class MediaTypeFactory:
                 file_path=str(file_path),
                 width=metadata.get("width"),
                 height=metadata.get("height"),
+                source_key=metadata.get("source_key"),
             )
 
         if media_type == MediaType.AUDIO:
@@ -247,9 +254,21 @@ class MediaTypeFactory:
                 encoding=metadata.get("encoding", "utf-8"),
             )
 
+        if media_type == MediaType.SIGNAL:
+            return SignalItem(
+                item_id=item_id,
+                file_path=str(file_path),
+                shape=metadata.get("shape"),
+                dtype=metadata.get("dtype"),
+                sample_rate=metadata.get("sample_rate"),
+                channels=metadata.get("channels"),
+                duration_s=metadata.get("duration_s"),
+                source_key=metadata.get("source_key"),
+            )
+
         raise ValueError(f"Unsupported media type: {media_type.value}")
 
-    def _get_metadata(self, media_type: MediaType, file_path: Path) -> dict:
+    def _get_metadata(self, media_type: MediaType, file_path: Path, strict: bool = False) -> dict:
         preview_source = self._preview_sources.get(media_type)
         if preview_source is None:
             return {}
@@ -257,6 +276,8 @@ class MediaTypeFactory:
         try:
             return preview_source.get_metadata(file_path)
         except Exception:
+            if strict:
+                raise
             return {}
 
     def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
@@ -278,6 +299,7 @@ class MediaTypeFactory:
                 media_type=media_type,
                 item_id=ProjectService._make_item_id(media_type, index),
                 file_path=file_path,
+                strict_metadata=True,
             )
             project.add_item(item)
 
