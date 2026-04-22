@@ -32,12 +32,15 @@ The workflow is intentionally linear: open a folder → review each fragment →
 | Python | 3.10 or later |
 | PySide6 | 6.x |
 | pandas | 2.x |
+| pydub | 0.25.x |
 
 Install all dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+Compressed audio waveform previews also require FFmpeg to be available on the system path.
 
 ---
 
@@ -203,7 +206,7 @@ Both lowercase and uppercase extensions are detected.
 
 - Image arrays: `.npy` and `.npz`
 - Signal projects: `.npy` and `.npz`
-- Audio viewer: waveform preview is rendered for supported sources
+- Audio viewer: waveform preview is rendered for WAV, MP3, AAC, M4A, OGG, FLAC, and WMA when FFmpeg is available
 
 ---
 
@@ -241,8 +244,8 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 - [x] Refactor scanners and interfaces to adopt media type factory (delete video specific code)
 - [x] Bugfix: Video and Audio duration doesnt update/displayed properly
 - [x] Project saving when user creates a new project from folder and after sync
-- [] Numpy arrays (images and audio)
-  - [ ] Show Audio (waveform)
+- [x] Numpy arrays (images and audio)
+  - [x] Show Audio (waveform)
   - [x] Add signal UI components
 - [ ] Cloud connection for dataset and project loading (creation)
 

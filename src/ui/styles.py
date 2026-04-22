@@ -505,7 +505,8 @@ def label_list() -> str:
             color: {t.TEXT_MUTED};
         }}
     """
-    
+
+
 def pill_style(active: bool) -> str:
     t = AppTheme
     if active:

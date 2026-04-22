@@ -5,6 +5,8 @@ from typing import Optional
 import numpy as np
 from PySide6.QtGui import QImage, QPixmap
 
+from pydub import AudioSegment
+
 
 def load_numpy_array(
     file_path: str | Path,
@@ -365,6 +367,9 @@ def load_waveform_envelope(file_path: str | Path, target_bins: int = 512) -> np.
     if suffix == ".wav":
         return _load_waveform_from_wav(path, target_bins=target_bins)
 
+    if suffix in {".mp3", ".aac", ".m4a", ".ogg", ".flac", ".wma", ".opus"}:
+        return _load_waveform_from_audio_segment(path, target_bins=target_bins)
+
     return np.zeros(0, dtype=np.float32)
 
 
@@ -403,6 +408,39 @@ def _load_waveform_from_wav(path: Path, target_bins: int) -> np.ndarray:
         normalized = data.astype(np.float32) / scale
 
     return compute_waveform_envelope(normalized, target_bins=target_bins)
+
+
+def _load_waveform_from_audio_segment(path: Path, target_bins: int) -> np.ndarray:
+    """
+    Decode compressed audio formats using pydub/ffmpeg and build a waveform envelope.
+
+    Args:
+        path (Path): The filesystem path to the compressed audio file
+        target_bins (int): The desired horizontal resolution for the resulting waveform envelope
+
+    Returns:
+        np.ndarray: A float32 NumPy array representing the downsampled waveform envelope.
+    """
+    if AudioSegment is None:
+        return np.zeros(0, dtype=np.float32)
+
+    try:
+        segment = AudioSegment.from_file(path)
+    except Exception:
+        return np.zeros(0, dtype=np.float32)
+
+    raw = np.array(segment.get_array_of_samples())
+    
+    if raw.size == 0:
+        return np.zeros(0, dtype=np.float32)
+
+    channels = max(1, int(segment.channels))
+    if channels > 1:
+        raw = raw.reshape(-1, channels).T
+    else:
+        raw = raw.reshape(1, -1)
+
+    return compute_waveform_envelope(raw, target_bins=target_bins)
 
 
 def _default_npz_array_key(keys: list[str]) -> str:

@@ -77,7 +77,7 @@ class ServiceContainer:
             TextScanner()
         ]
         
-        preview_sources = list[IMediaPreviewSource] = [
+        preview_sources: list[IMediaPreviewSource] = [
             VideoPreviewSource(),
             ImagePreviewSource(),
             AudioPreviewSource(),

@@ -37,9 +37,11 @@ class SignalViewer(BaseViewer):
         layout = QVBoxLayout(root)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(12)
+        self._plot = SignalPlotWidget()
 
         toolbar = QHBoxLayout()
         toolbar.addStretch()
+
         for name, factor, tip in [
             ("zoom_out", 0.8, "Reducir zoom"),
             ("reset", None, "Restablecer zoom"),
@@ -51,6 +53,7 @@ class SignalViewer(BaseViewer):
             btn.setToolTip(tip)
             btn.setIcon(icon(f"zoom_controls/{name}.png"))
             btn.setIconSize(QSize(*ICON_SIZE))
+
             if factor is None:
                 btn.clicked.connect(self._plot.reset_zoom)
             else:
@@ -67,7 +70,6 @@ class SignalViewer(BaseViewer):
         self._scroll.setStyleSheet(
             f"QScrollArea {{ background-color: {AppTheme.BG_APP}; border: none; }}"
         )
-        self._plot = SignalPlotWidget()
         self._scroll.setWidget(self._plot)
         layout.addWidget(self._scroll, stretch=1)
 
@@ -102,7 +104,7 @@ class SignalViewer(BaseViewer):
         except Exception as exc:
             QMessageBox.critical(self, "Error al cargar señal", str(exc))
             return
-        
+
         # Populate item metadata
         item.shape = metadata.get("shape")
         item.dtype = metadata.get("dtype")

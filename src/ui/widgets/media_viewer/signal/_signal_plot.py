@@ -60,7 +60,7 @@ class WaveformWidget(QWidget):
                              int(x), int(center_y + amp))
 
         playhead_x = rect.left() + int(self._progress * rect.width())
-        painter.setPen(QPen(QColor(AppTheme.ACCENT), 2))
+        painter.setPen(QPen(QColor(AppTheme.PRIMARY), 2))
         painter.drawLine(playhead_x, rect.top(), playhead_x, rect.bottom())
 
 
