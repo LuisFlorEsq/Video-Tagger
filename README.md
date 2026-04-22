@@ -199,6 +199,14 @@ Both lowercase and uppercase extensions are detected.
 
 ---
 
+## Extended media formats
+
+- Image arrays: `.npy` and `.npz`
+- Signal projects: `.npy` and `.npz`
+- Audio viewer: waveform preview is rendered for supported sources
+
+---
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -231,10 +239,11 @@ Centro de Investigación en Computación — IPN. All rights reserved.
   - [x] Implement the changes on browser methods
   - [x] Update current UI on sidebar file
 - [x] Refactor scanners and interfaces to adopt media type factory (delete video specific code)
-- [ ] Bugfix: Video and Audio duration doesnt update/displayed properly
+- [x] Bugfix: Video and Audio duration doesnt update/displayed properly
 - [x] Project saving when user creates a new project from folder and after sync
-- [ ] Numpy arrays (images and signals)
-- [ ] Show Audio (waveform)
+- [] Numpy arrays (images and audio)
+  - [ ] Show Audio (waveform)
+  - [x] Add signal UI components
 - [ ] Cloud connection for dataset and project loading (creation)
 
 

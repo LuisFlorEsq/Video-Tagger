@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
@@ -14,8 +13,9 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.logger import logger
-from src.core.resources import image
+from src.infrastructure.array_media import load_waveform_envelope
 from src.ui.styles import AppTheme, btn_primary
+from src.ui.widgets.media_viewer.signal._signal_plot import WaveformWidget
 
 
 class AudioPlayerWidget(QWidget):
@@ -32,6 +32,7 @@ class AudioPlayerWidget(QWidget):
 
         self._load_token = 0
         self._media_ready_connected = False
+        self._waveform_cache: dict[str, object] = {}
 
         self._init_ui()
         self._connect_signals()
@@ -45,25 +46,7 @@ class AudioPlayerWidget(QWidget):
         # Metadata
         # -------------------------------------
 
-        self._waveform = QLabel()
-        self._waveform.setAlignment(Qt.AlignCenter)
-        waveform_pixmap = image("zoom_controls/music_notes.png")
-
-        # Scale the pixmap to fit well inside the widget (adjust dimensions as needed)
-        if not waveform_pixmap.isNull():
-            scaled_pixmap = waveform_pixmap.scaled(
-                400, 200,
-                Qt.KeepAspectRatio,
-                Qt.SmoothTransformation
-            )
-            self._waveform.setPixmap(scaled_pixmap)
-        else:
-            logger.warning("Waveform image could not be loaded.")
-
-        self._waveform.setStyleSheet(
-            f"background-color: {AppTheme.BG_SUBTLE}; border-radius: 12px;"
-        )
-        self._waveform.setMinimumHeight(180)
+        self._waveform = WaveformWidget()
         layout.addWidget(self._waveform, stretch=1)
 
         self._filename_lbl = QLabel("")
@@ -149,6 +132,7 @@ class AudioPlayerWidget(QWidget):
 
         self._reset_ui()
         self._filename_lbl.setText(filename)
+        self._load_waveform(path)
 
         self._player.mediaStatusChanged.connect(self._on_media_status_changed)
         self._media_ready_connected = True
@@ -247,6 +231,7 @@ class AudioPlayerWidget(QWidget):
 
         self._slider.blockSignals(False)
         self._time_label.setText("00:00 / 00:00")
+        self._waveform.clear_waveform()
 
     def _on_slider_released(self) -> None:
         self._player.setPosition(self._slider.value())
@@ -256,8 +241,11 @@ class AudioPlayerWidget(QWidget):
             self._slider.blockSignals(True)
             self._slider.setValue(pos)
             self._slider.blockSignals(False)
+        duration = self._player.duration()
+        if duration > 0:
+            self._waveform.set_progress(pos / duration)
         self._time_label.setText(
-            f"{self.fmt(pos)} / {self.fmt(self._player.duration())}"
+            f"{self.fmt(pos)} / {self.fmt(duration)}"
         )
 
     def _on_duration(self, dur: int) -> None:
@@ -278,6 +266,13 @@ class AudioPlayerWidget(QWidget):
             "AudioPlayerWidget._on_error | error=%s | message=%s",
             error, error_string
         )
+
+    def _load_waveform(self, path: Path) -> None:
+        cache_key = str(path.resolve())
+        if cache_key not in self._waveform_cache:
+            self._waveform_cache[cache_key] = load_waveform_envelope(path)
+        self._waveform.set_waveform(self._waveform_cache[cache_key])
+        self._waveform.set_progress(0.0)
 
     @staticmethod
     def fmt(ms: int) -> str:

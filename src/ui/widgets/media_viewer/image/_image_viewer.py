@@ -1,6 +1,4 @@
-from pathlib import Path
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
@@ -13,9 +11,10 @@ from PySide6.QtWidgets import (
 from src.ui.styles import AppTheme, btn_ghost
 from src.ui.helpers.dividers import make_vline
 
-from src.core.logger import logger
-from src.domain.models.media.image_item import ImageItem
+from src.domain.models.media import ImageItem
 from src.domain.models.project import Project
+
+from src.infrastructure.array_media import load_image_pixmap
 
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 from src.ui.widgets.media_viewer.image._image_utils import ZoomableImageLabel
@@ -84,7 +83,18 @@ class ImageViewer(BaseViewer):
         action_factory("Ctrl+0", self._image_label.reset_zoom)
 
     def on_item_loaded(self, item: ImageItem, project: Project) -> None:
-        px = QPixmap(str(Path(item.file_path)))
+        try:
+            px, metadata = load_image_pixmap(
+                item.file_path,
+                source_key=item.source_key,
+            )
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Error al cargar la imagen",
+                str(exc),
+            )
+            return
 
         if px.isNull():
             QMessageBox.critical(
@@ -96,8 +106,10 @@ class ImageViewer(BaseViewer):
 
         # Populate dimensions Lazily
         if not item.has_dimensions:
-            item.width = px.width()
-            item.height = px.height()
+            item.width = metadata.get("width", px.width())
+            item.height = metadata.get("height", px.height())
+        if metadata.get("source_key"):
+            item.source_key = metadata["source_key"]
         if item.has_dimensions:
             self.dim_label.setText(f"{item.width} x {item.height} px")
 

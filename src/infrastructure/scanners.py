@@ -3,9 +3,7 @@ from typing import List
 
 from src.domain.interfaces import IMediaScanner
 from src.domain.models.media import (
-    MediaItem, MediaType,
-    ImageItem, AudioItem, SignalItem,
-    VideoItem, TextItem
+    MediaItem, MediaType
 )
 
 from src.core.config import (
