@@ -52,7 +52,11 @@ class _BaseFileScanner(IMediaScanner):
         return self.EXTENSIONS.copy()
 
     def _make_item(self, item_id: str, path: Path) -> MediaItem:
-        raise NotImplementedError
+        return MediaItem(
+            item_id=item_id,
+            file_path=str(path),
+            media_type=self.media_type
+        )
 
 # ---------------------------------------------
 # Video Scanner
@@ -68,12 +72,6 @@ class VideoScanner(_BaseFileScanner):
     def media_type(self) -> MediaType:
         return MediaType.VIDEO
 
-    def _make_item(self, item_id: str, path: Path) -> VideoItem:
-        return VideoItem(
-            item_id=item_id,
-            file_path=str(path)
-        )
-
 # ---------------------------------------------
 # Image Scanner
 # ---------------------------------------------
@@ -87,12 +85,6 @@ class ImageScanner(_BaseFileScanner):
     @property
     def media_type(self) -> MediaType:
         return MediaType.IMAGE
-
-    def _make_item(self, item_id: str, path: Path) -> ImageItem:
-        return ImageItem(
-            item_id=item_id,
-            file_path=str(path)
-        )
 
 # ---------------------------------------------
 # Audio Scanner
@@ -108,12 +100,6 @@ class AudioScanner(_BaseFileScanner):
     def media_type(self) -> MediaType:
         return MediaType.AUDIO
 
-    def _make_item(self, item_id: str, path: Path) -> AudioItem:
-        return AudioItem(
-            item_id=item_id,
-            file_path=str(path)
-        )
-
 # ---------------------------------------------
 # Text Scanner
 # ---------------------------------------------
@@ -128,11 +114,6 @@ class TextScanner(_BaseFileScanner):
     def media_type(self) -> MediaType:
         return MediaType.TEXT
 
-    def _make_item(self, item_id: str, path: Path) -> TextItem:
-        return TextItem(
-            item_id=item_id,
-            file_path=str(path)
-        )
 
 # ---------------------------------------------
 # Signal Scanner
@@ -147,9 +128,3 @@ class SignalScanner(_BaseFileScanner):
     @property
     def media_type(self) -> MediaType:
         return MediaType.SIGNAL
-
-    def _make_item(self, item_id: str, path: Path) -> SignalItem:
-        return SignalItem(
-            item_id=item_id,
-            file_path=str(path)
-        )

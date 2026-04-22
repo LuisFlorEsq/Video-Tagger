@@ -1,4 +1,3 @@
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QDialog,
@@ -10,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget
 )
 
-from src.domain.models.media.media_item import MediaType
+from src.domain.models.media import MediaType
 from src.ui.styles import (
     AppTheme,
     btn_primary,
@@ -42,6 +41,12 @@ _TYPES: list[tuple[MediaType, str, str, str]] = [
         MediaType.TEXT,
         "Texto",
         "Documentos de texto (.txt, .csv, .json, .md...)",
+        AppTheme.SUCCESS
+    ),
+    (
+        MediaType.SIGNAL,
+        "Señal",
+        "Arreglos numericos (.npy, .npz) para series o trazas",
         AppTheme.SUCCESS
     )
 ]

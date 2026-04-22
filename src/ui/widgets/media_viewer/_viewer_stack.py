@@ -1,18 +1,18 @@
-from __future__ import annotations
-
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QStackedWidget
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
+
 from src.core.logger import logger
-from src.domain.models.media.media_item import MediaItem, MediaType
+from src.domain.models.media import MediaItem, MediaType
 from src.domain.models.project import Project
 
 from src.ui.widgets.media_viewer import (
     ImageViewer,
     AudioViewer,
+    SignalViewer,
     TextViewer,
     VideoViewer
 )
@@ -23,7 +23,7 @@ class ViewerStack(QStackedWidget):
     Owns one media widget per MediaType    
     """
 
-    item_labeled = Signal(object)  # emits MediaItem
+    item_labeled = Signal(MediaItem)  # emits MediaItem
     prev_requested = Signal()
     next_requested = Signal()
     back_requested = Signal()
@@ -61,6 +61,7 @@ class ViewerStack(QStackedWidget):
             (MediaType.VIDEO, VideoViewer),
             (MediaType.IMAGE, ImageViewer),
             (MediaType.AUDIO, AudioViewer),
+            (MediaType.SIGNAL, SignalViewer),
             (MediaType.TEXT,  TextViewer),
         ]:
             viewer = cls(**kwargs)
@@ -96,7 +97,7 @@ class ViewerStack(QStackedWidget):
 
         viewer = self._viewers.get(item.media_type)
         if viewer is None:
-            viewer = self._viewers[MediaType.VIDEO]
+            viewer = self._viewers[MediaType.VIDEO] # Fallback to VIDEO viewer
 
         # Stop the previously active viewer before switching
         if self._current_viewer is not None and self._current_viewer is not viewer:
