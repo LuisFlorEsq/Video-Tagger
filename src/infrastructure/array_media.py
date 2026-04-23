@@ -1,12 +1,23 @@
 import wave
+import numpy as np
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 from PySide6.QtGui import QImage, QPixmap
-
 from pydub import AudioSegment
 
+import threading
+from collections import OrderedDict
+from src.core.config import WAVEFORM_CACHE_MAX_ITEMS
+
+_WAVEFORM_CACHE_LOCK = threading.Lock()
+_WAVEFORM_CACHE: OrderedDict[tuple[str, int,
+                                   int, int], np.ndarray] = OrderedDict()
+
+
+# ---------------------------------------------
+# NumPy and image methods
+# ---------------------------------------------
 
 def load_numpy_array(
     file_path: str | Path,
@@ -210,6 +221,10 @@ def load_image_pixmap(
         "source_key": resolved_key,
     }
     return pixmap, metadata
+
+# ---------------------------------------------
+# Signal on NumPy format methods
+# ---------------------------------------------
 
 
 def signal_channels_first(array: np.ndarray) -> np.ndarray:
@@ -430,7 +445,7 @@ def _load_waveform_from_audio_segment(path: Path, target_bins: int) -> np.ndarra
         return np.zeros(0, dtype=np.float32)
 
     raw = np.array(segment.get_array_of_samples())
-    
+
     if raw.size == 0:
         return np.zeros(0, dtype=np.float32)
 
@@ -458,3 +473,121 @@ def _default_npz_array_key(keys: list[str]) -> str:
     if preferred:
         return preferred[0]
     return sorted(keys)[0]
+
+# ---------------------------------------------
+# Waveform audio cache management
+# ---------------------------------------------
+
+
+def make_waveform_cache_key(
+    file_path: str | Path,
+    target_bins: int = 512,
+) -> tuple[str, int, int, int]:
+    """
+    Generate a unique and deterministic cache key based on file metadata
+
+    Args:
+        file_path (str | Path): The filesystem path to the compressed audio file.
+        target_bins (int, optional): The desired horizontal resolution for the resulting waveform envelope. Defaults to 512.
+
+    Returns:
+        tuple[str, int, int, int]: A unique four-element identifier tuple (resolved_path, modification_time_ns, file_size_bts, target_bins)
+    """
+    path = Path(file_path).resolve()
+    stat = path.stat()
+    return (str(path), int(stat.st_mtime_ns), int(stat.st_size), int(target_bins))
+
+
+def get_cached_waveform_envelope(
+    file_path: str | Path,
+    target_bins: int = 512,
+) -> Optional[np.ndarray]:
+    """
+    Retrieve a waveform envelope from the cache if it exists.
+
+    If found the item is moved to the end of OrderedDict to sustain its
+    lifespan under the Least Recently Used (LRU) eviction policy.
+
+    Args:
+        file_path (str | Path): The filesystem path to the audio or signal file
+        target_bins (int, optional): The horizontal resolution of the waveform. Defaults to 512.
+
+    Returns:
+        Optional[np.ndarray]: A float32 NumPy array copy of the envelope if cached,
+            otherwise None.
+    """
+    key = make_waveform_cache_key(file_path, target_bins=target_bins)
+    with _WAVEFORM_CACHE_LOCK:
+        envelope = _WAVEFORM_CACHE.get(key)
+        if envelope is None:
+            return None
+        _WAVEFORM_CACHE.move_to_end(key)
+        return envelope.copy()
+
+
+def store_waveform_envelope_cache(
+    file_path: str | Path,
+    envelope: np.ndarray,
+    target_bins: int = 512,
+) -> np.ndarray:
+    """
+    Stores a calculated waveform envelope into the global memory cache
+
+    Inserts the item and updates its position for the LRU policy. If the cache 
+    exceeds `WAVEFORM_CACHE_MAX_ITEMS`, the oldest entries are discarded.
+
+    Args:
+        file_path (str | Path): The filesystem path to the audio or signal file.
+        envelope (np.ndarray): The calculated float32 waveform array to cache.
+        target_bins (int, optional): The horizontal resolution of the waveform. Defaults to 512.
+
+    Returns:
+        np.ndarray: A contiguous float32 copy of the stored envelope.
+    """
+    key = make_waveform_cache_key(file_path, target_bins=target_bins)
+    cached = np.asarray(envelope, dtype=np.float32).copy()
+    with _WAVEFORM_CACHE_LOCK:
+        _WAVEFORM_CACHE[key] = cached
+        _WAVEFORM_CACHE.move_to_end(key)
+        while len(_WAVEFORM_CACHE) > WAVEFORM_CACHE_MAX_ITEMS:
+            _WAVEFORM_CACHE.popitem(last=False)
+    return cached
+
+
+def load_waveform_envelope_cached(
+    file_path: str | Path,
+    target_bins: int = 512,
+) -> tuple[np.ndarray, bool]:
+    """
+    Attempts to fetch the waveform from cache, or calculates and stores it on miss.
+
+    This acts as a high-level access point for clients requiring optimized waveform data retrieval
+
+    Args:
+        file_path (str | Path): The filesystem path to the audio or signal file 
+        target_bins (int, optional): The horizontal resolution of the waveform. Defaults to 512.
+
+    Returns:
+        tuple[np.ndarray, bool]: A tuple containing the floa32 waveform envelope and a boolean flag 
+        indicating whether is was a cache hit (True) or a cache miss (False)
+    """
+    cached = get_cached_waveform_envelope(file_path, target_bins=target_bins)
+    if cached is not None:
+        return cached, True
+
+    envelope = load_waveform_envelope(file_path, target_bins=target_bins)
+    if envelope.size > 0:
+        envelope = store_waveform_envelope_cache(
+            file_path,
+            envelope,
+            target_bins=target_bins,
+        )
+    return envelope, False
+
+
+def clear_waveform_envelope_cache() -> None:
+    """
+    Thread-safely clears all entries from the global waveform cache.
+    """
+    with _WAVEFORM_CACHE_LOCK:
+        _WAVEFORM_CACHE.clear()
