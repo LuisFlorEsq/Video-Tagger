@@ -1,11 +1,15 @@
 from pathlib import Path
+import numpy as np
 
 # --------------------------------------------------------------------
 # View indices (QStackedWidget slots on MainWindow and Project browser)
 # --------------------------------------------------------------------
 
+# MainWindow Stack
 VIEW_PROJECT = 0
 VIEW_FRAGMENT = 1
+
+# Project Browser Stack
 VIEW_WELCOME = 0
 VIEW_LIST = 1
 
@@ -47,14 +51,20 @@ ICON_SIZE = (16, 16)
 METADATA_TIMEOUT_MS = 5_000
 
 # ---------------------------------------------
-# Scanner available extensions
+# Waveform audio Cache Limits
 # ---------------------------------------------
 
-VIDEO_EXTENSIONS = [".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"]
-IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png",
-                    ".bmp", ".gif", ".tiff", ".tif", ".webp"]
-IMAGE_ARRAY_EXTENSIONS = [".npy", ".npz"]
-AUDIO_EXTENSIONS = [".mp3", ".wav", ".flac",
-                    ".ogg", ".aac", ".m4a", ".wma", ".opus"]
-TEXT_EXTENSIONS = [".txt", ".csv", ".json", ".xml", ".md", ".rst", ".log"]
-SIGNAL_EXTENSIONS = [".npy", ".npz"]
+WAVEFORM_CACHE_MAX_ITEMS = 64
+
+# ---------------------------------------------
+# Scanner available extensions (Optimized to Sets)
+# ---------------------------------------------
+
+VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png",
+                    ".bmp", ".gif", ".tiff", ".tif", ".webp"}
+IMAGE_ARRAY_EXTENSIONS = {".npy", ".npz"}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac",
+                    ".ogg", ".aac", ".m4a", ".wma", ".opus"}
+TEXT_EXTENSIONS = {".txt", ".csv", ".json", ".xml", ".md", ".rst", ".log"}
+SIGNAL_EXTENSIONS = {".npy", ".npz"}

@@ -2,9 +2,10 @@ import logging
 import sys
 from pathlib import Path
 
+
 def setup_logger(name: str = "labeling_app"):
     logger = logging.getLogger(name)
-    
+
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
@@ -25,6 +26,7 @@ def setup_logger(name: str = "labeling_app"):
         # logger.addHandler(file_handler)
 
     return logger
+
 
 # Instancia global para importar fácilmente
 logger = setup_logger()

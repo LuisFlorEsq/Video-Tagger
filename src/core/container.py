@@ -67,8 +67,7 @@ class ServiceContainer:
         self.register_singleton(IProjectRepository, JsonProjectRepository())
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
 
-
-        # ---- Initiate infrastructure components ---- 
+        # ---- Initiate infrastructure components ----
         scanners: list[IMediaScanner] = [
             VideoScanner(),
             ImageScanner(),
@@ -76,7 +75,7 @@ class ServiceContainer:
             SignalScanner(),
             TextScanner()
         ]
-        
+
         preview_sources: list[IMediaPreviewSource] = [
             VideoPreviewSource(),
             ImagePreviewSource(),
@@ -87,15 +86,15 @@ class ServiceContainer:
 
         # ------ MediaTypeFactory ---------
         media_factory = MediaTypeFactory()
-        
+
         # Register scanners
         for scanner in scanners:
             media_factory.register_scanner(scanner=scanner)
-        
+
         # Register previews
         for preview in preview_sources:
             media_factory.register_preview_source(preview_source=preview)
-        
+
         # Register as a singleton
         self.register_singleton(MediaTypeFactory, media_factory)
 
