@@ -1,21 +1,72 @@
 from pathlib import Path
+from time import perf_counter
 
-from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, QUrl, Qt, Signal
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
-    QWidget,
     QLabel,
-    QVBoxLayout,
-    QHBoxLayout,
     QPushButton,
+    QHBoxLayout,
     QSlider,
     QStyle,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.core.logger import logger
-from src.infrastructure.array_media import load_waveform_envelope
+from src.infrastructure.array_media import (
+    get_cached_waveform_envelope,
+    load_waveform_envelope_cached,
+)
 from src.ui.styles import AppTheme, btn_primary
 from src.ui.widgets.media_viewer.signal._signal_plot import WaveformWidget
+
+
+class _WaveformLoadSignals(QObject):
+    """
+    Defines PySide66 Signals for communicating asynchronous task results.
+    
+    Signals:
+        finished(str, int, object, bool, float, float): Emitted when the processing finishes
+            - file_path (str): Path of the processed audio file
+            - token (int): Validation token to match the UI load request state
+            - envelope (np.ndarray): The computed float32 waveform data
+            - cache_hit (bool): True if fetched from memory, False if decoded
+            - decode_ms (float): Time spent decoding raw streams in miliseconds
+            - elapsed_ms (float): Total operation execution time in miliseconds
+    """
+    finished = Signal(str, int, object, bool, float, float)
+
+
+class _WaveformLoadTask(QRunnable):
+    """
+    A runnable worker to load and compute audio waveform in a background thread.
+    
+    Inherits from QRunnable to be managed and executed by a QThreadPool infrastructure.
+    """
+    def __init__(self, file_path: Path, token: int, target_bins: int) -> None:
+        super().__init__()
+        self.file_path = Path(file_path)
+        self.token = token
+        self.target_bins = target_bins
+        self.signals = _WaveformLoadSignals()
+
+    def run(self) -> None:
+        start = perf_counter()
+        envelope, cache_hit = load_waveform_envelope_cached(
+            self.file_path,
+            target_bins=self.target_bins,
+        )
+        elapsed_ms = (perf_counter() - start) * 1000.0
+        decode_ms = 0.0 if cache_hit else elapsed_ms
+        self.signals.finished.emit(
+            str(self.file_path),
+            self.token,
+            envelope,
+            cache_hit,
+            decode_ms,
+            elapsed_ms,
+        )
 
 
 class AudioPlayerWidget(QWidget):
@@ -31,8 +82,11 @@ class AudioPlayerWidget(QWidget):
         self._player.setAudioOutput(self._audio)
 
         self._load_token = 0
+        self._load_started_at = 0.0
+        self._current_file_path: str | None = None
         self._media_ready_connected = False
-        self._waveform_cache: dict[str, object] = {}
+        self._waveform_pool = QThreadPool.globalInstance()
+        self._active_waveform_task: _WaveformLoadTask | None = None
 
         self._init_ui()
         self._connect_signals()
@@ -41,10 +95,6 @@ class AudioPlayerWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(16)
-
-        # -------------------------------------
-        # Metadata
-        # -------------------------------------
 
         self._waveform = WaveformWidget()
         layout.addWidget(self._waveform, stretch=1)
@@ -56,10 +106,6 @@ class AudioPlayerWidget(QWidget):
             f"color: {AppTheme.TEXT_PRIMARY};"
         )
         layout.addWidget(self._filename_lbl)
-
-        # -------------------------------------
-        # Timeline and slider
-        # -------------------------------------
 
         timeline = QHBoxLayout()
         self._time_label = QLabel("00:00 / 00:00")
@@ -74,10 +120,6 @@ class AudioPlayerWidget(QWidget):
         timeline.addWidget(self._slider)
         layout.addLayout(timeline)
 
-        # -------------------------------------
-        # Controls (Play/Pause)
-        # -------------------------------------
-
         controls = QHBoxLayout()
         controls.addStretch()
 
@@ -91,13 +133,10 @@ class AudioPlayerWidget(QWidget):
         layout.addLayout(controls)
 
     def _connect_signals(self) -> None:
-
         self._player.positionChanged.connect(self._on_position)
         self._player.durationChanged.connect(self._on_duration)
-
         self._player.playbackStateChanged.connect(self._on_state)
         self._player.errorOccurred.connect(self._on_error)
-
         self._play_btn.clicked.connect(self.toggle_playback)
         self._slider.sliderReleased.connect(self._on_slider_released)
 
@@ -105,18 +144,18 @@ class AudioPlayerWidget(QWidget):
         path = Path(file_path)
 
         self._load_token += 1
-        # current_token = self._load_token
+        self._load_started_at = perf_counter()
+        self._current_file_path = str(
+            path.resolve()) if path.exists() else None
+        token = self._load_token
 
-        # logger.debug(
-        #     "AudioPlayerWidget.load | token=%s | file=%s",
-        #     current_token, path
-        # )
+        logger.debug(
+            "AudioPlayerWidget.load | token=%s | file=%s",
+            token,
+            path,
+        )
 
         if not path.exists():
-            # logger.warning(
-            #     "AudioPlayerWidget.load missing file | token=%s | path=%s",
-            #     current_token, path
-            # )
             self._reset_ui()
             self._filename_lbl.setText(filename)
             return
@@ -132,18 +171,13 @@ class AudioPlayerWidget(QWidget):
 
         self._reset_ui()
         self._filename_lbl.setText(filename)
-        self._load_waveform(path)
+        self._load_waveform_async(path, token)
 
         self._player.mediaStatusChanged.connect(self._on_media_status_changed)
         self._media_ready_connected = True
         self._player.setSource(QUrl.fromLocalFile(str(path.absolute())))
 
-        # logger.debug(
-        #     "AudioPlayerWidget.load source set | token=%s", current_token
-        # )
-
     def _on_media_status_changed(self, status) -> None:
-
         if status != QMediaPlayer.LoadedMedia:
             return
 
@@ -157,34 +191,23 @@ class AudioPlayerWidget(QWidget):
             self._media_ready_connected = False
 
         token = self._load_token
-
-        # logger.debug(
-        #     "AudioPlayerWidget._on_media_status_changed LoadedMedia | token=%s",
-        #     token
-        # )
-
         self._player.play()
         self._player.pause()
         self._player.setPosition(0)
 
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        if self._load_started_at:
+            elapsed_ms = (perf_counter() - self._load_started_at) * 1000.0
+            logger.debug(
+                "AudioPlayerWidget.player_ready | token=%s | elapsed_ms=%.1f",
+                token,
+                elapsed_ms,
+            )
         QTimer.singleShot(0, lambda: self._finalize_load(token))
 
     def _finalize_load(self, token: int) -> None:
         if token != self._load_token:
-            # logger.debug(
-            #     "AudioPlayerWidget._finalize_load stale token | token=%s | current=%s",
-            #     token, self._load_token
-            # )
             return
-
-        # logger.debug(
-        #     "AudioPlayerWidget._finalize_load ready | token=%s", token
-        # )
-
-    # -------------------------------------
-    # Playback controls
-    # -------------------------------------
 
     def toggle_playback(self) -> None:
         if self._player.playbackState() == QMediaPlayer.PlayingState:
@@ -195,14 +218,6 @@ class AudioPlayerWidget(QWidget):
     def stop(self) -> None:
         self._load_token += 1
 
-        # logger.debug(
-        #     "AudioPlayerWidget.stop | token=%s | state=%s | has_source=%s",
-        #     self._load_token,
-        #     self._player.playbackState(),
-        #     self._player.source().isValid(),
-        # )
-
-        # Disconnect any pending status listener
         if self._media_ready_connected:
             try:
                 self._player.mediaStatusChanged.disconnect(
@@ -217,10 +232,8 @@ class AudioPlayerWidget(QWidget):
         self._player.setPosition(0)
         self._player.setSource(QUrl())
         self._reset_ui()
-
-    # -------------------------------------
-    # UI helpers
-    # -------------------------------------
+        self._current_file_path = None
+        self._load_started_at = 0.0
 
     def _reset_ui(self) -> None:
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
@@ -228,10 +241,11 @@ class AudioPlayerWidget(QWidget):
         self._slider.blockSignals(True)
         self._slider.setRange(0, 0)
         self._slider.setValue(0)
-
         self._slider.blockSignals(False)
+
         self._time_label.setText("00:00 / 00:00")
         self._waveform.clear_waveform()
+        self._active_waveform_task = None
 
     def _on_slider_released(self) -> None:
         self._player.setPosition(self._slider.value())
@@ -250,7 +264,6 @@ class AudioPlayerWidget(QWidget):
 
     def _on_duration(self, dur: int) -> None:
         if dur > 0:
-            # logger.debug("AudioPlayerWidget._on_duration | dur=%s", dur)
             self._slider.setRange(0, dur)
 
     def _on_state(self, state) -> None:
@@ -267,12 +280,69 @@ class AudioPlayerWidget(QWidget):
             error, error_string
         )
 
-    def _load_waveform(self, path: Path) -> None:
-        cache_key = str(path.resolve())
-        if cache_key not in self._waveform_cache:
-            self._waveform_cache[cache_key] = load_waveform_envelope(path)
-        self._waveform.set_waveform(self._waveform_cache[cache_key])
-        self._waveform.set_progress(0.0)
+    def _load_waveform_async(self, path: Path, token: int) -> None:
+        cached = get_cached_waveform_envelope(path)
+        if cached is not None:
+            logger.debug(
+                "AudioPlayerWidget.waveform_cache_hit | token=%s | path=%s",
+                token,
+                path,
+            )
+            self._apply_waveform_result(
+                str(path),
+                token,
+                cached,
+                True,
+                0.0,
+                0.0,
+            )
+            return
+
+        logger.debug(
+            "AudioPlayerWidget.waveform_cache_miss | token=%s | path=%s",
+            token,
+            path,
+        )
+        self._waveform.set_loading("Loading waveform...")
+        task = _WaveformLoadTask(path, token, target_bins=512)
+        task.signals.finished.connect(self._apply_waveform_result)
+        self._active_waveform_task = task
+        self._waveform_pool.start(task)
+
+    def _apply_waveform_result(
+        self,
+        file_path: str,
+        token: int,
+        envelope,
+        cache_hit: bool,
+        decode_ms: float,
+        elapsed_ms: float,
+    ) -> None:
+        if token != self._load_token or file_path != self._current_file_path:
+            return
+
+        if cache_hit:
+            logger.debug(
+                "AudioPlayerWidget.waveform_cache_apply | token=%s | path=%s",
+                token,
+                file_path,
+            )
+        else:
+            logger.debug(
+                "AudioPlayerWidget.waveform_decoded | token=%s | path=%s | decode_ms=%.1f | total_ms=%.1f",
+                token,
+                file_path,
+                decode_ms,
+                elapsed_ms,
+            )
+
+        if getattr(envelope, "size", 0) > 0:
+            self._waveform.set_waveform(envelope)
+            self._waveform.set_progress(0.0)
+        else:
+            self._waveform.set_message("Waveform unavailable")
+
+        self._active_waveform_task = None
 
     @staticmethod
     def fmt(ms: int) -> str:
