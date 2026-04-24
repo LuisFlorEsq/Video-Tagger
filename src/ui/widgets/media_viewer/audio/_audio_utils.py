@@ -25,7 +25,7 @@ from src.ui.widgets.media_viewer.signal._signal_plot import WaveformWidget
 class _WaveformLoadSignals(QObject):
     """
     Defines PySide66 Signals for communicating asynchronous task results.
-    
+
     Signals:
         finished(str, int, object, bool, float, float): Emitted when the processing finishes
             - file_path (str): Path of the processed audio file
@@ -41,10 +41,19 @@ class _WaveformLoadSignals(QObject):
 class _WaveformLoadTask(QRunnable):
     """
     A runnable worker to load and compute audio waveform in a background thread.
-    
+
     Inherits from QRunnable to be managed and executed by a QThreadPool infrastructure.
     """
+
     def __init__(self, file_path: Path, token: int, target_bins: int) -> None:
+        """
+        Initializes the background waveform processing task
+
+        Args:
+            file_path (Path): Path to the target media/signal file
+            token (int): Unique execution token for handling concurrent state drift
+            target_bins (int): Desired horizontal resolution points for the widget
+        """
         super().__init__()
         self.file_path = Path(file_path)
         self.token = token
@@ -52,6 +61,13 @@ class _WaveformLoadTask(QRunnable):
         self.signals = _WaveformLoadSignals()
 
     def run(self) -> None:
+        """
+        Executes the computionaly intensive decoding and downsampling
+
+        Note:
+            Runs completely inside a secondary Worker Thread from QThreadPool
+            Emits the 'finished' signal safely back to the GUI thread upon completion
+        """
         start = perf_counter()
         envelope, cache_hit = load_waveform_envelope_cached(
             self.file_path,
@@ -71,7 +87,10 @@ class _WaveformLoadTask(QRunnable):
 
 class AudioPlayerWidget(QWidget):
     """
-    Self-contained audio playback controls.
+    Self-contained custom UI component for audio playback and waveform visualization
+
+    Integrates PySide6 Multimedia capabilities with multi-threaded audio envelope
+    decoding to avoid freezing the GUI
     """
 
     def __init__(self, parent=None) -> None:
@@ -141,6 +160,16 @@ class AudioPlayerWidget(QWidget):
         self._slider.sliderReleased.connect(self._on_slider_released)
 
     def load(self, file_path: str, filename: str) -> None:
+        """
+        Initialize the asynchronous loading sequence for a media file
+
+        Resets UI states, tracks state changes via incremental tokens, and dispatches
+        background tasks to process waveform visual structures.
+
+        Args:
+            file_path (str): Absolute filesystem path to the audio file
+            filename (str): Name string of the file to display the UI header
+        """
         path = Path(file_path)
 
         self._load_token += 1
@@ -178,6 +207,11 @@ class AudioPlayerWidget(QWidget):
         self._player.setSource(QUrl.fromLocalFile(str(path.absolute())))
 
     def _on_media_status_changed(self, status) -> None:
+        """Handles internal QMediaPlayer lifecycle status transitions.
+
+        Args:
+            status (QMediaPlayer.MediaStatus): The updated playback state from the core.
+        """
         if status != QMediaPlayer.LoadedMedia:
             return
 
@@ -206,16 +240,28 @@ class AudioPlayerWidget(QWidget):
         QTimer.singleShot(0, lambda: self._finalize_load(token))
 
     def _finalize_load(self, token: int) -> None:
+        """
+        Validates state compliance and finalizes internal setups
+
+        Args:
+            token (int): Request validation token checking for asynchronous convergence.
+        """
         if token != self._load_token:
             return
 
     def toggle_playback(self) -> None:
+        """
+        Switches the current media player state between PlayingState and PausedState
+        """
         if self._player.playbackState() == QMediaPlayer.PlayingState:
             self._player.pause()
         else:
             self._player.play()
 
     def stop(self) -> None:
+        """
+        Fully halts media playback, cancels state lifecycles, and clears current UI metrics
+        """
         self._load_token += 1
 
         if self._media_ready_connected:
@@ -236,6 +282,9 @@ class AudioPlayerWidget(QWidget):
         self._load_started_at = 0.0
 
     def _reset_ui(self) -> None:
+        """
+        Restores internal widgets, labels, sliders and drawing canvas to defatuls.
+        """
         self._play_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
         self._slider.blockSignals(True)
@@ -248,10 +297,19 @@ class AudioPlayerWidget(QWidget):
         self._active_waveform_task = None
 
     def _on_slider_released(self) -> None:
+        """
+        Synchronizes the backend QMediaPlayer position with user trackin inputs.
+        """
         self._player.setPosition(self._slider.value())
 
     def _on_position(self, pos: int) -> None:
-        if not self._slider.isSliderDown():
+        """
+        Updates the slider track bar and timing labels during continuous playback.
+
+        Args:
+            pos (int): Current milisecond timeline position of the track.
+        """
+        if not self._slider.isSliderDown(): 
             self._slider.blockSignals(True)
             self._slider.setValue(pos)
             self._slider.blockSignals(False)
@@ -263,10 +321,22 @@ class AudioPlayerWidget(QWidget):
         )
 
     def _on_duration(self, dur: int) -> None:
+        """
+        Configures slider constraints based on actual track lengths
+
+        Args:
+            dur (int): Full execution length of the current track in miliseconds.
+        """
         if dur > 0:
             self._slider.setRange(0, dur)
 
     def _on_state(self, state) -> None:
+        """
+        Updates control interface button icons following playback state changes
+
+        Args:
+            state (QMediaPlayer.PlaybackState): Active target player state 
+        """
         playing = state == QMediaPlayer.PlayingState
         self._play_btn.setIcon(
             self.style().standardIcon(
@@ -274,13 +344,30 @@ class AudioPlayerWidget(QWidget):
             )
         )
 
-    def _on_error(self, error, error_string) -> None:
+    def _on_error(self, error, error_string: str) -> None:
+        """
+        Logs and traces operational multimedia exceptions.
+
+        Args:
+            error (QMediaPlayer.Error): Exception identifier.
+            error_string (str): Human-readable notification description.
+        """
         logger.error(
             "AudioPlayerWidget._on_error | error=%s | message=%s",
             error, error_string
         )
 
     def _load_waveform_async(self, path: Path, token: int) -> None:
+        """
+        Dispatches or pulls cache enveopes to pain layout widgets
+        
+        Checks first if the entry is resident in cache memory. On failure, spins off 
+        a `_WaveformLoadTask` on a worker thread to keep the main event loop interactive.
+
+        Args:
+            path (Path): Target file location on the local file system
+            token (int): Identity tracking metric assigned to the loading execution thread
+        """
         cached = get_cached_waveform_envelope(path)
         if cached is not None:
             logger.debug(
@@ -318,6 +405,14 @@ class AudioPlayerWidget(QWidget):
         decode_ms: float,
         elapsed_ms: float,
     ) -> None:
+        """Slot invoked on the Main Thread when waveform calculation completes.
+
+        Validates tokens to ensure data alignment, and paints the final envelope 
+        into the custom WaveformWidget graph if valid.
+
+        Note:
+            Executed safely on the Main (GUI) Thread via PySide Signal connection.
+        """
         if token != self._load_token or file_path != self._current_file_path:
             return
 
@@ -346,5 +441,14 @@ class AudioPlayerWidget(QWidget):
 
     @staticmethod
     def fmt(ms: int) -> str:
+        """
+        Formats raw millisecond periods into conventional human-readable intervals.
+
+        Args:
+            ms (int): Duration span measured in miliseconds
+
+        Returns:
+            str: Time formatted as 'MM:SS'
+        """
         s = ms // 1000
         return f"{s // 60:02d}:{s % 60:02d}"
