@@ -15,16 +15,31 @@ class WaveformWidget(QWidget):
         super().__init__(parent)
         self._envelope = np.zeros(0, dtype=np.float32)
         self._progress = 0.0
+        self._message = "Waveform unavailable"
         self.setMinimumHeight(180)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
     def clear_waveform(self) -> None:
         self._envelope = np.zeros(0, dtype=np.float32)
         self._progress = 0.0
+        self._message = "Waveform unavailable"
+        self.update()
+
+    def set_loading(self, message: str = "Loading waveform...") -> None:
+        self._envelope = np.zeros(0, dtype=np.float32)
+        self._progress = 0.0
+        self._message = message
+        self.update()
+
+    def set_message(self, message: str) -> None:
+        self._envelope = np.zeros(0, dtype=np.float32)
+        self._progress = 0.0
+        self._message = message
         self.update()
 
     def set_waveform(self, envelope: np.ndarray) -> None:
         self._envelope = np.asarray(envelope, dtype=np.float32)
+        self._message = ""
         self.update()
 
     def set_progress(self, ratio: float) -> None:
@@ -38,8 +53,11 @@ class WaveformWidget(QWidget):
 
         if self._envelope.size == 0:
             painter.setPen(QColor(AppTheme.TEXT_MUTED))
-            painter.drawText(self.rect(), Qt.AlignCenter,
-                             "Waveform unavailable")
+            painter.drawText(
+                self.rect(),
+                Qt.AlignCenter,
+                self._message or "Waveform unavailable",
+            )
             return
 
         rect = self.rect().adjusted(10, 10, -10, -10)
