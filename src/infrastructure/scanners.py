@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import List
 
@@ -31,11 +32,18 @@ class _BaseFileScanner(IMediaScanner):
     def scan_folder(self, folder_path: Path) -> List[MediaItem]:
         if not folder_path.exists() or not folder_path.is_dir():
             raise ValueError(f"Invalid folder path: {folder_path}")
-
+        
+        # Normalize extensions for fast comparison
+        
+        valid_exts = {ext.lower() for ext in self.EXTENSIONS}
         found: List[Path] = []
-        for ext in self.EXTENSIONS:
-            found.extend(folder_path.glob(f"*{ext}"))
-            found.extend(folder_path.glob(f"*{ext.upper()}"))
+        
+        with os.scandir(folder_path) as it:
+            for entry in it:
+                if entry.is_file():
+                    name = entry.name.lower()
+                    if any(name.endswith(ext) for ext in valid_exts):
+                        found.append(Path(entry.path))
 
         sorted_paths = sorted(set(found))
         items: List[MediaItem] = []
@@ -78,7 +86,7 @@ class VideoScanner(_BaseFileScanner):
 class ImageScanner(_BaseFileScanner):
     """Scans a folder for image files and returns ImageItem instances."""
 
-    EXTENSIONS = IMAGE_EXTENSIONS + IMAGE_ARRAY_EXTENSIONS
+    EXTENSIONS = IMAGE_EXTENSIONS.union(IMAGE_ARRAY_EXTENSIONS) # Important, when working with sets we cannot use A + B
 
     @property
     def media_type(self) -> MediaType:
