@@ -1,17 +1,10 @@
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
+from src.application.services.project_factory import MediaTypeFactory
+from src.domain.interfaces import IProjectRepository
 
 from src.domain.models.project import Project
-from src.domain.models.media import (
-    MediaItem, MediaType,
-    AudioItem, ImageItem, SignalItem,
-    TextItem, VideoItem
-)
-from src.domain.interfaces import (
-    IMediaPreviewSource,
-    IProjectRepository,
-    IMediaScanner
-)
+from src.domain.models.media import MediaType
 
 
 # ---------------------------------------------
@@ -25,14 +18,16 @@ class ProjectService:
     def __init__(
         self,
         repository: IProjectRepository,
-        media_factory: Optional["MediaTypeFactory"] = None
+        media_factory: Optional["MediaTypeFactory"] = None,
     ):
         self._repository = repository
         self._media_factory = media_factory
 
     # ---- Project creation ----
 
-    def create_project_from_folder(self, folder_path: Path, media_type: MediaType) -> Project:
+    def create_project_from_folder(
+        self, folder_path: Path, media_type: MediaType
+    ) -> Project:
         """Create a new project by scanning *folder_path*."""
         if not folder_path.exists():
             raise ValueError(f"La carpeta no existe: {folder_path}")
@@ -44,6 +39,25 @@ class ProjectService:
             )
 
         return self._media_factory.create_project(folder_path, media_type)
+
+    def create_project_from_paths(
+        self,
+        folder_path: Path,
+        media_type: MediaType,
+        paths: Iterable[Path],
+    ) -> Project:
+        """Create a project from pre-scanned paths."""
+        if self._media_factory is None:
+            raise RuntimeError(
+                "MediaTypeFactory is required for non-video projects"
+                "Register it in the service container"
+            )
+
+        return self._media_factory.create_project_from_paths(
+            folder_path=folder_path,
+            media_type=media_type,
+            paths=paths,
+        )
 
     # ---- Persistence ----
 
@@ -101,10 +115,9 @@ class ProjectService:
             raise RuntimeError("MediaTypeFactory is required for project sync")
 
         all_paths = self._media_factory.scan_paths(
-            folder_path=folder_path,
-            media_type=project.media_type
+            folder_path=folder_path, media_type=project.media_type
         )
-        existing_paths = {Path(it.file_path) for it in project.items}
+        existing_paths = {Path(it.file_path) for it in project.iter_items()}
         new_items = set(all_paths) - existing_paths
 
         return new_items
@@ -126,21 +139,14 @@ class ProjectService:
         if self._media_factory is None:
             raise RuntimeError("MediaTypeFactory is required for project sync")
 
-        # Derive the next numeric id for the existing item_ids
-        max_id = 0
-        for it in project.items:
-            try:
-                max_id = max(max_id, int(it.item_id.split("_")[-1]))
-            except ValueError:
-                pass
-        next_id = max_id + 1
+        next_id = project.get_next_item_sequence()  # Get the current project next_id
 
         added = 0
         for file_path in sorted(new_items):
             try:
                 item = self._media_factory.create_item(
                     media_type=project.media_type,
-                    item_id=self._make_item_id(project.media_type, next_id),
+                    item_id=next_id,
                     file_path=file_path,
                 )
                 project.add_item(item)
@@ -150,113 +156,14 @@ class ProjectService:
                 print(f"Failed to add {file_path}: {e}")
         return added
 
-    @staticmethod
-    def _make_item_id(media_type: MediaType, numeric_id: int) -> str:
-        return f"{media_type.value}_{numeric_id:03d}"
+    def sync_new_items_from_paths(
+        self, project: Project, new_items: Iterable[Path]
+    ) -> int:
+        """Sync new media from any iterable of file paths."""
+        return self.sync_new_items(project, set(Path(path) for path in new_items))
 
     # ---- Statistics ----
 
     def get_project_summary(self, project: Project) -> dict:
         """Get a summary of project statistics."""
-        return {
-            'name': project.name,
-            'media_type': project.media_type.value,
-            'total_fragments': project.get_total_count(),
-            'labeled': project.get_labeled_count(),
-            'unlabeled': project.get_unlabeled_count(),
-            'progress_percentage': project.get_progress_percentage(),
-            'label_statistics': project.get_label_statistics()
-        }
-
-
-# ---------------------------------------------
-# MediaTypeFactory
-# ---------------------------------------------
-
-class MediaTypeFactory:
-    """
-    Creates a project for non-video media types.
-    Register one IMediaScanner per MediaType at startup via register_scanner()
-    """
-
-    def __init__(
-        self
-    ):
-        self._scanners: dict[MediaType, IMediaScanner] = {}
-        self._preview_sources: dict[MediaType, IMediaPreviewSource] = {}
-
-    def register_scanner(self, scanner: IMediaScanner) -> None:
-        self._scanners[scanner.media_type] = scanner
-
-    def register_preview_source(self, preview_source: IMediaPreviewSource) -> None:
-        self._preview_sources[preview_source.media_type] = preview_source
-
-    def get_scanner(self, media_type: MediaType) -> Optional[IMediaScanner]:
-        return self._scanners.get(media_type)
-
-    def scan_paths(self, folder_path: Path, media_type: MediaType) -> list[Path]:
-
-        scanner = self.get_scanner(media_type)
-        if scanner is None:
-            raise ValueError(
-                f"No scanner registered for media type: {media_type.value}"
-            )
-
-        return [Path(item.file_path) for item in scanner.scan_folder(folder_path)]
-
-    def create_item(
-        self,
-        media_type: MediaType,
-        item_id: str,
-        file_path: Path,
-        strict_metadata: bool = False,
-    ) -> MediaItem:
-
-        file_path = Path(file_path)
-
-        preview_source = self._preview_sources.get(media_type)
-
-        if preview_source is None:
-            raise ValueError(f"Unsupported media type: {media_type.value}")
-
-        metadata = self._get_metadata(
-            media_type=media_type, file_path=file_path, strict=strict_metadata)
-
-        return preview_source.create_media_item(item_id=item_id, file_path=file_path, metadata=metadata)
-
-    def _get_metadata(self, media_type: MediaType, file_path: Path, strict: bool = False) -> dict:
-        preview_source = self._preview_sources.get(media_type)
-        if preview_source is None:
-            return {}
-
-        try:
-            return preview_source.get_metadata(file_path)
-        except Exception:
-            if strict:
-                raise
-            return {}
-
-    def create_project(self, folder_path: Path, media_type: MediaType) -> Project:
-        paths = self.scan_paths(folder_path=folder_path, media_type=media_type)
-        if not paths:
-            label = media_type.label()
-            raise ValueError(
-                f"No se encontraron archivos de {label.lower()} en la carpeta"
-            )
-
-        project = Project(
-            name=folder_path.name,
-            folder_path=str(folder_path),
-            media_type=media_type
-        )
-
-        for index, file_path in enumerate(paths, start=1):
-            item = self.create_item(
-                media_type=media_type,
-                item_id=ProjectService._make_item_id(media_type, index),
-                file_path=file_path,
-                strict_metadata=True,
-            )
-            project.add_item(item)
-
-        return project
+        return project.get_summary()

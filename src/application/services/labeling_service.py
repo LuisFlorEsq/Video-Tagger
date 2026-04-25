@@ -1,5 +1,4 @@
 from typing import List, Optional
-from datetime import datetime
 
 from src.domain.models.project import Project
 from src.domain.models.media import MediaItem
@@ -20,17 +19,19 @@ class LabelingService:
             error = self._validator.get_validation_error(label)
             raise ValueError(error or "Etiqueta no valida")
 
+        previous_label = item.label
         item.assign_label(label)
 
         if project:
-            project.modified_at = datetime.now()
+            project.record_label_change(previous_label, item.label)
 
     def clear_label(self, item: MediaItem, project: Project) -> None:
         """Remove a label from a item."""
+        previous_label = item.label
         item.clear_label()
 
         if project:
-            project.modified_at = datetime.now()
+            project.record_label_change(previous_label, item.label)
 
     def batch_assign_label(self, items: List[MediaItem], project: Project, label: str) -> int:
         """

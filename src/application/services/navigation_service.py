@@ -35,10 +35,10 @@ class NavigationService:
         """Move to the next item."""
         if not self._current_item_id:
             # Start from first item
-            items = self._project.items
-            if items:
-                self._current_item_id = items[0].item_id
-                return items[0]
+            first_item = next(self._project.iter_items(), None)
+            if first_item:
+                self._current_item_id = first_item.item_id
+                return first_item
             return None
 
         next_item = self._project.get_next_item(self._current_item_id)
@@ -58,15 +58,15 @@ class NavigationService:
 
     def move_to_first(self) -> Optional[MediaItem]:
         """Move to the first fragment."""
-        items = self._project.items
-        if items:
-            self._current_item_id = items[0].item_id
-            return items[0]
+        first_item = next(self._project.iter_items(), None)
+        if first_item:
+            self._current_item_id = first_item.item_id
+            return first_item
         return None
 
     def move_to_last(self) -> Optional[MediaItem]:
         """Move to the last fragment."""
-        items = self._project.items
+        items = list(self._project.iter_items())
         if items:
             self._current_item_id = items[-1].item_id
             return items[-1]
