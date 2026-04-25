@@ -1,7 +1,7 @@
 from datetime import datetime
 from os import PathLike
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterator
 
 from src.domain.models.media.media_item import MediaItem, MediaType
 from src.core.config import DEFAULT_LABELS
@@ -18,7 +18,7 @@ class Project:
         media_type: MediaType = None,
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None,
-        custom_labels: Optional[List[str]] = None
+        custom_labels: Optional[List[str]] = None,
     ):
         if not name or not name.strip():
             raise ValueError("Project name cannot be empty")
@@ -34,6 +34,10 @@ class Project:
 
         self._items: List[MediaItem] = []
         self._item_index: Dict[str, int] = {}
+        self._label_statistics: Dict[str, int] = {}
+        self._labeled_count = 0
+        self._unlabeled_count = 0
+        self._next_item_sequence = 1
 
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
@@ -68,12 +72,17 @@ class Project:
         """Get read-only access to all media items."""
         return list(self._items)
 
+    def iter_items(self) -> Iterator[MediaItem]:
+        """Iterate over project items without copying the internal list."""
+        return iter(self._items)
+
     def add_item(self, item: MediaItem) -> None:
         """Add a media item to the project."""
         if item.item_id in self._item_index:
             raise ValueError(f"Item with ID '{item.item_id}' already exists")
         self._item_index[item.item_id] = len(self._items)
         self._items.append(item)
+        self._register_item_state(item)
         self.modified_at = datetime.now()
 
     def remove_item(self, item_id: str) -> bool:
@@ -82,10 +91,10 @@ class Project:
             return False
 
         idx = self._item_index[item_id]
-        self.items.pop(idx)
-        self._item_index = {
-            it.item_id: i for i, it in enumerate(self._items)
-        }
+        removed_item = self._items.pop(idx)
+        self._item_index.pop(item_id, None)
+        self._unregister_item_state(removed_item)
+        self._rebuild_item_index(start_index=idx)
         self.modified_at = datetime.now()
         return True
 
@@ -125,26 +134,27 @@ class Project:
         return len(self._items)
 
     def get_labeled_count(self) -> int:
-        return len(self.get_labeled_items())
+        return self._labeled_count
 
     def get_unlabeled_count(self) -> int:
-        return len(self.get_unlabeled_items())
+        return self._unlabeled_count
 
     def get_progress_percentage(self) -> float:
-        if not self._items:
+        total = self.get_total_count()
+        if not total:
             return 0.0
-        return (self.get_labeled_count() / self.get_total_count()) * 100
+        return (self.get_labeled_count() / total) * 100
 
     def get_label_statistics(self) -> dict:
-        stats: Dict[str, int] = {}
-        for item in self._items:
-            if item.is_labeled():
-                stats[item.label] = stats.get(item.label, 0) + 1
-        return stats
+        return dict(self._label_statistics)
 
     def clear_all_labels(self) -> None:
         for item in self._items:
-            item.clear_label()
+            if item.is_labeled():
+                item.clear_label()
+        self._label_statistics.clear()
+        self._labeled_count = 0
+        self._unlabeled_count = len(self._items)
         self.modified_at = datetime.now()
 
     # ---------------------------------------------
@@ -157,3 +167,77 @@ class Project:
 
     def get_save_path(self) -> Optional[str]:
         return Path(self.save_path) if self.save_path else None
+
+    def get_next_item_sequence(self) -> int:
+        return self._next_item_sequence
+
+    def record_label_change(
+        self, previous_label: Optional[str], new_label: Optional[str]
+    ) -> None:
+        if previous_label == new_label:
+            return
+
+        if previous_label:
+            current_count = self._label_statistics.get(previous_label, 0) - 1
+            if current_count > 0:
+                self._label_statistics[previous_label] = current_count
+            else:
+                self._label_statistics.pop(previous_label, None)
+            self._labeled_count = max(0, self._labeled_count - 1)
+            self._unlabeled_count = min(len(self._items), self._unlabeled_count + 1)
+
+        if new_label:
+            self._label_statistics[new_label] = (
+                self._label_statistics.get(new_label, 0) + 1
+            )
+            self._labeled_count += 1
+            self._unlabeled_count = max(0, self._unlabeled_count - 1)
+
+        self.modified_at = datetime.now()
+
+    def get_summary(self) -> dict:
+        return {
+            "name": self.name,
+            "media_type": self.media_type.value,
+            "total_fragments": self.get_total_count(),
+            "labeled": self.get_labeled_count(),
+            "unlabeled": self.get_unlabeled_count(),
+            "progress_percentage": self.get_progress_percentage(),
+            "label_statistics": self.get_label_statistics(),
+        }
+
+    def _register_item_state(self, item: MediaItem) -> None:
+        if item.is_labeled():
+            self._labeled_count += 1
+            self._label_statistics[item.label] = (
+                self._label_statistics.get(item.label, 0) + 1
+            )
+        else:
+            self._unlabeled_count += 1
+
+        item_sequence = self._extract_item_sequence(item.item_id)
+        if item_sequence is not None:
+            self._next_item_sequence = max(self._next_item_sequence, item_sequence + 1)
+
+    def _unregister_item_state(self, item: MediaItem) -> None:
+        if item.is_labeled():
+            self._labeled_count = max(0, self._labeled_count - 1)
+            label = item.label
+            current_count = self._label_statistics.get(label, 0) - 1
+            if current_count > 0:
+                self._label_statistics[label] = current_count
+            else:
+                self._label_statistics.pop(label, None)
+        else:
+            self._unlabeled_count = max(0, self._unlabeled_count - 1)
+
+    def _rebuild_item_index(self, start_index: int = 0) -> None:
+        for index in range(start_index, len(self._items)):
+            self._item_index[self._items[index].item_id] = index
+
+    @staticmethod
+    def _extract_item_sequence(item_id: str) -> Optional[int]:
+        try:
+            return int(item_id.split("_")[-1])
+        except (ValueError, AttributeError):
+            return None

@@ -66,6 +66,7 @@ class ILabelValidator(ABC):
 # Multimodal Interfaces
 # ---------------------------------------------
 
+
 class IMediaScanner(ABC):
     """
     Generic folder scanner that produces MediaItem instances.
@@ -91,6 +92,12 @@ class IMediaScanner(ABC):
         Return lowercase dot-prefixed extensions: ['.jpg', '.png', '.mp4', ...]
         """
         pass
+
+    def scan_paths(self, folder_path: Path) -> List[Path]:
+        """
+        Lightweight scan that returns matching paths without building MediaItems.
+        """
+        return [Path(item.file_path) for item in self.scan_folder(folder_path)]
 
 
 class IMediaPreviewSource(ABC):
@@ -122,13 +129,14 @@ class IMediaPreviewSource(ABC):
                     "source_key": str | None}
         """
         pass
-    
+
     @abstractmethod
-    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> MediaItem:
+    def create_media_item(
+        self, item_id: str, file_path: Path, metadata: dict
+    ) -> MediaItem:
         """Creates an instance of the corresponding MediaItem"""
         pass
 
     @abstractmethod
     def file_exists(self, file_path: str) -> bool:
         pass
-    
