@@ -27,35 +27,34 @@ class _BaseFileScanner(IMediaScanner):
         - _make_item() to convert a (id, Path) pair into a MediaItem
     """
 
-    EXTENSIONS: List[str] = []
+    EXTENSIONS: frozenset[str] = frozenset()
 
     def scan_folder(self, folder_path: Path) -> List[MediaItem]:
-        if not folder_path.exists() or not folder_path.is_dir():
-            raise ValueError(f"Invalid folder path: {folder_path}")
-        
-        # Normalize extensions for fast comparison
-        
-        valid_exts = {ext.lower() for ext in self.EXTENSIONS}
-        found: List[Path] = []
-        
-        with os.scandir(folder_path) as it:
-            for entry in it:
-                if entry.is_file():
-                    name = entry.name.lower()
-                    if any(name.endswith(ext) for ext in valid_exts):
-                        found.append(Path(entry.path))
-
-        sorted_paths = sorted(set(found))
+        paths = self.scan_paths(folder_path)
         items: List[MediaItem] = []
-
-        for i, path in enumerate(sorted_paths):
-            item_id = f"item_{i + 1:03d}"
+        for i, path in enumerate(paths, start=1):
+            item_id = f"item_{i:03d}"
             items.append(self._make_item(item_id, path))
-
         return items
 
+    def scan_paths(self, folder_path: Path) -> List[Path]:
+        if not folder_path.exists() or not folder_path.is_dir():
+            raise ValueError(f"Invalid folder path: {folder_path}")
+
+        valid_exts = self.EXTENSIONS
+        found: List[Path] = []
+
+        with os.scandir(folder_path) as entries:
+            for entry in entries:
+                if not entry.is_file():
+                    continue
+                if Path(entry.name).suffix.lower() in valid_exts:
+                    found.append(Path(entry.path))
+
+        return sorted(found)
+
     def get_supported_extensions(self) -> List[str]:
-        return self.EXTENSIONS.copy()
+        return list(self.EXTENSIONS)
 
     def _make_item(self, item_id: str, path: Path) -> MediaItem:
         return MediaItem(
@@ -72,7 +71,7 @@ class _BaseFileScanner(IMediaScanner):
 class VideoScanner(_BaseFileScanner):
     """Scans a folder for video files and returns VideoItem instances"""
 
-    EXTENSIONS = VIDEO_EXTENSIONS
+    EXTENSIONS = frozenset(VIDEO_EXTENSIONS)
 
     @property
     def media_type(self) -> MediaType:
@@ -86,7 +85,7 @@ class VideoScanner(_BaseFileScanner):
 class ImageScanner(_BaseFileScanner):
     """Scans a folder for image files and returns ImageItem instances."""
 
-    EXTENSIONS = IMAGE_EXTENSIONS.union(IMAGE_ARRAY_EXTENSIONS) # Important, when working with sets we cannot use A + B
+    EXTENSIONS = frozenset(IMAGE_EXTENSIONS.union(IMAGE_ARRAY_EXTENSIONS)) # Important operation over sets (union)
 
     @property
     def media_type(self) -> MediaType:
@@ -100,7 +99,7 @@ class ImageScanner(_BaseFileScanner):
 class AudioScanner(_BaseFileScanner):
     """Scans a folder for audio files and returns AudioItem instances"""
 
-    EXTENSIONS = AUDIO_EXTENSIONS
+    EXTENSIONS = frozenset(AUDIO_EXTENSIONS)
 
     @property
     def media_type(self) -> MediaType:
@@ -114,7 +113,7 @@ class AudioScanner(_BaseFileScanner):
 class TextScanner(_BaseFileScanner):
     """Scans a folder for plain-text files and returns TextItem instances"""
 
-    EXTENSIONS = TEXT_EXTENSIONS
+    EXTENSIONS = frozenset(TEXT_EXTENSIONS)
 
     @property
     def media_type(self) -> MediaType:
@@ -129,7 +128,7 @@ class TextScanner(_BaseFileScanner):
 class SignalScanner(_BaseFileScanner):
     """Scans a folder for numeric signal files and returns SignalItem instances."""
 
-    EXTENSIONS = SIGNAL_EXTENSIONS
+    EXTENSIONS = frozenset(SIGNAL_EXTENSIONS)
 
     @property
     def media_type(self) -> MediaType:

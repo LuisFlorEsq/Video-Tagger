@@ -1,3 +1,5 @@
+import copy
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -18,6 +20,16 @@ from src.infrastructure.array_media import (
     load_numpy_array,
     load_signal_array
 )
+
+
+def make_file_signature(file_path: Path) -> tuple[str, int, int]:
+    path = Path(file_path).resolve()
+    stat = path.stat()
+    return str(path), int(stat.st_mtime_ns), int(stat.st_size)
+
+
+def _clone_metadata(metadata: dict) -> dict:
+    return copy.deepcopy(metadata)
 
 
 # ---------------------------------------------
@@ -82,8 +94,17 @@ class VideoPreviewSource(IMediaPreviewSource):
         return MediaType.VIDEO
 
     def get_metadata(self, file_path: Path) -> dict:
-        duration_s = read_qt_media_duration(file_path)
+        return self.get_metadata_cached(file_path)
+
+    def get_metadata_cached(self, file_path: Path) -> dict:
+        duration_s = self._get_cached_duration(make_file_signature(file_path), file_path)
         return {"duration_s": duration_s}
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _get_cached_duration(signature: tuple[str, int, int], file_path: Path) -> Optional[float]:
+        del signature
+        return read_qt_media_duration(file_path)
     
     def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> VideoItem:
         return VideoItem(
@@ -109,6 +130,16 @@ class ImagePreviewSource(IMediaPreviewSource):
         return MediaType.IMAGE
 
     def get_metadata(self, file_path: Path) -> dict:
+        return self.get_metadata_cached(file_path)
+
+    def get_metadata_cached(self, file_path: Path) -> dict:
+        signature = make_file_signature(file_path)
+        return _clone_metadata(self._get_cached_metadata(signature, Path(file_path)))
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _get_cached_metadata(signature: tuple[str, int, int], file_path: Path) -> dict:
+        del signature
         if is_numpy_media_path(file_path):
             array, source_key, _ = load_numpy_array(file_path)
             if not is_image_array(array):
@@ -155,6 +186,16 @@ class AudioPreviewSource(IMediaPreviewSource):
         return MediaType.AUDIO
 
     def get_metadata(self, file_path: Path) -> dict:
+        return self.get_metadata_cached(file_path)
+
+    def get_metadata_cached(self, file_path: Path) -> dict:
+        signature = make_file_signature(file_path)
+        return _clone_metadata(self._get_cached_metadata(signature, Path(file_path)))
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _get_cached_metadata(signature: tuple[str, int, int], file_path: Path) -> dict:
+        del signature
         duration_s = read_qt_media_duration(file_path)
         return {"duration_s": duration_s, "sample_rate": None}
     
@@ -190,7 +231,17 @@ class TextPreviewSource(IMediaPreviewSource):
         return MediaType.TEXT
 
     def get_metadata(self, file_path: Path) -> dict:
-        encoding = self._detect_encoding(file_path)
+        return self.get_metadata_cached(file_path)
+
+    def get_metadata_cached(self, file_path: Path) -> dict:
+        signature = make_file_signature(file_path)
+        return _clone_metadata(self._get_cached_metadata(signature, Path(file_path)))
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _get_cached_metadata(signature: tuple[str, int, int], file_path: Path) -> dict:
+        del signature
+        encoding = TextPreviewSource._detect_encoding(file_path)
         size_bytes = file_path.stat().st_size if file_path.exists() else 0
         return {"encoding": encoding, "size_bytes": size_bytes}
     
@@ -204,10 +255,11 @@ class TextPreviewSource(IMediaPreviewSource):
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
 
-    def _detect_encoding(self, file_path: Path) -> str:
+    @staticmethod
+    def _detect_encoding(file_path: Path) -> str:
         try:
             raw = file_path.read_bytes()
-            for bom, enc in self._BOM_MAP.items():
+            for bom, enc in TextPreviewSource.BOM_MAP.items():
                 if raw.startswith(bom):
                     return enc
             # Heuristic: try UTF-8 strict; fall back to latin-1
@@ -232,6 +284,16 @@ class SignalPreviewSource(IMediaPreviewSource):
         return MediaType.SIGNAL
 
     def get_metadata(self, file_path: Path) -> dict:
+        return self.get_metadata_cached(file_path)
+
+    def get_metadata_cached(self, file_path: Path) -> dict:
+        signature = make_file_signature(file_path)
+        return _clone_metadata(self._get_cached_metadata(signature, Path(file_path)))
+
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def _get_cached_metadata(signature: tuple[str, int, int], file_path: Path) -> dict:
+        del signature
         _, metadata = load_signal_array(file_path)
         return metadata
     

@@ -117,7 +117,7 @@ class IMediaPreviewSource(ABC):
         pass
 
     @abstractmethod
-    def get_metadata(self, file_path: str) -> dict:
+    def get_metadata(self, file_path: Path) -> dict:
         """
         Return a dict of type-specific metadata.
 

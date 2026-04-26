@@ -516,7 +516,10 @@ def get_cached_waveform_envelope(
         Optional[np.ndarray]: A float32 NumPy array copy of the envelope if cached,
             otherwise None.
     """
-    key = make_waveform_cache_key(file_path, target_bins=target_bins)
+    try:
+        key = make_waveform_cache_key(file_path, target_bins=target_bins)
+    except FileNotFoundError:
+        return None
     with _WAVEFORM_CACHE_LOCK:
         envelope = _WAVEFORM_CACHE.get(key)
         if envelope is None:
@@ -575,7 +578,10 @@ def load_waveform_envelope_cached(
     if cached is not None:
         return cached, True
 
-    envelope = load_waveform_envelope(file_path, target_bins=target_bins)
+    try:
+        envelope = load_waveform_envelope(file_path, target_bins=target_bins)
+    except FileNotFoundError:
+        return np.zeros(0, dtype=np.float32), False
     if envelope.size > 0:
         envelope = store_waveform_envelope_cache(
             file_path,
