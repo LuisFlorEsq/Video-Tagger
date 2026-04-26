@@ -137,7 +137,9 @@ class ViewerStack(QStackedWidget):
     def reset(self) -> None:
         for viewer in self._viewers.values():
             viewer.reset()
-        self._current_viewer = self._viewers.get(MediaType.VIDEO) # Fallback again to Video viewer
+        self._current_viewer = self._viewers.get(
+            MediaType.VIDEO
+        )  # Fallback again to Video viewer
         if self._current_viewer is not None:
             self.setCurrentWidget(self._current_viewer)
 

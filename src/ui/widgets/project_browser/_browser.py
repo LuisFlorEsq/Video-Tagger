@@ -3,9 +3,14 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QFileDialog, QDialog,
-    QHBoxLayout, QLabel, QMessageBox,
-    QStackedWidget, QVBoxLayout, QWidget
+    QFileDialog,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.application.services.project_service import ProjectService
@@ -17,9 +22,12 @@ from src.domain.models.project import Project
 from src.ui.helpers.dividers import make_vline
 from src.ui.styles import (
     AppTheme,
-    chip_info, chip_warning,
-    text_breadcrumb, text_secondary, text_title,
-    topbar_panel
+    chip_info,
+    chip_warning,
+    text_breadcrumb,
+    text_secondary,
+    text_title,
+    topbar_panel,
 )
 
 from src.ui.widgets.dialogs.label_config_dialog import LabelConfigDialog
@@ -46,7 +54,7 @@ class ProjectBrowser(QWidget):
         self,
         project_service: ProjectService,
         export_service: ExportService,
-        parent=None
+        parent=None,
     ):
         super().__init__(parent)
         self._project_service = project_service
@@ -207,8 +215,7 @@ class ProjectBrowser(QWidget):
             self._show_error("Error al crear proyecto", str(exc))
         except Exception as exc:
             self._show_error(
-                "Error inesperado",
-                f"No se pudo crear el proyecto:\n{str(exc)}"
+                "Error inesperado", f"No se pudo crear el proyecto:\n{str(exc)}"
             )
 
     def _on_load_project_clicked(self):
@@ -223,8 +230,7 @@ class ProjectBrowser(QWidget):
             self._show_error("No se pudo cargar el proyecto", str(exc))
         except Exception as exc:
             self._show_error(
-                "Error inesperado",
-                f"No se pudo cargar el proyecto:\n{str(exc)}"
+                "Error inesperado", f"No se pudo cargar el proyecto:\n{str(exc)}"
             )
 
     def _on_back_clicked(self):
@@ -237,33 +243,26 @@ class ProjectBrowser(QWidget):
             return
 
         file_path = self._select_save_path(
-            f"{self._current_project.name}.json",
-            "JSON Files (*.json)"
+            f"{self._current_project.name}.json", "JSON Files (*.json)"
         )
         if not file_path:
             return
 
         try:
-            self._project_service.save_project(
-                self._current_project, file_path)
-            summary = self._project_service.get_project_summary(
-                self._current_project
-            )
+            self._project_service.save_project(self._current_project, file_path)
+            summary = self._project_service.get_project_summary(self._current_project)
             self._show_info(
                 "Proyecto guardado",
                 "Guardado correctamente.\n\n"
                 f"Progreso: {summary['labeled']}/{summary['total_fragments']} "
-                f"({summary['progress_percentage']:.1f}%)"
+                f"({summary['progress_percentage']:.1f}%)",
             )
         except Exception as exc:
             self._show_error("Error al guardar", str(exc))
 
     def _on_export_csv_clicked(self):
         if not self._current_project:
-            self._show_error(
-                "Sin proyecto",
-                "No hay proyecto cargado para exportar."
-            )
+            self._show_error("Sin proyecto", "No hay proyecto cargado para exportar.")
             return
 
         if self._current_project.get_total_count() == 0:
@@ -272,27 +271,23 @@ class ProjectBrowser(QWidget):
 
         file_path = self._select_save_path(
             f"{self._current_project.name}_export.csv",
-            "CSV Files (*.csv);;All Files (*)"
+            "CSV Files (*.csv);;All Files (*)",
         )
         if not file_path:
             return
 
         try:
-            self._export_service.export(
-                self._current_project, file_path, "csv")
-            summary = self._project_service.get_project_summary(
-                self._current_project
-            )
+            self._export_service.export(self._current_project, file_path, "csv")
+            summary = self._project_service.get_project_summary(self._current_project)
             self._show_info(
                 "Exportacion exitosa",
                 f"{summary['total_fragments']} elementos exportados.\n"
                 f"Etiquetados: {summary['labeled']}/{summary['total_fragments']}\n"
-                f"Archivo: {file_path.name}"
+                f"Archivo: {file_path.name}",
             )
         except Exception as exc:
             self._show_error(
-                "Error al exportar",
-                f"No se pudo exportar a CSV:\n{str(exc)}"
+                "Error al exportar", f"No se pudo exportar a CSV:\n{str(exc)}"
             )
 
     def _on_config_labels_clicked(self):
@@ -323,10 +318,7 @@ class ProjectBrowser(QWidget):
 
         new_items = self._project_service.get_new_items(self._current_project)
         if not new_items:
-            self._show_info(
-                "Sin cambios",
-                "No hay archivos nuevos para sincronizar."
-            )
+            self._show_info("Sin cambios", "No hay archivos nuevos para sincronizar.")
             return
 
         reply = QMessageBox.question(
@@ -350,15 +342,13 @@ class ProjectBrowser(QWidget):
             was_saved = self._persist_current_project(
                 ask_first_save=True,
                 success_title="Sincronizacion exitosa",
-                success_message=(
-                    f"Se agregaron {count} archivos nuevos al proyecto."
-                ),
+                success_message=(f"Se agregaron {count} archivos nuevos al proyecto."),
             )
             if not was_saved:
                 self._show_info(
                     "Sincronizacion exitosa",
                     f"Se agregaron {count} archivos nuevos al proyecto.\n\n"
-                    "El proyecto sigue en memoria, pero aun no se guardo."
+                    "El proyecto sigue en memoria, pero aun no se guardo.",
                 )
         except Exception as exc:
             self._show_error("Error al sincronizar", str(exc))
@@ -437,8 +427,7 @@ class ProjectBrowser(QWidget):
         reply = QMessageBox.question(
             self,
             "Guardar proyecto",
-            "El proyecto fue creado correctamente.\n\n"
-            "Deseas guardarlo ahora?",
+            "El proyecto fue creado correctamente.\n\nDeseas guardarlo ahora?",
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply != QMessageBox.Yes:
