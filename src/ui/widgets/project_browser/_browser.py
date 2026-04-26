@@ -345,6 +345,8 @@ class ProjectBrowser(QWidget):
                 new_items,
             )
             self.refresh()
+            self._sidebar.set_sync_idle()
+            self.sync_badge.setVisible(False)
             was_saved = self._persist_current_project(
                 ask_first_save=True,
                 success_title="Sincronizacion exitosa",
@@ -366,7 +368,6 @@ class ProjectBrowser(QWidget):
     def refresh(self):
         if self._current_project:
             self._item_list.refresh(self._current_project)
-            self._check_for_new_items()
 
     def set_focus(self):
         self._item_list.set_focus()

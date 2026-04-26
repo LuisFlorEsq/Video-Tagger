@@ -14,13 +14,13 @@ from src.ui.widgets.media_viewer import (
     AudioViewer,
     SignalViewer,
     TextViewer,
-    VideoViewer
+    VideoViewer,
 )
 
 
 class ViewerStack(QStackedWidget):
     """
-    Owns one media widget per MediaType    
+    Owns one media widget per MediaType
     """
 
     item_labeled = Signal(MediaItem)  # emits MediaItem
@@ -34,7 +34,7 @@ class ViewerStack(QStackedWidget):
         labeling_service: LabelingService,
         project_service: ProjectService,
         available_labels: list | None = None,
-        parent=None
+        parent=None,
     ) -> None:
 
         super().__init__(parent)
@@ -54,7 +54,7 @@ class ViewerStack(QStackedWidget):
         kwargs = dict(
             labeling_service=self._labeling_service,
             project_service=self._project_service,
-            available_labels=self._available_labels or None
+            available_labels=self._available_labels or None,
         )
 
         for mt, cls in [
@@ -62,7 +62,7 @@ class ViewerStack(QStackedWidget):
             (MediaType.IMAGE, ImageViewer),
             (MediaType.AUDIO, AudioViewer),
             (MediaType.SIGNAL, SignalViewer),
-            (MediaType.TEXT,  TextViewer),
+            (MediaType.TEXT, TextViewer),
         ]:
             viewer = cls(**kwargs)
             self._viewers[mt] = viewer
@@ -97,16 +97,17 @@ class ViewerStack(QStackedWidget):
 
         viewer = self._viewers.get(item.media_type)
         if viewer is None:
-            viewer = self._viewers[MediaType.VIDEO] # Fallback to VIDEO viewer
+            viewer = self._viewers[MediaType.VIDEO]  # Fallback to VIDEO viewer
 
-        # Stop the previously active viewer before switching
-        if self._current_viewer is not None and self._current_viewer is not viewer:
+        previous_viewer = self._current_viewer
+        if previous_viewer is not None:
             logger.debug(
                 "ViewerStack stopping viewer | reason=switch_viewer | viewer=%s",
-                self._viewer_name(self._current_viewer),
+                self._viewer_name(previous_viewer),
             )
+            previous_viewer.stop()
 
-            self._current_viewer.stop()
+        if self._current_viewer is not viewer:
             self._current_viewer = viewer
             self.setCurrentWidget(viewer)
 
@@ -136,6 +137,9 @@ class ViewerStack(QStackedWidget):
     def reset(self) -> None:
         for viewer in self._viewers.values():
             viewer.reset()
+        self._current_viewer = self._viewers.get(MediaType.VIDEO) # Fallback again to Video viewer
+        if self._current_viewer is not None:
+            self.setCurrentWidget(self._current_viewer)
 
     def stop_all_media(self, reason: str = "leave_fragment_view") -> None:
         for viewer in self._viewers.values():

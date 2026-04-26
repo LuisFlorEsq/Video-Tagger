@@ -2,9 +2,15 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QProgressBar,
-    QLineEdit, QTreeWidget, QTreeWidgetItem
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QLineEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
 )
 
 from src.domain.models.project import Project
@@ -14,9 +20,13 @@ from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
 from src.ui.helpers.project_formatter import format_project_badge, format_project_stats
 from src.ui.styles import (
     AppTheme,
-    progress_bar, fragment_list, pill_style,
-    text_secondary, text_muted,
-    chip_info, input_field
+    progress_bar,
+    fragment_list,
+    pill_style,
+    text_secondary,
+    text_muted,
+    chip_info,
+    input_field,
 )
 
 
@@ -31,16 +41,16 @@ class MediaListPanel(QWidget):
         self._active_filter = FILTER_ALL
         self._init_ui()
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # UI construction
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # ── Filter bar ────────────────────────────
+        # ---- Filter bar ---------------------------------
         filter_bar = QWidget()
         filter_bar.setFixedHeight(48)
         filter_bar.setStyleSheet(
@@ -62,16 +72,15 @@ class MediaListPanel(QWidget):
 
         self._filter_btns: dict[str, QPushButton] = {}
         for mode, label in [
-            (FILTER_ALL,       "Todos"),
-            (FILTER_LABELED,   "Etiquetados"),
+            (FILTER_ALL, "Todos"),
+            (FILTER_LABELED, "Etiquetados"),
             (FILTER_UNLABELED, "Sin etiquetar"),
         ]:
             btn = QPushButton(label)
             btn.setFixedHeight(28)
             btn.setCheckable(True)
             btn.setStyleSheet(pill_style(active=(mode == FILTER_ALL)))
-            btn.clicked.connect(
-                lambda checked, m=mode: self._on_filter_clicked(m))
+            btn.clicked.connect(lambda checked, m=mode: self._on_filter_clicked(m))
             filter_layout.addWidget(btn)
             self._filter_btns[mode] = btn
 
@@ -83,7 +92,7 @@ class MediaListPanel(QWidget):
 
         layout.addWidget(filter_bar)
 
-        # ── Stats toolbar ─────────────────────────
+        # ----- Stats toolbar -------------------------
         toolbar = QWidget()
         toolbar.setFixedHeight(36)
         toolbar.setStyleSheet(
@@ -105,7 +114,7 @@ class MediaListPanel(QWidget):
 
         layout.addWidget(toolbar)
 
-        # ── Progress bar ──────────────────────────
+        # ---- Progress bar --------------------
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
@@ -115,7 +124,7 @@ class MediaListPanel(QWidget):
 
         layout.addWidget(self.progress_bar)
 
-        # ── Item tree ─────────────────────────
+        # ----- Item tree ----------------------
         self.tree = QTreeWidget()
         self.tree.setColumnCount(3)
         self.tree.setHeaderLabels(["Archivo", "Etiqueta", "ID"])
@@ -132,9 +141,9 @@ class MediaListPanel(QWidget):
 
         layout.addWidget(self.tree)
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # Public API
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def load(self, project: Project):
         """Replace the displayed project and repopulate the list."""
@@ -197,9 +206,9 @@ class MediaListPanel(QWidget):
     def set_focus(self):
         self.tree.setFocus()
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # Private — populate and filter
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def _populate(self):
         self.tree.clear()
@@ -207,12 +216,13 @@ class MediaListPanel(QWidget):
         if not self._project:
             return
 
-        for media_item in self._project.items:
+        for media_item in self._project.iter_items():
             status = media_item.label if media_item.is_labeled() else "Sin etiquetar"
             tree_item = QTreeWidgetItem(
                 [media_item.get_filename(), status, media_item.item_id]
             )
             tree_item.setData(0, Qt.UserRole, media_item.item_id)
+            tree_item.setData(0, Qt.UserRole + 1, media_item)
             tree_item.setToolTip(0, media_item.file_path)
 
             color = AppTheme.SUCCESS if media_item.is_labeled() else AppTheme.TEXT_MUTED
@@ -223,18 +233,12 @@ class MediaListPanel(QWidget):
         if not self._project:
             return
 
-        summary = {
-            'total_fragments':    self._project.get_total_count(),
-            'labeled':            self._project.get_labeled_count(),
-            'unlabeled':          self._project.get_unlabeled_count(),
-            'progress_percentage': self._project.get_progress_percentage(),
-            'label_statistics':   self._project.get_label_statistics(),
-        }
+        summary = self._project.get_summary()
 
         self.stats_label.setText(format_project_stats(summary))
         self.progress_badge.setText(format_project_badge(summary))
         self.progress_badge.setVisible(True)
-        self.progress_bar.setValue(int(summary['progress_percentage']))
+        self.progress_bar.setValue(int(summary["progress_percentage"]))
 
     def _apply_filter(self):
         if not self._project:
@@ -246,8 +250,10 @@ class MediaListPanel(QWidget):
 
         for i in range(total):
             tree_item = self.tree.topLevelItem(i)
-            item_id = tree_item.data(0, Qt.UserRole)
-            media_item = self._project.get_item(item_id)
+            media_item = tree_item.data(0, Qt.UserRole + 1)
+            if media_item is None:
+                item_id = tree_item.data(0, Qt.UserRole)
+                media_item = self._project.get_item(item_id)
 
             if media_item is None:
                 tree_item.setHidden(True)
@@ -289,11 +295,12 @@ class MediaListPanel(QWidget):
         if not self._project:
             return
 
-        media_item = self._project.get_item(item.data(0, Qt.UserRole))
+        media_item = item.data(0, Qt.UserRole + 1)
+        if media_item is None:
+            media_item = self._project.get_item(item.data(0, Qt.UserRole))
         if media_item:
             self.item_activated.emit(media_item)
 
     def _update_pill_styles(self):
         for mode, btn in self._filter_btns.items():
-            btn.setStyleSheet(pill_style(
-                active=(mode == self._active_filter)))
+            btn.setStyleSheet(pill_style(active=(mode == self._active_filter)))
