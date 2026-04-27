@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QWidget,
-    QScrollArea
+    QScrollArea,
 )
 
 from src.ui.styles import AppTheme, btn_ghost
@@ -40,9 +40,7 @@ class ImageViewer(BaseViewer):
 
         self._image_label = ZoomableImageLabel()
         self._image_label.set_viewport(self._scroll.viewport())
-        self._image_label.setStyleSheet(
-            f"background-color: {AppTheme.BG_APP};"
-        )
+        self._image_label.setStyleSheet(f"background-color: {AppTheme.BG_APP};")
         self._scroll.setWidget(self._image_label)
 
         return self._scroll
@@ -54,7 +52,7 @@ class ImageViewer(BaseViewer):
         """Inject zoom controls between the breadcrumb stretch and position counter"""
 
         for text, factor, tip in [
-            ("zoom_out", 0.8,  "Reducir zoom (Ctrl+-)"),
+            ("zoom_out", 0.8, "Reducir zoom (Ctrl+-)"),
             ("reset", None, "Restablecer zoom (Ctrl+0)"),
             ("zoom_in", 1.25, "Ampliar zoom (Ctrl++)"),
         ]:
@@ -69,7 +67,8 @@ class ImageViewer(BaseViewer):
                 btn.clicked.connect(self._image_label.reset_zoom)
             else:
                 btn.clicked.connect(
-                    lambda _=False, f=factor: self._image_label.adjust_zoom(f))
+                    lambda _=False, f=factor: self._image_label.adjust_zoom(f)
+                )
 
             tb.addWidget(btn)
 
@@ -98,8 +97,9 @@ class ImageViewer(BaseViewer):
 
         if px.isNull():
             QMessageBox.critical(
-                self, "Error al cargar la imagen",
-                f"No se pudo cargar la imagen\n{item.file_path}"
+                self,
+                "Error al cargar la imagen",
+                f"No se pudo cargar la imagen\n{item.file_path}",
             )
             return
         self._image_label.set_pix_map(px)
@@ -117,4 +117,8 @@ class ImageViewer(BaseViewer):
         # logger.debug("ImageViewer.on_reset")
         self._image_label.clear()
         self._image_label.resize(1, 1)
+        self._image_label.reset_zoom()
         self.dim_label.setText("--")
+
+    def stop(self) -> None:
+        self.on_reset()

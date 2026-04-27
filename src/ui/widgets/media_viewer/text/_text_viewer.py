@@ -1,4 +1,3 @@
-from pathlib import Path
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
@@ -9,17 +8,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QPlainTextEdit,
     QLabel,
-    QMessageBox
+    QMessageBox,
 )
 
-from src.ui.styles import (
-    AppTheme,
-    editor,
-    text_wc, input_field,
-    btn_ghost
-)
+from src.ui.styles import AppTheme, editor, text_wc, input_field, btn_ghost
 
-from src.core.logger import logger
 from src.core.config import ICON_SIZE
 from src.core.resources import icon
 from src.domain.models.media.text_item import TextItem
@@ -130,8 +123,9 @@ class TextViewer(BaseViewer):
             content = item.load_content()
         except FileNotFoundError:
             QMessageBox.critical(
-                self, "Archivo no encontrado",
-                f"No se encontró el archivo de texto:\n{item.file_path}"
+                self,
+                "Archivo no encontrado",
+                f"No se encontró el archivo de texto:\n{item.file_path}",
             )
             return
         except Exception as e:
@@ -156,3 +150,6 @@ class TextViewer(BaseViewer):
         self._wc_label.setText("")
         self._search_input.clear()
         self._find_btn.setEnabled(False)
+
+    def stop(self) -> None:
+        self.on_reset()

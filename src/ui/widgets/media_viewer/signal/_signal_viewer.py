@@ -57,9 +57,7 @@ class SignalViewer(BaseViewer):
             if factor is None:
                 btn.clicked.connect(self._plot.reset_zoom)
             else:
-                btn.clicked.connect(
-                    lambda _=False, f=factor: self._plot.adjust_zoom(f)
-                )
+                btn.clicked.connect(lambda _=False, f=factor: self._plot.adjust_zoom(f))
             toolbar.addWidget(btn)
 
         layout.addLayout(toolbar)
@@ -126,3 +124,6 @@ class SignalViewer(BaseViewer):
         self._dtype_label.setText("--")
         self._channels_label.setText("--")
         self._duration_label.setText("--:--")
+
+    def stop(self) -> None:
+        self.on_reset()
