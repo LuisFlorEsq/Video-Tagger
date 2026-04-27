@@ -1,10 +1,8 @@
 from typing import List, Optional
 
-from src.domain.models.project import Project
+from src.domain.interfaces import ILabelValidator
 from src.domain.models.media import MediaItem
-from src.domain.interfaces import (
-    ILabelValidator
-)
+from src.domain.models.project import Project
 
 
 class LabelingService:

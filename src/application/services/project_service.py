@@ -1,11 +1,10 @@
 from pathlib import Path
 from typing import Iterable, Optional
+
 from src.application.services.project_factory import MediaTypeFactory
 from src.domain.interfaces import IProjectRepository
-
-from src.domain.models.project import Project
 from src.domain.models.media import MediaType
-
+from src.domain.models.project import Project
 
 # ---------------------------------------------
 # Project Service
@@ -25,9 +24,7 @@ class ProjectService:
 
     # ---- Project creation ----
 
-    def create_project_from_folder(
-        self, folder_path: Path, media_type: MediaType
-    ) -> Project:
+    def create_project_from_folder(self, folder_path: Path, media_type: MediaType) -> Project:
         """Create a new project by scanning *folder_path*."""
         if not folder_path.exists():
             raise ValueError(f"La carpeta no existe: {folder_path}")
@@ -146,7 +143,7 @@ class ProjectService:
             try:
                 item = self._media_factory.create_item(
                     media_type=project.media_type,
-                    item_id=next_id,
+                    index=next_id,
                     file_path=file_path,
                 )
                 project.add_item(item)
@@ -156,9 +153,7 @@ class ProjectService:
                 print(f"Failed to add {file_path}: {e}")
         return added
 
-    def sync_new_items_from_paths(
-        self, project: Project, new_items: Iterable[Path]
-    ) -> int:
+    def sync_new_items_from_paths(self, project: Project, new_items: Iterable[Path]) -> int:
         """Sync new media from any iterable of file paths."""
         return self.sync_new_items(project, set(Path(path) for path in new_items))
 

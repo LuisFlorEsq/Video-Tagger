@@ -1,6 +1,5 @@
 import logging
 import sys
-from pathlib import Path
 
 
 def setup_logger(name: str = "labeling_app"):
@@ -9,8 +8,7 @@ def setup_logger(name: str = "labeling_app"):
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            '%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
 
         # Log en consola (útil para desarrollo)

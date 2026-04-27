@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
+
 from PySide6.QtGui import QIcon, QPixmap
+
 from src.core.config import ICONS_PATH
 
 
@@ -18,10 +20,11 @@ def resource_path(relative: str) -> str:
         relative (str): Path relative to the project root
 
     Returns:
-        str: Absolute path that works both in development and when running from a 
+        str: Absolute path that works both in development and when running from a
         PyInstaller onedir bundle.
     """
     return str(base_dir() / relative)
+
 
 # Elements specific methods
 

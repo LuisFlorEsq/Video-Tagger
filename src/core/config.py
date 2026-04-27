@@ -1,5 +1,4 @@
 from pathlib import Path
-import numpy as np
 
 # --------------------------------------------------------------------
 # View indices (QStackedWidget slots on MainWindow and Project browser)
@@ -23,7 +22,7 @@ DEFAULT_LABELS: list[str] = [
     "Etiqueta 3",
     "Etiqueta 4",
     "Etiqueta 5",
-    "Otro"
+    "Otro",
 ]
 
 LABELS_MIN_COUNT = 1
@@ -61,10 +60,8 @@ WAVEFORM_CACHE_MAX_ITEMS = 64
 # ---------------------------------------------
 
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png",
-                    ".bmp", ".gif", ".tiff", ".tif", ".webp"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".webp"}
 IMAGE_ARRAY_EXTENSIONS = {".npy", ".npz"}
-AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac",
-                    ".ogg", ".aac", ".m4a", ".wma", ".opus"}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a", ".wma", ".opus"}
 TEXT_EXTENSIONS = {".txt", ".csv", ".json", ".xml", ".md", ".rst", ".log"}
 SIGNAL_EXTENSIONS = {".npy", ".npz"}

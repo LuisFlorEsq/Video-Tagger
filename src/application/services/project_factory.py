@@ -1,10 +1,9 @@
-from src.domain.models.media import MediaItem, MediaType
-from src.domain.models.project import Project
-from src.domain.interfaces import IMediaScanner, IMediaPreviewSource
-
+from pathlib import Path
 from typing import Iterable, Optional
 
-from pathlib import Path
+from src.domain.interfaces import IMediaPreviewSource, IMediaScanner
+from src.domain.models.media import MediaItem, MediaType
+from src.domain.models.project import Project
 
 # ---------------------------------------------
 # MediaTypeFactory
@@ -34,9 +33,7 @@ class MediaTypeFactory:
 
         scanner = self.get_scanner(media_type)
         if scanner is None:
-            raise ValueError(
-                f"No scanner registered for media type: {media_type.value}"
-            )
+            raise ValueError(f"No scanner registered for media type: {media_type.value}")
 
         return scanner.scan_paths(folder_path)
 
@@ -65,9 +62,7 @@ class MediaTypeFactory:
             item_id=item_id, file_path=file_path, metadata=metadata
         )
 
-    def _get_metadata(
-        self, media_type: MediaType, file_path: Path, strict: bool = False
-    ) -> dict:
+    def _get_metadata(self, media_type: MediaType, file_path: Path, strict: bool = False) -> dict:
         preview_source = self._preview_sources.get(media_type)
         if preview_source is None:
             return {}
@@ -104,9 +99,7 @@ class MediaTypeFactory:
         )
         if not scanned_paths:
             label = media_type.label()
-            raise ValueError(
-                f"No se encontraron archivos de {label.lower()} en la carpeta"
-            )
+            raise ValueError(f"No se encontraron archivos de {label.lower()} en la carpeta")
 
         return self.create_project_from_paths(
             folder_path=folder_path,
@@ -123,9 +116,7 @@ class MediaTypeFactory:
         path_list = [Path(path) for path in paths]
         if not path_list:
             label = media_type.label()
-            raise ValueError(
-                f"No se encontraron archivos de {label.lower()} en la carpeta"
-            )
+            raise ValueError(f"No se encontraron archivos de {label.lower()} en la carpeta")
 
         project = Project(
             name=folder_path.name, folder_path=str(folder_path), media_type=media_type
@@ -134,7 +125,7 @@ class MediaTypeFactory:
         for index, file_path in enumerate(sorted(path_list), start=1):
             item = self.create_item(
                 media_type=media_type,
-                item_id=index,
+                index=index,
                 file_path=file_path,
                 strict_metadata=True,
             )

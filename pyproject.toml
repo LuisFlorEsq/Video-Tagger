@@ -1,0 +1,57 @@
+[project]
+name = "video-tagger"
+version = "0.1.0"
+description = "A desktop annotation tool for dataset creation"
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Core Runtime Dependencies (Only what the app needs to run)
+dependencies = [
+    "colorama==0.4.6",
+    "numpy==2.2.6",
+    "pandas==2.3.3",
+    "pydub==0.25.1",
+    "pygments==2.20.0",
+    "pyside6==6.7.2",
+    "pyside6-addons==6.7.2",
+    "pyside6-essentials==6.7.2",
+    "python-dateutil==2.9.0.post0",
+    "pytz==2025.2",
+    "shiboken6==6.7.2",
+    "six==1.17.0",
+    "tzdata==2025.3",
+]
+
+[dependency-groups]
+# Development & Linting
+dev = [
+    "ruff>=0.15.20",
+]
+# Testing framework
+test = [
+    "pytest==9.0.3",
+    "iniconfig==2.3.0",
+    "pluggy==1.6.0",
+    "packaging==26.0",
+]
+# Build & Bundling tools
+build = [
+    "pyinstaller==6.19.0",
+    "pyinstaller-hooks-contrib==2026.4",
+    "altgraph==0.17.5",
+    "pefile==2024.8.26",
+    "pywin32-ctypes==0.2.3",
+]
+
+[tool.ruff]
+line-length = 98
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N"]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from src.domain.models.project import Project
 from src.domain.models.media import MediaItem
+from src.domain.models.project import Project
 
 
 class NavigationService:

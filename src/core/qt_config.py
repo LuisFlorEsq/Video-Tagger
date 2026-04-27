@@ -1,23 +1,21 @@
+import logging
 import os
 import sys
-import logging
-from PySide6.QtCore import qInstallMessageHandler, QtMsgType
+
+from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 
 
 def suppress_qt_warnings():
     """Suppress Qt multimedia and style warnings."""
 
     # Suppress Qt multimedia FFmpeg warnings via environment variable
-    os.environ['QT_LOGGING_RULES'] = (
-        'qt.multimedia.ffmpeg*=false;'
-        'qt.qpa.fonts=false;'
-        'qt.pointer.dispatch=false;'
-        'ffmpeg*=false'
+    os.environ["QT_LOGGING_RULES"] = (
+        "qt.multimedia.ffmpeg*=false;qt.qpa.fonts=false;qt.pointer.dispatch=false;ffmpeg*=false"
     )
 
     # Suppress Python logging from Qt
-    logging.getLogger('qt').setLevel(logging.ERROR)
-    logging.getLogger('qt.multimedia').setLevel(logging.ERROR)
+    logging.getLogger("qt").setLevel(logging.ERROR)
+    logging.getLogger("qt.multimedia").setLevel(logging.ERROR)
 
 
 def install_qt_message_handler(verbose: bool = False):
@@ -29,17 +27,17 @@ def install_qt_message_handler(verbose: bool = False):
     """
 
     # Messages to suppress (common, non-critical warnings)
-    SUPPRESSED_MESSAGES = [
-        'AVStream duration',
-        'is invalid',
-        'Taking it from the metadata',
-        'Unknown property cursor',
-        'QFont',
-        'font',
-        'timescale not set',
-        'Could not find codec parameters',
-        'analyzeduration',
-        'probesize',
+    supressed_messages = [
+        "AVStream duration",
+        "is invalid",
+        "Taking it from the metadata",
+        "Unknown property cursor",
+        "QFont",
+        "font",
+        "timescale not set",
+        "Could not find codec parameters",
+        "analyzeduration",
+        "probesize",
     ]
 
     def message_handler(msg_type: QtMsgType, context, message: str):
@@ -47,7 +45,7 @@ def install_qt_message_handler(verbose: bool = False):
 
         # Skip if verbose mode is off and message should be suppressed
         if not verbose:
-            for suppressed in SUPPRESSED_MESSAGES:
+            for suppressed in supressed_messages:
                 if suppressed.lower() in message.lower():
                     return
 
@@ -85,11 +83,11 @@ def configure_qt_application(verbose: bool = False):
     install_qt_message_handler(verbose=verbose)
 
     # Additional Qt settings
-    os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
+    os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 
     # Disable Qt's default warning output on Windows
-    if sys.platform == 'win32':
-        os.environ['QT_ENABLE_REGEXP_JIT'] = '0'
+    if sys.platform == "win32":
+        os.environ["QT_ENABLE_REGEXP_JIT"] = "0"
 
 
 def setup_quiet_mode():
@@ -106,6 +104,5 @@ def setup_debug_mode():
     """Setup for debugging (show everything)."""
     configure_qt_application(verbose=True)
     logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )

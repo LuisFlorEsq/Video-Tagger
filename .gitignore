@@ -208,8 +208,10 @@ __marimo__/
 
 # Project specific test files
 tests/*
-!tests/*.py
+tests/data
 tests/json/*.json
 tests/export/*.csv
+
+# Distribution files
 *.rar
 *.zip

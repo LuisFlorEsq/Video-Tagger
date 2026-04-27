@@ -1,37 +1,33 @@
-from typing import Dict, Any, Callable, TypeVar, Type
+from typing import Any, Callable, Dict, Type, TypeVar
 
+from src.application.services.export_service import ExportService
+from src.application.services.labeling_service import LabelingService
+from src.application.services.project_service import MediaTypeFactory, ProjectService
 from src.domain.interfaces import (
     ILabelValidator,
     IMediaPreviewSource,
     IMediaScanner,
     IProjectRepository,
 )
-
-from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
-from src.infrastructure.validators import SimpleLabelValidator
-
-from src.infrastructure.scanners import (
-    VideoScanner,
-    AudioScanner,
-    ImageScanner,
-    SignalScanner,
-    TextScanner
-)
 from src.infrastructure.preview_sources import (
-    VideoPreviewSource,
     AudioPreviewSource,
     ImagePreviewSource,
     SignalPreviewSource,
-    TextPreviewSource
+    TextPreviewSource,
+    VideoPreviewSource,
 )
+from src.infrastructure.repositories import JsonProjectRepository
+from src.infrastructure.scanners import (
+    AudioScanner,
+    ImageScanner,
+    SignalScanner,
+    TextScanner,
+    VideoScanner,
+)
+from src.infrastructure.validators import SimpleLabelValidator
 
-from src.application.services.project_service import MediaTypeFactory, ProjectService
-from src.application.services.labeling_service import LabelingService
-from src.application.services.export_service import ExportService
-
-
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ServiceContainer:
@@ -73,7 +69,7 @@ class ServiceContainer:
             ImageScanner(),
             AudioScanner(),
             SignalScanner(),
-            TextScanner()
+            TextScanner(),
         ]
 
         preview_sources: list[IMediaPreviewSource] = [
@@ -81,7 +77,7 @@ class ServiceContainer:
             ImagePreviewSource(),
             AudioPreviewSource(),
             SignalPreviewSource(),
-            TextPreviewSource()
+            TextPreviewSource(),
         ]
 
         # ------ MediaTypeFactory ---------
@@ -103,21 +99,18 @@ class ServiceContainer:
             ProjectService,
             lambda: ProjectService(
                 repository=self.resolve(IProjectRepository),
-                media_factory=self.resolve(MediaTypeFactory)
-            )
+                media_factory=self.resolve(MediaTypeFactory),
+            ),
         )
 
         self.register_transient(
-            LabelingService,
-            lambda: LabelingService(
-                validator=self.resolve(ILabelValidator)
-            )
+            LabelingService, lambda: LabelingService(validator=self.resolve(ILabelValidator))
         )
 
         # Export service with registered exporters
         export_service = ExportService()
-        export_service.register_exporter('csv', CsvExporter())
-        export_service.register_exporter('json', JsonExporter())
+        export_service.register_exporter("csv", CsvExporter())
+        export_service.register_exporter("json", JsonExporter())
         self.register_singleton(ExportService, export_service)
 
 
