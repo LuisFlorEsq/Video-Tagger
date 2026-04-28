@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
-from src.domain.models.project import Project
 from src.domain.models.media.media_item import MediaItem, MediaType
+from src.domain.models.project import Project
 
 # ---------------------------------------------
 # Persistence and validators
@@ -131,9 +131,7 @@ class IMediaPreviewSource(ABC):
         pass
 
     @abstractmethod
-    def create_media_item(
-        self, item_id: str, file_path: Path, metadata: dict
-    ) -> MediaItem:
+    def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> MediaItem:
         """Creates an instance of the corresponding MediaItem"""
         pass
 

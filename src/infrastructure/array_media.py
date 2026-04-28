@@ -1,23 +1,23 @@
+import threading
 import wave
-import numpy as np
+from collections import OrderedDict
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtGui import QImage, QPixmap
+import numpy as np
 from pydub import AudioSegment
+from PySide6.QtGui import QImage, QPixmap
 
-import threading
-from collections import OrderedDict
 from src.core.config import WAVEFORM_CACHE_MAX_ITEMS
 
 _WAVEFORM_CACHE_LOCK = threading.Lock()
-_WAVEFORM_CACHE: OrderedDict[tuple[str, int,
-                                   int, int], np.ndarray] = OrderedDict()
+_WAVEFORM_CACHE: OrderedDict[tuple[str, int, int, int], np.ndarray] = OrderedDict()
 
 
 # ---------------------------------------------
 # NumPy and image methods
 # ---------------------------------------------
+
 
 def load_numpy_array(
     file_path: str | Path,
@@ -28,7 +28,8 @@ def load_numpy_array(
 
     Args:
         file_path (str | Path): Path to the file to load
-        source_key (str | None, optional): Specific key used when working with .npz files. Defaults to None.
+        source_key (str | None, optional): Specific key used when working with .npz files.
+        Defaults to None.
 
     Raises:
         ValueError: Not supported extensions
@@ -36,7 +37,7 @@ def load_numpy_array(
         ValueError: Source key not found
 
     Returns:
-        tuple[np.ndarray, str | None, dict]: Numpy loaded array, source key and metadata dictionary
+        tuple[np.ndarray, str|None, dict]: Numpy loaded array, source key and metadata dictionary
     """
 
     path = Path(file_path)
@@ -51,15 +52,13 @@ def load_numpy_array(
 
     # Load a numpy array for a .npz file
     with np.load(path, allow_pickle=False) as archive:
-        array_keys = [key for key in archive.files if np.asarray(
-            archive[key]).ndim > 0]
+        array_keys = [key for key in archive.files if np.asarray(archive[key]).ndim > 0]
         if not array_keys:
             raise ValueError(f"No array payloads found in {path.name}")
 
         chosen_key = source_key or _default_npz_array_key(array_keys)
         if chosen_key not in archive.files:
-            raise ValueError(
-                f"Array key '{chosen_key}' not found in {path.name}")
+            raise ValueError(f"Array key '{chosen_key}' not found in {path.name}")
 
         metadata = {}
         for key in ("sample_rate", "sr", "fs"):
@@ -87,7 +86,7 @@ def is_image_array(array: np.ndarray) -> bool:
     Determines if a specific numpy array has a compatible struct with an image
 
     Args:
-        array (np.ndarray): Image to evaluate in numpy format 
+        array (np.ndarray): Image to evaluate in numpy format
 
     Returns:
         bool: True for image detected, False if not
@@ -123,9 +122,7 @@ def normalize_image_array(array: np.ndarray) -> np.ndarray:
         arr = arr[:, :, 0]
 
     if not is_image_array(arr):
-        raise ValueError(
-            "Unsupported image array shape. Expected HxW, HxWx3, or HxWx4."
-        )
+        raise ValueError("Unsupported image array shape. Expected HxW, HxWx3, or HxWx4.")
 
     # If the array is already on uint8 format it doesnt require an extra transformation
     if arr.dtype == np.uint8:
@@ -222,6 +219,7 @@ def load_image_pixmap(
     }
     return pixmap, metadata
 
+
 # ---------------------------------------------
 # Signal on NumPy format methods
 # ---------------------------------------------
@@ -309,7 +307,8 @@ def load_signal_array(file_path: str | Path) -> tuple[np.ndarray, dict]:
         file_path (str | Path): .npy or .npz file path
 
     Returns:
-        tuple[np.ndarray, dict]: Tuple with array as (Channels, Samples) in float32 and their metadata dict
+        tuple[np.ndarray, dict]: Tuple with array as (Channels, Samples)
+        in float32 and their metadata dict
     """
     array, source_key, extra = load_numpy_array(file_path)
     sample_rate = extra.get("sample_rate")
@@ -330,13 +329,14 @@ def compute_waveform_envelope(
 
     Args:
         samples (np.ndarray): Input audio arrangement
-        target_bins (int, optional): Desired number of horizontal points for the resulting graph. Defaults to 512.
+        target_bins (int, optional): Desired number of horizontal points for the resulting graph.
+        Defaults to 512.
 
     Returns:
-        np.ndarray: Floating array of 1D normalized between 0.0 and 1.0 with length equal to target bins.
+        np.ndarray: Floating array of 1D normalized between 0.0 and 1.0 with length
+        equal to target bins.
     """
-    channel_first = signal_channels_first(
-        np.asarray(samples, dtype=np.float32))
+    channel_first = signal_channels_first(np.asarray(samples, dtype=np.float32))
 
     # Convert to Mono by averaging the absolute values of all channels
     mono = np.mean(np.abs(channel_first), axis=0)
@@ -349,8 +349,7 @@ def compute_waveform_envelope(
 
     # List comprehension that extracts the maximum amplitude peak in each fragment
     envelope = np.array(
-        [mono[i:i + chunk].max(initial=0.0)
-         for i in range(0, mono.size, chunk)],
+        [mono[i : i + chunk].max(initial=0.0) for i in range(0, mono.size, chunk)],
         dtype=np.float32,
     )
 
@@ -397,7 +396,8 @@ def _load_waveform_from_wav(path: Path, target_bins: int) -> np.ndarray:
         target_bins (int): Targeted bins desired
 
     Returns:
-        np.ndarray: Floating array of 1D normalized between 0.0 and 1.0 with length equal to target bins.
+        np.ndarray: Floating array of 1D normalized between 0.0 and 1.0 with length
+        equal to target bins.
     """
     with wave.open(str(path), "rb") as wav_file:
         frames = wav_file.getnframes()
@@ -468,11 +468,13 @@ def _default_npz_array_key(keys: list[str]) -> str:
     Returns:
         str: Key to use
     """
-    preferred = [key for key in keys if key.lower(
-    ) in {"image", "signal", "data", "array", "arr_0"}]
+    preferred = [
+        key for key in keys if key.lower() in {"image", "signal", "data", "array", "arr_0"}
+    ]
     if preferred:
         return preferred[0]
     return sorted(keys)[0]
+
 
 # ---------------------------------------------
 # Waveform audio cache management
@@ -488,10 +490,12 @@ def make_waveform_cache_key(
 
     Args:
         file_path (str | Path): The filesystem path to the compressed audio file.
-        target_bins (int, optional): The desired horizontal resolution for the resulting waveform envelope. Defaults to 512.
+        target_bins (int, optional): The desired horizontal resolution for the resulting waveform
+        envelope. Defaults to 512.
 
     Returns:
-        tuple[str, int, int, int]: A unique four-element identifier tuple (resolved_path, modification_time_ns, file_size_bts, target_bins)
+        tuple[str, int, int, int]: A unique four-element identifier tuple
+        (resolved_path, modification_time_ns, file_size_bts, target_bins)
     """
     path = Path(file_path).resolve()
     stat = path.stat()
@@ -536,7 +540,7 @@ def store_waveform_envelope_cache(
     """
     Stores a calculated waveform envelope into the global memory cache
 
-    Inserts the item and updates its position for the LRU policy. If the cache 
+    Inserts the item and updates its position for the LRU policy. If the cache
     exceeds `WAVEFORM_CACHE_MAX_ITEMS`, the oldest entries are discarded.
 
     Args:
@@ -567,11 +571,11 @@ def load_waveform_envelope_cached(
     This acts as a high-level access point for clients requiring optimized waveform data retrieval
 
     Args:
-        file_path (str | Path): The filesystem path to the audio or signal file 
+        file_path (str | Path): The filesystem path to the audio or signal file
         target_bins (int, optional): The horizontal resolution of the waveform. Defaults to 512.
 
     Returns:
-        tuple[np.ndarray, bool]: A tuple containing the floa32 waveform envelope and a boolean flag 
+        tuple[np.ndarray, bool]: A tuple containing the floa32 waveform envelope and a flag
         indicating whether is was a cache hit (True) or a cache miss (False)
     """
     cached = get_cached_waveform_envelope(file_path, target_bins=target_bins)

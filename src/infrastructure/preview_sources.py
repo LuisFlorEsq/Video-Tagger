@@ -3,22 +3,25 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtGui import QImageReader
 from PySide6.QtCore import QEventLoop, QTimer, QUrl
+from PySide6.QtGui import QImageReader
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
+from src.core.config import METADATA_TIMEOUT_MS
 from src.domain.interfaces import IMediaPreviewSource
 from src.domain.models.media import (
-    MediaType, AudioItem, ImageItem,
-    SignalItem, TextItem, VideoItem
+    AudioItem,
+    ImageItem,
+    MediaType,
+    SignalItem,
+    TextItem,
+    VideoItem,
 )
-
-from src.core.config import METADATA_TIMEOUT_MS
 from src.infrastructure.array_media import (
     is_image_array,
     is_numpy_media_path,
     load_numpy_array,
-    load_signal_array
+    load_signal_array,
 )
 
 
@@ -35,6 +38,7 @@ def _clone_metadata(metadata: dict) -> dict:
 # ---------------------------------------------
 # Auxiliar methods
 # ---------------------------------------------
+
 
 def read_qt_media_duration(file_path: Path) -> Optional[float]:
     """Standalone utility function to extract exact duration using QMediaPlayer"""
@@ -86,6 +90,7 @@ def read_qt_media_duration(file_path: Path) -> Optional[float]:
 # VideoPreviewSource
 # ---------------------------------------------
 
+
 class VideoPreviewSource(IMediaPreviewSource):
     """Reads video duration using Qts MediaPlayer with an event loop"""
 
@@ -105,17 +110,18 @@ class VideoPreviewSource(IMediaPreviewSource):
     def _get_cached_duration(signature: tuple[str, int, int], file_path: Path) -> Optional[float]:
         del signature
         return read_qt_media_duration(file_path)
-    
+
     def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> VideoItem:
         return VideoItem(
             item_id=item_id,
             file_path=str(file_path),
             start_time=0,
-            duration=metadata.get("duration_s", 0)
+            duration=metadata.get("duration_s", 0),
         )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
+
 
 # ---------------------------------------------
 # ImagePreviewSource
@@ -143,9 +149,7 @@ class ImagePreviewSource(IMediaPreviewSource):
         if is_numpy_media_path(file_path):
             array, source_key, _ = load_numpy_array(file_path)
             if not is_image_array(array):
-                raise ValueError(
-                    f"{file_path.name} does not contain an image-shaped NumPy array"
-                )
+                raise ValueError(f"{file_path.name} does not contain an image-shaped NumPy array")
             return {
                 "width": int(array.shape[1]),
                 "height": int(array.shape[0]),
@@ -167,7 +171,7 @@ class ImagePreviewSource(IMediaPreviewSource):
             file_path=str(file_path),
             width=metadata.get("width"),
             height=metadata.get("height"),
-            source_key=metadata.get("source_key")
+            source_key=metadata.get("source_key"),
         )
 
     def file_exists(self, file_path: Path) -> bool:
@@ -177,6 +181,7 @@ class ImagePreviewSource(IMediaPreviewSource):
 # ---------------------------------------------
 # AudioPreviewSource
 # ---------------------------------------------
+
 
 class AudioPreviewSource(IMediaPreviewSource):
     """Reads audio duration using Qts QMediaPlayer with an event loop"""
@@ -198,17 +203,18 @@ class AudioPreviewSource(IMediaPreviewSource):
         del signature
         duration_s = read_qt_media_duration(file_path)
         return {"duration_s": duration_s, "sample_rate": None}
-    
+
     def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> AudioItem:
         return AudioItem(
             item_id=item_id,
             file_path=str(file_path),
             duration_s=metadata.get("duration_s"),
-            sample_rate=metadata.get("sample_rate")
+            sample_rate=metadata.get("sample_rate"),
         )
 
     def file_exists(self, file_path: Path) -> bool:
         return file_path.exists() and file_path.is_file()
+
 
 # ---------------------------------------------
 # TextPreviewSource
@@ -219,11 +225,11 @@ class TextPreviewSource(IMediaPreviewSource):
     """Sniffs the encoding of a text file and reports its byte size"""
 
     BOM_MAP = {
-        b"\xef\xbb\xbf":     "utf-8-sig",
+        b"\xef\xbb\xbf": "utf-8-sig",
         b"\xff\xfe\x00\x00": "utf-32-le",
         b"\x00\x00\xfe\xff": "utf-32-be",
-        b"\xff\xfe":         "utf-16-le",
-        b"\xfe\xff":         "utf-16-be",
+        b"\xff\xfe": "utf-16-le",
+        b"\xfe\xff": "utf-16-be",
     }
 
     @property
@@ -244,12 +250,10 @@ class TextPreviewSource(IMediaPreviewSource):
         encoding = TextPreviewSource._detect_encoding(file_path)
         size_bytes = file_path.stat().st_size if file_path.exists() else 0
         return {"encoding": encoding, "size_bytes": size_bytes}
-    
+
     def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> TextItem:
         return TextItem(
-            item_id=item_id,
-            file_path=str(file_path),
-            encoding=metadata.get("encoding", "utf-8")
+            item_id=item_id, file_path=str(file_path), encoding=metadata.get("encoding", "utf-8")
         )
 
     def file_exists(self, file_path: Path) -> bool:
@@ -270,6 +274,7 @@ class TextPreviewSource(IMediaPreviewSource):
                 return "latin-1"
         except Exception:
             return "utf-8"
+
 
 # ---------------------------------------------
 # SignalPreviewSource
@@ -296,7 +301,7 @@ class SignalPreviewSource(IMediaPreviewSource):
         del signature
         _, metadata = load_signal_array(file_path)
         return metadata
-    
+
     def create_media_item(self, item_id: str, file_path: Path, metadata: dict) -> SignalItem:
         return SignalItem(
             item_id=item_id,
@@ -306,7 +311,7 @@ class SignalPreviewSource(IMediaPreviewSource):
             sample_rate=metadata.get("sample_rate"),
             channels=metadata.get("channels"),
             duration_s=metadata.get("duration_s"),
-            source_key=metadata.get("source_key")
+            source_key=metadata.get("source_key"),
         )
 
     def file_exists(self, file_path: Path) -> bool:

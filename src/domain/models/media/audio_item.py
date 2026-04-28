@@ -27,7 +27,7 @@ class AudioItem(MediaItem):
         duration_s: Optional[float] = None,
         sample_rate: Optional[int] = None,
         created_at: Optional[datetime] = None,
-        modified_at: Optional[datetime] = None
+        modified_at: Optional[datetime] = None,
     ) -> None:
 
         super().__init__(
@@ -37,7 +37,7 @@ class AudioItem(MediaItem):
             label=label,
             notes=notes,
             created_at=created_at or datetime.now(),
-            modified_at=modified_at or datetime.now()
+            modified_at=modified_at or datetime.now(),
         )
 
         if duration_s is not None and duration_s < 0:

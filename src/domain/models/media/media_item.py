@@ -1,9 +1,9 @@
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from dataclasses import dataclass, field
 from typing import Optional
-from datetime import datetime
 
 # ---------------------------------------------
 # MediaType enum
@@ -44,6 +44,7 @@ class MediaType(Enum):
 # MediaType base
 # ---------------------------------------------
 
+
 @dataclass
 class MediaItem:
     """
@@ -52,7 +53,8 @@ class MediaItem:
     All media types share: an ID, a file path, a media type tag,
     an optional label, notes, timestamps.
 
-    Subclasses and type-specific fields (start_time/duration for video, width/height for images, etc.) without touching this base.
+    Subclasses and type-specific fields
+    (start_time/duration for video, width/height for images, etc.) without touching this base.
 
     """
 

@@ -28,7 +28,7 @@ class ImageItem(MediaItem):
         height: Optional[int] = None,
         source_key: Optional[str] = None,
         created_at: Optional[datetime] = None,
-        modified_at: Optional[datetime] = None
+        modified_at: Optional[datetime] = None,
     ) -> None:
 
         super().__init__(
@@ -38,7 +38,7 @@ class ImageItem(MediaItem):
             label=label,
             notes=notes,
             created_at=created_at or datetime.now(),
-            modified_at=modified_at or datetime.now()
+            modified_at=modified_at or datetime.now(),
         )
         self.width = width
         self.height = height

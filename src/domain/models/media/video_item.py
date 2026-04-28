@@ -24,7 +24,7 @@ class VideoItem(MediaItem):
         label: Optional[str] = None,
         notes: str = "",
         created_at: Optional[datetime] = None,
-        modified_at: Optional[datetime] = None
+        modified_at: Optional[datetime] = None,
     ) -> None:
         super().__init__(
             item_id=item_id,
@@ -33,7 +33,7 @@ class VideoItem(MediaItem):
             label=label,
             notes=notes,
             created_at=created_at or datetime.now(),
-            modified_at=modified_at or datetime.now()
+            modified_at=modified_at or datetime.now(),
         )
 
         if start_time < 0:

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from src.domain.models.media import MediaItem, MediaType
 
@@ -12,7 +12,7 @@ class TextItem(MediaItem):
     A text document / snippet to be labeled
 
     content - in-memory text content (loaded from file_path on demand).
-    encoding - file encoding, defaults to UTF-8 
+    encoding - file encoding, defaults to UTF-8
     """
 
     content: Optional[str] = None
@@ -37,7 +37,7 @@ class TextItem(MediaItem):
             label=label,
             notes=notes,
             created_at=created_at or datetime.now(),
-            modified_at=modified_at or datetime.now()
+            modified_at=modified_at or datetime.now(),
         )
 
         self.content = content
@@ -55,8 +55,7 @@ class TextItem(MediaItem):
             path = Path(self.file_path)
 
             if not path.exists():
-                raise FileNotFoundError(
-                    f"Text file not found: {self.file_path}")
+                raise FileNotFoundError(f"Text file not found: {self.file_path}")
             self.content = path.read_text(encoding=self.encoding)
 
         return self.content

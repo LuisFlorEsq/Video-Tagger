@@ -2,19 +2,16 @@ import os
 from pathlib import Path
 from typing import List
 
-from src.domain.interfaces import IMediaScanner
-from src.domain.models.media import (
-    MediaItem, MediaType
-)
-
 from src.core.config import (
-    VIDEO_EXTENSIONS,
-    IMAGE_EXTENSIONS,
-    IMAGE_ARRAY_EXTENSIONS,
     AUDIO_EXTENSIONS,
-    TEXT_EXTENSIONS,
+    IMAGE_ARRAY_EXTENSIONS,
+    IMAGE_EXTENSIONS,
     SIGNAL_EXTENSIONS,
+    TEXT_EXTENSIONS,
+    VIDEO_EXTENSIONS,
 )
+from src.domain.interfaces import IMediaScanner
+from src.domain.models.media import MediaItem, MediaType
 
 
 class _BaseFileScanner(IMediaScanner):
@@ -57,11 +54,8 @@ class _BaseFileScanner(IMediaScanner):
         return list(self.EXTENSIONS)
 
     def _make_item(self, item_id: str, path: Path) -> MediaItem:
-        return MediaItem(
-            item_id=item_id,
-            file_path=str(path),
-            media_type=self.media_type
-        )
+        return MediaItem(item_id=item_id, file_path=str(path), media_type=self.media_type)
+
 
 # ---------------------------------------------
 # Video Scanner
@@ -77,6 +71,7 @@ class VideoScanner(_BaseFileScanner):
     def media_type(self) -> MediaType:
         return MediaType.VIDEO
 
+
 # ---------------------------------------------
 # Image Scanner
 # ---------------------------------------------
@@ -85,11 +80,12 @@ class VideoScanner(_BaseFileScanner):
 class ImageScanner(_BaseFileScanner):
     """Scans a folder for image files and returns ImageItem instances."""
 
-    EXTENSIONS = frozenset(IMAGE_EXTENSIONS.union(IMAGE_ARRAY_EXTENSIONS)) # Important operation over sets (union)
+    EXTENSIONS = frozenset(IMAGE_EXTENSIONS.union(IMAGE_ARRAY_EXTENSIONS))
 
     @property
     def media_type(self) -> MediaType:
         return MediaType.IMAGE
+
 
 # ---------------------------------------------
 # Audio Scanner
@@ -104,6 +100,7 @@ class AudioScanner(_BaseFileScanner):
     @property
     def media_type(self) -> MediaType:
         return MediaType.AUDIO
+
 
 # ---------------------------------------------
 # Text Scanner

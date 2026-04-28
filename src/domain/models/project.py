@@ -1,10 +1,10 @@
 from datetime import datetime
 from os import PathLike
 from pathlib import Path
-from typing import Optional, List, Dict, Iterator
+from typing import Dict, Iterator, List, Optional
 
-from src.domain.models.media.media_item import MediaItem, MediaType
 from src.core.config import DEFAULT_LABELS
+from src.domain.models.media.media_item import MediaItem, MediaType
 
 
 class Project:
@@ -187,9 +187,7 @@ class Project:
             self._unlabeled_count = min(len(self._items), self._unlabeled_count + 1)
 
         if new_label:
-            self._label_statistics[new_label] = (
-                self._label_statistics.get(new_label, 0) + 1
-            )
+            self._label_statistics[new_label] = self._label_statistics.get(new_label, 0) + 1
             self._labeled_count += 1
             self._unlabeled_count = max(0, self._unlabeled_count - 1)
 
@@ -209,9 +207,7 @@ class Project:
     def _register_item_state(self, item: MediaItem) -> None:
         if item.is_labeled():
             self._labeled_count += 1
-            self._label_statistics[item.label] = (
-                self._label_statistics.get(item.label, 0) + 1
-            )
+            self._label_statistics[item.label] = self._label_statistics.get(item.label, 0) + 1
         else:
             self._unlabeled_count += 1
 

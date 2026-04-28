@@ -1,16 +1,18 @@
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from src.core.logger import logger
 from src.domain.interfaces import IProjectRepository
-
 from src.domain.models.media import (
-    MediaItem, MediaType,
-    ImageItem, AudioItem, SignalItem,
-    VideoItem, TextItem
+    AudioItem,
+    ImageItem,
+    MediaItem,
+    MediaType,
+    SignalItem,
+    TextItem,
+    VideoItem,
 )
-
 from src.domain.models.project import Project
 
 
@@ -24,50 +26,49 @@ class JsonProjectRepository(IProjectRepository):
             project.set_save_path(file_path)
 
             data = {
-                'name': project.name,
-                'folder_path': project.folder_path,
-                'save_path': project.save_path,
-                'media_type': project.media_type.value,
-                'custom_labels': project.custom_labels,
-                'items': [self._item_to_dict(it) for it in project.items],
-                'created_at': project.created_at.isoformat(),
-                'modified_at': project.modified_at.isoformat()
+                "name": project.name,
+                "folder_path": project.folder_path,
+                "save_path": project.save_path,
+                "media_type": project.media_type.value,
+                "custom_labels": project.custom_labels,
+                "items": [self._item_to_dict(it) for it in project.items],
+                "created_at": project.created_at.isoformat(),
+                "modified_at": project.modified_at.isoformat(),
             }
 
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
             # logger.info(f"Proyecto '{project.name}' guardado exitosamente.")
 
         except Exception as e:
             logger.error(
-                f"Error crítico al guardar proyecto {project.name}: {str(e)}", exc_info=True)
+                f"Error crítico al guardar proyecto {project.name}: {str(e)}", exc_info=True
+            )
             raise
 
     def load(self, file_path: Path) -> Project:
         """Load project from JSON file."""
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # ----- Labels ------
-        raw_labels = data.get('custom_labels')
+        raw_labels = data.get("custom_labels")
         custom_labels = (
-            [lbl for lbl in raw_labels if lbl and lbl.strip()]
-            if raw_labels
-            else list()
+            [lbl for lbl in raw_labels if lbl and lbl.strip()] if raw_labels else list()
         )
 
         # ----- Media type ------
         media_type = MediaType.from_str(data.get("media_type", "video"))
 
         project = Project(
-            name=data['name'],
-            folder_path=data['folder_path'],
-            save_path=data['save_path'],
+            name=data["name"],
+            folder_path=data["folder_path"],
+            save_path=data["save_path"],
             media_type=media_type,
-            created_at=datetime.fromisoformat(data['created_at']),
-            modified_at=datetime.fromisoformat(data['modified_at']),
-            custom_labels=custom_labels
+            created_at=datetime.fromisoformat(data["created_at"]),
+            modified_at=datetime.fromisoformat(data["modified_at"]),
+            custom_labels=custom_labels,
         )
 
         raw_items = data.get("items")
@@ -138,7 +139,7 @@ class JsonProjectRepository(IProjectRepository):
             "label": item.label or "",
             "notes": item.notes,
             "created_at": item.created_at.isoformat(),
-            "modified_at": item.modified_at.isoformat()
+            "modified_at": item.modified_at.isoformat(),
         }
 
     @staticmethod
@@ -150,7 +151,7 @@ class JsonProjectRepository(IProjectRepository):
             "label": data.get("label") or None,
             "notes": data.get("notes", ""),
             "created_at": datetime.fromisoformat(data["created_at"]),
-            "modified_at": datetime.fromisoformat(data["modified_at"])
+            "modified_at": datetime.fromisoformat(data["modified_at"]),
         }
 
     # ---------------------------------------------
@@ -161,8 +162,8 @@ class JsonProjectRepository(IProjectRepository):
     def _video_extra(video: VideoItem) -> dict:
 
         return {
-            "start_time":  video.start_time,
-            "duration":    video.duration,
+            "start_time": video.start_time,
+            "duration": video.duration,
         }
 
     @staticmethod
@@ -193,7 +194,7 @@ class JsonProjectRepository(IProjectRepository):
             width=data.get("width"),
             height=data.get("height"),
             source_key=data.get("source_key"),
-            **base
+            **base,
         )
 
     # ---------------------------------------------
@@ -203,7 +204,7 @@ class JsonProjectRepository(IProjectRepository):
     @staticmethod
     def _audio_extra(audio: AudioItem) -> dict:
         return {
-            "duration_s":  audio.duration_s,
+            "duration_s": audio.duration_s,
             "sample_rate": audio.sample_rate,
         }
 
