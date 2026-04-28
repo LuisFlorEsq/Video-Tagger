@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QMessageBox,
@@ -6,13 +7,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.ui.styles import AppTheme
-
 from src.domain.models.media.video_item import VideoItem
 from src.domain.models.project import Project
-
-from src.ui.widgets.media_viewer.video._video_player import VideoPlayer
+from src.ui.styles import AppTheme
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
+from src.ui.widgets.media_viewer.video._video_player import VideoPlayer
 
 
 class VideoViewer(BaseViewer):
@@ -53,8 +52,9 @@ class VideoViewer(BaseViewer):
     def on_item_loaded(self, item: VideoItem, project: Project) -> None:
         if not Path(item.file_path).exists():
             QMessageBox.critical(
-                self, "Archivo no encontrado",
-                f"No se encontró el archivo de video:\n{item.file_path}"
+                self,
+                "Archivo no encontrado",
+                f"No se encontró el archivo de video:\n{item.file_path}",
             )
             return
         self.video_player.load_video(item.file_path)
@@ -80,8 +80,7 @@ class VideoViewer(BaseViewer):
         # Signals only present on FragmentViewer
         self.video_player.ready.connect(self._on_video_ready)
         self.video_player.load_failed.connect(
-            lambda msg: QMessageBox.critical(
-                self, "Error al cargar el video", msg)
+            lambda msg: QMessageBox.critical(self, "Error al cargar el video", msg)
         )
 
     def _on_video_ready(self) -> None:

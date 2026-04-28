@@ -1,12 +1,12 @@
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QListWidget, QListWidgetItem
-)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QLabel, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
 from src.ui.styles import (
-    AppTheme, label_list, text_section_header,
-    chip_labeled, chip_unlabeled,
+    chip_labeled,
+    chip_unlabeled,
+    label_list,
+    text_section_header,
 )
 
 
@@ -127,7 +127,7 @@ class LabelPanel(QWidget):
         font.setPointSize(10)
 
         for idx, label in enumerate(self.labels):
-            prefix = f"[{idx+1}] " if idx < 9 else ""
+            prefix = f"[{idx + 1}] " if idx < 9 else ""
             display_text = f" {prefix}{label}"
 
             item = QListWidgetItem(display_text)

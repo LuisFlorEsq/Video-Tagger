@@ -1,9 +1,6 @@
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import (
-    QLabel,
-    QSizePolicy
-)
+from PySide6.QtWidgets import QLabel, QSizePolicy
 
 
 class ZoomableImageLabel(QLabel):
@@ -27,7 +24,7 @@ class ZoomableImageLabel(QLabel):
         self._zoom = 1.0
         self._render()
 
-    def wheelEvent(self, event) -> None:
+    def wheelEvent(self, event) -> None:  # noqa: N802
         if event.modifiers() & Qt.ControlModifier:
             factor = 1.15 if event.angleDelta().y() > 0 else (1 / 1.15)
             self._zoom = max(0.1, min(self._zoom * factor, 8.0))
@@ -45,12 +42,12 @@ class ZoomableImageLabel(QLabel):
         if self._pixmap_orig:
             self._render()
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         if self._pixmap_orig and self._zoom == 1.0:
             self._render()
 
-    def eventFilter(self, watched, event) -> bool:
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
         if watched is self._viewport and event.type() == QEvent.Resize:
             if self._pixmap_orig and self._zoom == 1.0:
                 self._render()
@@ -75,8 +72,6 @@ class ZoomableImageLabel(QLabel):
         scale = max(0.1, self._fit_scale() * self._zoom)
         w = max(1, int(self._pixmap_orig.width() * scale))
         h = max(1, int(self._pixmap_orig.height() * scale))
-        scaled = self._pixmap_orig.scaled(
-            w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation
-        )
+        scaled = self._pixmap_orig.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.setPixmap(scaled)
         self.resize(scaled.size())

@@ -2,6 +2,7 @@
 # Design tokens
 # ─────────────────────────────────────────────
 
+
 class AppTheme:
     # Brand
     PRIMARY = "#0078D4"
@@ -145,6 +146,7 @@ def app_stylesheet() -> str:
 # Top bar / header panel
 # ─────────────────────────────────────────────
 
+
 def topbar_panel() -> str:
     t = AppTheme
     return f"""
@@ -191,15 +193,13 @@ def input_field() -> str:
 
 def info_strip() -> str:
     t = AppTheme
-    return (
-        f" background-color: {AppTheme.BG_PANEL};"
-        f"border-bottom: 1px solid {AppTheme.BG_APP};"
-    )
+    return f" background-color: {t.BG_PANEL};border-bottom: 1px solid {t.BG_APP};"
 
 
 # ─────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────
+
 
 def sidebar_panel() -> str:
     t = AppTheme
@@ -316,6 +316,8 @@ def sidebar_btn_danger() -> str:
             margin-right: 8px;
         }}
     """
+
+
 # ─────────────────────────────────────────────
 # Buttons
 # ─────────────────────────────────────────────
@@ -439,6 +441,7 @@ def btn_danger() -> str:
 # Lists
 # ─────────────────────────────────────────────
 
+
 def fragment_list() -> str:
     t = AppTheme
     return f"""
@@ -533,6 +536,7 @@ def pill_style(active: bool) -> str:
             f"}}"
         )
 
+
 # ─────────────────────────────────────────────
 # Media Card
 # ─────────────────────────────────────────────
@@ -546,7 +550,7 @@ def media_card(accent: str) -> str:
         border: 1px solid {t.BORDER};
         border-radius: {t.RADIUS_MD};
         }}
-        
+
         QWidget:hover {{
         background-color: {t.BG_APP};
         border-color: {accent};
@@ -554,8 +558,8 @@ def media_card(accent: str) -> str:
         """
 
 
-def radio() -> str:
-    ...
+def radio() -> str: ...
+
 
 # ─────────────────────────────────────────────
 # Text viewer related styles
@@ -574,6 +578,7 @@ def editor() -> str:
             padding: 16px;
         }}
         """
+
 
 # ─────────────────────────────────────────────
 # Info / status chips (used on QLabel)
@@ -614,6 +619,7 @@ def chip_info() -> str:
         f"border-radius: 10px; font-size: {t.FONT_SM}; font-weight: bold; "
         f"color: {t.PRIMARY};"
     )
+
 
 # ─────────────────────────────────────────────
 # Text helpers (used on QLabel)
@@ -677,10 +683,10 @@ def text_desc() -> str:
 def text_wc() -> str:
     t = AppTheme
     return (
-        f"background-color: {AppTheme.BG_SUBTLE}; "
-        f"border-top: 1px solid {AppTheme.BORDER}; "
-        f"padding: 4px 16px; font-size: {AppTheme.FONT_XS}; "
-        f"color: {AppTheme.TEXT_MUTED};"
+        f"background-color: {t.BG_SUBTLE}; "
+        f"border-top: 1px solid {t.BORDER}; "
+        f"padding: 4px 16px; font-size: {t.FONT_XS}; "
+        f"color: {t.TEXT_MUTED};"
     )
 
 

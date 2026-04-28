@@ -1,30 +1,27 @@
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QStackedWidget,
-    QMessageBox,
-    QStatusBar,
-    QApplication,
-)
-from PySide6.QtGui import QAction
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QMessageBox,
+    QStackedWidget,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
 
+from src.application.services.export_service import ExportService
+from src.application.services.labeling_service import LabelingService
+from src.application.services.navigation_service import NavigationService
+from src.application.services.project_service import ProjectService
 from src.core.config import VIEW_FRAGMENT, VIEW_PROJECT
 from src.core.resources import icon
-
-from src.application.services.project_service import ProjectService
-from src.application.services.labeling_service import LabelingService
-from src.application.services.export_service import ExportService
-from src.application.services.navigation_service import NavigationService
-
-from src.ui.widgets.project_browser import ProjectBrowser
-from src.ui.widgets.media_viewer._viewer_stack import ViewerStack
-from src.ui.styles import app_stylesheet
-from src.ui.helpers.project_formatter import format_project_progress
-
-from src.domain.models.project import Project
 from src.domain.models.media.media_item import MediaItem
+from src.domain.models.project import Project
+from src.ui.helpers.project_formatter import format_project_progress
+from src.ui.styles import app_stylesheet
+from src.ui.widgets.media_viewer._viewer_stack import ViewerStack
+from src.ui.widgets.project_browser import ProjectBrowser
 
 
 class MainWindow(QMainWindow):
@@ -320,7 +317,7 @@ class MainWindow(QMainWindow):
     def _update_status(self, message: str):
         self.status_bar.showMessage(message)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event):  # noqa: N802
         if self._current_project:
             unlabeled = self._current_project.get_unlabeled_count()
             if unlabeled > 0:

@@ -1,12 +1,12 @@
 from pathlib import Path
 from time import perf_counter
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, QUrl, Qt, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, QUrl, Signal
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QPushButton,
-    QHBoxLayout,
     QSlider,
     QStyle,
     QVBoxLayout,
@@ -131,8 +131,7 @@ class AudioPlayerWidget(QWidget):
         self._filename_lbl = QLabel("")
         self._filename_lbl.setAlignment(Qt.AlignCenter)
         self._filename_lbl.setStyleSheet(
-            f"font-size: {AppTheme.FONT_BASE}; font-weight: bold; "
-            f"color: {AppTheme.TEXT_PRIMARY};"
+            f"font-size: {AppTheme.FONT_BASE}; font-weight: bold; color: {AppTheme.TEXT_PRIMARY};"
         )
         layout.addWidget(self._filename_lbl)
 
@@ -330,9 +329,7 @@ class AudioPlayerWidget(QWidget):
         """
         playing = state == QMediaPlayer.PlayingState
         self._play_btn.setIcon(
-            self.style().standardIcon(
-                QStyle.SP_MediaPause if playing else QStyle.SP_MediaPlay
-            )
+            self.style().standardIcon(QStyle.SP_MediaPause if playing else QStyle.SP_MediaPlay)
         )
 
     def _on_error(self, error, error_string: str) -> None:
@@ -343,9 +340,7 @@ class AudioPlayerWidget(QWidget):
             error (QMediaPlayer.Error): Exception identifier.
             error_string (str): Human-readable notification description.
         """
-        logger.error(
-            "AudioPlayerWidget._on_error | error=%s | message=%s", error, error_string
-        )
+        logger.error("AudioPlayerWidget._on_error | error=%s | message=%s", error, error_string)
 
     def _load_waveform_async(self, path: Path, token: int) -> None:
         """
@@ -414,7 +409,7 @@ class AudioPlayerWidget(QWidget):
             )
         else:
             logger.debug(
-                "AudioPlayerWidget.waveform_decoded | token=%s | path=%s | decode_ms=%.1f | total_ms=%.1f",
+                "AudioPlayerWidget.waveform_decoded | token=%s | path=%s | decode_ms=%.1f | total_ms=%.1f",  # noqa: E501
                 token,
                 file_path,
                 decode_ms,

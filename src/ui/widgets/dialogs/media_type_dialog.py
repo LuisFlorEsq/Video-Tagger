@@ -6,16 +6,19 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QVBoxLayout,
-    QWidget
+    QWidget,
 )
 
 from src.domain.models.media import MediaType
 from src.ui.styles import (
     AppTheme,
-    btn_primary,
     btn_ghost,
-    text_section_header, text_secondary,
-    media_card, text_label, text_desc
+    btn_primary,
+    media_card,
+    text_desc,
+    text_label,
+    text_secondary,
+    text_section_header,
 )
 
 _TYPES: list[tuple[MediaType, str, str, str]] = [
@@ -23,32 +26,27 @@ _TYPES: list[tuple[MediaType, str, str, str]] = [
         MediaType.VIDEO,
         "Video",
         "Fragmentos de video (.mp4, .avi, .mov, mkv...)",
-        AppTheme.SUCCESS
+        AppTheme.SUCCESS,
     ),
     (
         MediaType.IMAGE,
         "Imagen",
         "Imágenes estáticas (.jpg, .png, .bmp, .webp...)",
-        AppTheme.SUCCESS
+        AppTheme.SUCCESS,
     ),
-    (
-        MediaType.AUDIO,
-        "Audio",
-        "Clips de audio (.mp3, .wav, .flac, .ogg...)",
-        AppTheme.SUCCESS
-    ),
+    (MediaType.AUDIO, "Audio", "Clips de audio (.mp3, .wav, .flac, .ogg...)", AppTheme.SUCCESS),
     (
         MediaType.TEXT,
         "Texto",
         "Documentos de texto (.txt, .csv, .json, .md...)",
-        AppTheme.SUCCESS
+        AppTheme.SUCCESS,
     ),
     (
         MediaType.SIGNAL,
         "Señal",
         "Arreglos numericos (.npy, .npz) para series o trazas",
-        AppTheme.SUCCESS
-    )
+        AppTheme.SUCCESS,
+    ),
 ]
 
 
@@ -59,7 +57,7 @@ class MediaCard(QWidget):
         super().__init__(parent)
         self._radio = radio
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event):  # noqa: N802
         self._radio.setChecked(True)
         super().mousePressEvent(event)
 

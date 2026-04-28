@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal, QUrl, QTimer
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QPushButton,
-    QHBoxLayout,
     QSlider,
     QStyle,
     QVBoxLayout,
@@ -83,9 +83,7 @@ class VideoPlayer(QWidget):
         if not self._media_ready_connected:
             return
         try:
-            self.media_player.mediaStatusChanged.disconnect(
-                self._on_media_status_changed
-            )
+            self.media_player.mediaStatusChanged.disconnect(self._on_media_status_changed)
         except RuntimeError:
             pass
         self._media_ready_connected = False
@@ -188,15 +186,15 @@ class VideoPlayer(QWidget):
     def force_stop(self):
         self._load_token += 1
         self._disconnect_media_status_changed()
-        
+
         self.media_player.stop()
         self.media_player.setSource(QUrl())
-        
+
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.timeline_slider.blockSignals(True)
         self.timeline_slider.setValue(0)
         self.timeline_slider.blockSignals(False)
-        
+
         self.time_label.setText("00:00 / 00:00")
         self.video_path = None
 

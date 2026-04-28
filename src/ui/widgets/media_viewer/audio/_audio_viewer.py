@@ -2,9 +2,9 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QMessageBox,
     QVBoxLayout,
     QWidget,
-    QMessageBox,
 )
 
 from src.core.logger import logger

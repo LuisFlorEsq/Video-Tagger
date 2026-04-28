@@ -1,27 +1,24 @@
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
-    QHBoxLayout,
     QWidget,
 )
 
-from src.ui.styles import AppTheme, btn_ghost
-from src.ui.helpers.dividers import make_vline
-
+from src.core.config import ICON_SIZE
+from src.core.resources import icon
 from src.domain.models.media.signal_item import SignalItem
 from src.domain.models.project import Project
 from src.infrastructure.array_media import load_signal_array
-
+from src.ui.helpers.dividers import make_vline
+from src.ui.styles import AppTheme, btn_ghost
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 from src.ui.widgets.media_viewer.signal._signal_plot import SignalPlotWidget
-
-from src.core.config import ICON_SIZE
-from src.core.resources import icon
 
 
 class SignalViewer(BaseViewer):

@@ -1,15 +1,16 @@
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton
-)
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
-from src.ui.helpers.dividers import make_hline
-from src.ui.styles import (
-    sidebar_panel, sidebar_btn, sidebar_btn_warning, sidebar_btn_danger,
-    sidebar_section_label,
-)
 from src.core.config import ICON_SIZE
 from src.core.resources import icon
+from src.ui.helpers.dividers import make_hline
+from src.ui.styles import (
+    sidebar_btn,
+    sidebar_btn_danger,
+    sidebar_btn_warning,
+    sidebar_panel,
+    sidebar_section_label,
+)
 
 
 class SidebarPanel(QWidget):

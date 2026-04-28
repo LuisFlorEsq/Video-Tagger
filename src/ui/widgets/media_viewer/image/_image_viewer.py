@@ -1,26 +1,22 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QMessageBox,
     QPushButton,
-    QVBoxLayout,
-    QHBoxLayout,
-    QWidget,
     QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-
-from src.ui.styles import AppTheme, btn_ghost
-from src.ui.helpers.dividers import make_vline
-
-from src.domain.models.media import ImageItem
-from src.domain.models.project import Project
-
-from src.infrastructure.array_media import load_image_pixmap
-
-from src.ui.widgets.media_viewer._base_viewer import BaseViewer
-from src.ui.widgets.media_viewer.image._image_utils import ZoomableImageLabel
 
 from src.core.config import ICON_SIZE
 from src.core.resources import icon
+from src.domain.models.media import ImageItem
+from src.domain.models.project import Project
+from src.infrastructure.array_media import load_image_pixmap
+from src.ui.helpers.dividers import make_vline
+from src.ui.styles import AppTheme, btn_ghost
+from src.ui.widgets.media_viewer._base_viewer import BaseViewer
+from src.ui.widgets.media_viewer.image._image_utils import ZoomableImageLabel
 
 
 class ImageViewer(BaseViewer):
@@ -66,9 +62,7 @@ class ImageViewer(BaseViewer):
             if factor is None:
                 btn.clicked.connect(self._image_label.reset_zoom)
             else:
-                btn.clicked.connect(
-                    lambda _=False, f=factor: self._image_label.adjust_zoom(f)
-                )
+                btn.clicked.connect(lambda _=False, f=factor: self._image_label.adjust_zoom(f))
 
             tb.addWidget(btn)
 

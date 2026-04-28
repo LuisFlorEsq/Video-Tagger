@@ -1,34 +1,30 @@
 from abc import abstractmethod
 
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QMessageBox,
-    QPushButton,
-    QVBoxLayout,
-    QWidget
-)
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
-
 from src.core.config import DEFAULT_LABELS, ICON_SIZE
 from src.core.resources import icon
-
 from src.domain.models.media.media_item import MediaItem
 from src.domain.models.project import Project
-
 from src.ui.helpers.dividers import make_hline, make_vline
 from src.ui.styles import (
     AppTheme,
-    topbar_panel, info_strip,
-    btn_danger, btn_ghost, btn_primary_sm,
-    chip_labeled, chip_unlabeled,
-    text_breadcrumb, text_section_header
+    btn_danger,
+    btn_ghost,
+    btn_primary_sm,
+    chip_labeled,
+    chip_unlabeled,
+    info_strip,
+    text_breadcrumb,
+    text_section_header,
+    topbar_panel,
 )
+
 from ._label_panel import LabelPanel
 
 
@@ -49,7 +45,7 @@ class BaseViewer(QWidget):
         labeling_service: LabelingService,
         project_service: ProjectService,
         available_labels: list | None = None,
-        parent=None
+        parent=None,
     ) -> None:
 
         super().__init__(parent)
@@ -101,7 +97,7 @@ class BaseViewer(QWidget):
 
     def on_reset(self) -> None:
         """
-        Stop/Clear the media widget beforee the base clears shared state 
+        Stop/Clear the media widget beforee the base clears shared state
 
         Default: no-op
         """
@@ -118,7 +114,7 @@ class BaseViewer(QWidget):
 
     def _populate_topbar_extras(self, tb: QHBoxLayout) -> None:
         """
-        Optional Hook: injects widgets between the breadcrumb search stretch and the position 
+        Optional Hook: injects widgets between the breadcrumb search stretch and the position
         counter (e.g. zoom controls for ImageViewer)
         Default: no-op
         """
@@ -273,11 +269,10 @@ class BaseViewer(QWidget):
         # ID row - always present
         id_row = QHBoxLayout()
         id_key = QLabel("ID")
-        id_key .setStyleSheet(text_section_header())
+        id_key.setStyleSheet(text_section_header())
         self.id_label = QLabel("-")
         self.id_label.setStyleSheet(
-            f"font-size: {AppTheme.FONT_SM}; font-weight: bold; "
-            f"color: {AppTheme.TEXT_PRIMARY};"
+            f"font-size: {AppTheme.FONT_SM}; font-weight: bold; color: {AppTheme.TEXT_PRIMARY};"
         )
         self.id_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         id_row.addWidget(id_key)
@@ -357,13 +352,11 @@ class BaseViewer(QWidget):
             act = QAction(self)
             act.setShortcut(str(i + 1))
             act.setShortcutContext(Qt.WidgetWithChildrenShortcut)
-            act.triggered.connect(
-                lambda checked=False, idx=i: self._assign_label_by_index(idx)
-            )
+            act.triggered.connect(lambda checked=False, idx=i: self._assign_label_by_index(idx))
             act._is_label_shortcut = True
             self.addAction(act)
 
-    def eventFilter(self, watched, event: QEvent) -> bool:
+    def eventFilter(self, watched, event: QEvent) -> bool:  # noqa: N802
         """
         Intercepts keys that QListWidget before QAction shortcuts fire
         """
@@ -401,9 +394,7 @@ class BaseViewer(QWidget):
             return
 
         try:
-            self._labeling_service.assign_label(
-                self._current_item, self._current_project, label
-            )
+            self._labeling_service.assign_label(self._current_item, self._current_project, label)
             self._has_unsaved_changes = True
             self._schedule_auto_save()
             self._update_item_status()
@@ -435,16 +426,14 @@ class BaseViewer(QWidget):
         if not self._current_item or not self._current_item.is_labeled():
             return
         try:
-            self._labeling_service.clear_label(
-                self._current_item, self._current_project
-            )
+            self._labeling_service.clear_label(self._current_item, self._current_project)
             self._has_unsaved_changes = True
             self._schedule_auto_save()
             self._update_item_status()
             self.item_labeled.emit(self._current_item)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error",  str(e))
+            QMessageBox.critical(self, "Error", str(e))
 
         finally:
             self.focus_label_list()
@@ -455,9 +444,10 @@ class BaseViewer(QWidget):
         if self._current_item and not self._current_item.is_labeled():
             noun = self.item_type_label()
             reply = QMessageBox.question(
-                self, f"{noun.capitalize()} sin etiquetar",
+                self,
+                f"{noun.capitalize()} sin etiquetar",
                 f"Este {noun} no tiene etiqueta. ¿Seguro que deseas regresar?",
-                QMessageBox.Yes | QMessageBox.No
+                QMessageBox.Yes | QMessageBox.No,
             )
             if reply == QMessageBox.No:
                 return
@@ -470,7 +460,8 @@ class BaseViewer(QWidget):
     def _ask_skip(self) -> int:
         noun = self.item_type_label()
         return QMessageBox.question(
-            self, f"{noun.capitalize()} sin etiquetar",
+            self,
+            f"{noun.capitalize()} sin etiquetar",
             f"Este {noun} aún no tiene etiqueta. ¿Deseas saltarlo?",
             QMessageBox.Yes | QMessageBox.No,
         )
@@ -588,9 +579,7 @@ class BaseViewer(QWidget):
         else:
             self.status_chip.setText("Sin etiquetar")
             self.status_chip.setStyleSheet(chip_unlabeled())
-        self.label_panel.set_current_label(
-            self._current_item.label if labeled else None
-        )
+        self.label_panel.set_current_label(self._current_item.label if labeled else None)
         self.delete_label_btn.setEnabled(labeled)
 
     def _update_position_display(self) -> None:
@@ -614,11 +603,7 @@ class BaseViewer(QWidget):
     # --------------------------------------
 
     @staticmethod
-    def _info_row(
-        key: str,
-        value_attr: str,
-        info_layout: QVBoxLayout
-    ) -> QLabel:
+    def _info_row(key: str, value_attr: str, info_layout: QVBoxLayout) -> QLabel:
         """
         Build and add standard key/value row to info_layout
         Returns the value QLabel so the subclass can update it
@@ -629,9 +614,7 @@ class BaseViewer(QWidget):
         key_lbl.setStyleSheet(text_section_header())
 
         val_lbl = QLabel(value_attr)
-        val_lbl.setStyleSheet(
-            f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY};"
-        )
+        val_lbl.setStyleSheet(f"font-size: {AppTheme.FONT_SM}; color: {AppTheme.TEXT_SECONDARY};")
         val_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         row.addWidget(key_lbl)

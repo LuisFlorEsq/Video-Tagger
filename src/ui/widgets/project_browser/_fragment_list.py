@@ -1,32 +1,30 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QProgressBar,
     QPushButton,
-    QLineEdit,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
-from src.domain.models.project import Project
-from src.domain.models.media.media_item import MediaItem
-
 from src.core.config import FILTER_ALL, FILTER_LABELED, FILTER_UNLABELED
+from src.domain.models.media.media_item import MediaItem
+from src.domain.models.project import Project
 from src.ui.helpers.project_formatter import format_project_badge, format_project_stats
 from src.ui.styles import (
     AppTheme,
-    progress_bar,
-    fragment_list,
-    pill_style,
-    text_secondary,
-    text_muted,
     chip_info,
+    fragment_list,
     input_field,
+    pill_style,
+    progress_bar,
+    text_muted,
+    text_secondary,
 )
 
 
@@ -54,8 +52,7 @@ class MediaListPanel(QWidget):
         filter_bar = QWidget()
         filter_bar.setFixedHeight(48)
         filter_bar.setStyleSheet(
-            f"background-color: {AppTheme.BG_PANEL};"
-            f"border-bottom: 1px solid {AppTheme.BORDER};"
+            f"background-color: {AppTheme.BG_PANEL};border-bottom: 1px solid {AppTheme.BORDER};"
         )
         filter_layout = QHBoxLayout(filter_bar)
         filter_layout.setContentsMargins(14, 0, 14, 0)
@@ -96,8 +93,7 @@ class MediaListPanel(QWidget):
         toolbar = QWidget()
         toolbar.setFixedHeight(36)
         toolbar.setStyleSheet(
-            f"background-color: {AppTheme.BG_SUBTLE};"
-            f"border-bottom: 1px solid {AppTheme.BORDER};"
+            f"background-color: {AppTheme.BG_SUBTLE};border-bottom: 1px solid {AppTheme.BORDER};"
         )
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(14, 0, 14, 0)
@@ -218,9 +214,7 @@ class MediaListPanel(QWidget):
 
         for media_item in self._project.iter_items():
             status = media_item.label if media_item.is_labeled() else "Sin etiquetar"
-            tree_item = QTreeWidgetItem(
-                [media_item.get_filename(), status, media_item.item_id]
-            )
+            tree_item = QTreeWidgetItem([media_item.get_filename(), status, media_item.item_id])
             tree_item.setData(0, Qt.UserRole, media_item.item_id)
             tree_item.setData(0, Qt.UserRole + 1, media_item)
             tree_item.setToolTip(0, media_item.file_path)

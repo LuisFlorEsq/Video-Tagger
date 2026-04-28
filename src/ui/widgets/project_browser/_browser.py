@@ -3,8 +3,8 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QFileDialog,
     QDialog,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -13,12 +13,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.application.services.project_service import ProjectService
 from src.application.services.export_service import ExportService
-
+from src.application.services.project_service import ProjectService
+from src.core.config import VIEW_LIST, VIEW_WELCOME
 from src.domain.models.media.media_item import MediaItem
 from src.domain.models.project import Project
-
 from src.ui.helpers.dividers import make_vline
 from src.ui.styles import (
     AppTheme,
@@ -29,11 +28,8 @@ from src.ui.styles import (
     text_title,
     topbar_panel,
 )
-
 from src.ui.widgets.dialogs.label_config_dialog import LabelConfigDialog
 from src.ui.widgets.dialogs.media_type_dialog import MediaTypeDialog
-from src.core.config import VIEW_LIST, VIEW_WELCOME
-
 
 from ._fragment_list import MediaListPanel
 from ._sidebar import SidebarPanel
@@ -83,8 +79,7 @@ class ProjectBrowser(QWidget):
 
         app_title = QLabel("Herramienta de etiquetado")
         app_title.setStyleSheet(
-            f"font-size: {AppTheme.FONT_LG}; font-weight: bold; "
-            f"color: {AppTheme.TEXT_PRIMARY};"
+            f"font-size: {AppTheme.FONT_LG}; font-weight: bold; color: {AppTheme.TEXT_PRIMARY};"
         )
         tb.addWidget(app_title)
 
@@ -171,9 +166,7 @@ class ProjectBrowser(QWidget):
         s.back_btn.clicked.connect(self._on_back_clicked)
 
         # Switch to media viewer (item selected)
-        self._item_list.item_activated.connect(
-            lambda item: self.item_selected.emit(item)
-        )
+        self._item_list.item_activated.connect(lambda item: self.item_selected.emit(item))
 
     # ----- Keyboard shortcuts -----
 
@@ -214,9 +207,7 @@ class ProjectBrowser(QWidget):
         except ValueError as exc:
             self._show_error("Error al crear proyecto", str(exc))
         except Exception as exc:
-            self._show_error(
-                "Error inesperado", f"No se pudo crear el proyecto:\n{str(exc)}"
-            )
+            self._show_error("Error inesperado", f"No se pudo crear el proyecto:\n{str(exc)}")
 
     def _on_load_project_clicked(self):
         file_path = self._select_project_file()
@@ -229,9 +220,7 @@ class ProjectBrowser(QWidget):
         except ValueError as exc:
             self._show_error("No se pudo cargar el proyecto", str(exc))
         except Exception as exc:
-            self._show_error(
-                "Error inesperado", f"No se pudo cargar el proyecto:\n{str(exc)}"
-            )
+            self._show_error("Error inesperado", f"No se pudo cargar el proyecto:\n{str(exc)}")
 
     def _on_back_clicked(self):
         self._current_project = None
@@ -286,9 +275,7 @@ class ProjectBrowser(QWidget):
                 f"Archivo: {file_path.name}",
             )
         except Exception as exc:
-            self._show_error(
-                "Error al exportar", f"No se pudo exportar a CSV:\n{str(exc)}"
-            )
+            self._show_error("Error al exportar", f"No se pudo exportar a CSV:\n{str(exc)}")
 
     def _on_config_labels_clicked(self):
         if not self._current_project:
@@ -298,9 +285,7 @@ class ProjectBrowser(QWidget):
             current_labels=self._current_project.get_labels(),
             parent=self,
         )
-        dlg.set_assigned_labels(
-            set(self._current_project.get_label_statistics().keys())
-        )
+        dlg.set_assigned_labels(set(self._current_project.get_label_statistics().keys()))
         dlg.labels_changed.connect(self._on_labels_confirmed)
         dlg.exec()
 
@@ -324,8 +309,7 @@ class ProjectBrowser(QWidget):
         reply = QMessageBox.question(
             self,
             "Sincronizar archivos",
-            f"Se encontraron {len(new_items)} archivos nuevos.\n\n"
-            "Deseas agregarlos al proyecto?",
+            f"Se encontraron {len(new_items)} archivos nuevos.\n\nDeseas agregarlos al proyecto?",
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply != QMessageBox.Yes:

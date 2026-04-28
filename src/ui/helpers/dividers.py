@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QFrame
+
 from src.ui.styles import AppTheme
 
 

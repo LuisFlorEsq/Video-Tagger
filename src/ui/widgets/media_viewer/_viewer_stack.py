@@ -4,14 +4,12 @@ from PySide6.QtWidgets import QStackedWidget
 from src.application.services.labeling_service import LabelingService
 from src.application.services.navigation_service import NavigationService
 from src.application.services.project_service import ProjectService
-
 from src.core.logger import logger
 from src.domain.models.media import MediaItem, MediaType
 from src.domain.models.project import Project
-
 from src.ui.widgets.media_viewer import (
-    ImageViewer,
     AudioViewer,
+    ImageViewer,
     SignalViewer,
     TextViewer,
     VideoViewer,

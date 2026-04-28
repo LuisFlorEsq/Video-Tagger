@@ -1,23 +1,21 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
-    QLineEdit,
-    QPushButton,
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
-    QPlainTextEdit,
     QLabel,
+    QLineEdit,
     QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-
-from src.ui.styles import AppTheme, editor, text_wc, input_field, btn_ghost
 
 from src.core.config import ICON_SIZE
 from src.core.resources import icon
 from src.domain.models.media.text_item import TextItem
 from src.domain.models.project import Project
-
+from src.ui.styles import AppTheme, btn_ghost, editor, input_field, text_wc
 from src.ui.widgets.media_viewer._base_viewer import BaseViewer
 
 
@@ -137,9 +135,7 @@ class TextViewer(BaseViewer):
 
         words = item.word_count or 0
         chars = len(content)
-        self._wc_label.setText(
-            f"{words:,} palabras  ·  {chars:,} caracteres  ·  {item.encoding}"
-        )
+        self._wc_label.setText(f"{words:,} palabras  ·  {chars:,} caracteres  ·  {item.encoding}")
         self._search_input.clear()
         self._find_btn.setEnabled(False)
         self._editor.setFocus()

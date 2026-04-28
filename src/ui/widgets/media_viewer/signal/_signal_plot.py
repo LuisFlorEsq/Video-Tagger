@@ -1,7 +1,7 @@
 import math
-import numpy as np
 
-from PySide6.QtCore import Qt, QSize
+import numpy as np
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
@@ -46,7 +46,7 @@ class WaveformWidget(QWidget):
         self._progress = max(0.0, min(1.0, float(ratio)))
         self.update()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
         painter.fillRect(self.rect(), QColor(AppTheme.BG_SUBTLE))
@@ -74,8 +74,7 @@ class WaveformWidget(QWidget):
         for index, value in enumerate(self._envelope):
             x = rect.left() + (index * step)
             amp = float(value) * (rect.height() / 2.2)
-            painter.drawLine(int(x), int(center_y - amp),
-                             int(x), int(center_y + amp))
+            painter.drawLine(int(x), int(center_y - amp), int(x), int(center_y + amp))
 
         playhead_x = rect.left() + int(self._progress * rect.width())
         painter.setPen(QPen(QColor(AppTheme.PRIMARY), 2))
@@ -101,7 +100,7 @@ class SignalPlotWidget(QWidget):
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         self._update_canvas_width()
 
-    def sizeHint(self) -> QSize:
+    def sizeHint(self) -> QSize:  # noqa: N802
         return QSize(self.width(), 360)
 
     def clear_plot(self) -> None:
@@ -127,7 +126,7 @@ class SignalPlotWidget(QWidget):
         self._update_canvas_width()
         self.update()
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
         painter.fillRect(self.rect(), QColor(AppTheme.BG_SUBTLE))
@@ -170,8 +169,7 @@ class SignalPlotWidget(QWidget):
                 else:
                     path.lineTo(x, y)
 
-            painter.setPen(
-                QPen(self.TRACE_COLORS[idx % len(self.TRACE_COLORS)], 1.5))
+            painter.setPen(QPen(self.TRACE_COLORS[idx % len(self.TRACE_COLORS)], 1.5))
             painter.drawPath(path)
 
             label = f"Ch {idx + 1}"

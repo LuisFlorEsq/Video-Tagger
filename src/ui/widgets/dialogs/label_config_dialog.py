@@ -1,19 +1,28 @@
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QPushButton, QListWidget, QListWidgetItem,
-    QLineEdit, QLabel, QMessageBox, QWidget
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
-from PySide6.QtCore import Qt, Signal, QEvent, QSize
-from PySide6.QtGui import QFont
-
-from src.core.config import LABELS_MIN_COUNT, LABELS_MAX_COUNT, LABEL_MAX_LENGTH, ICON_SIZE
+from src.core.config import ICON_SIZE, LABEL_MAX_LENGTH, LABELS_MAX_COUNT, LABELS_MIN_COUNT
 from src.core.resources import icon
-
 from src.ui.styles import (
     AppTheme,
-    btn_primary, btn_ghost, btn_danger,
-    label_list, text_section_header, text_secondary
+    btn_danger,
+    btn_ghost,
+    btn_primary,
+    label_list,
+    text_secondary,
+    text_section_header,
 )
 
 
@@ -168,7 +177,7 @@ class LabelConfigDialog(QDialog):
     # Event filter - keyboard ordering
     # ─────────────────────────────────────────────
 
-    def eventFilter(self, watched, event) -> bool:
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
         """Ctrl+Up / Ctrl + Down reorder the selected label without the mouse."""
 
         if watched is self.label_list and event.type() == QEvent.KeyPress:
@@ -214,22 +223,19 @@ class LabelConfigDialog(QDialog):
 
         if self.label_list.count() >= LABELS_MAX_COUNT:
             QMessageBox.warning(
-                self, "Limite alcanzado",
-                f"No puedes tener más de {LABELS_MAX_COUNT} etiquetas."
+                self, "Limite alcanzado", f"No puedes tener más de {LABELS_MAX_COUNT} etiquetas."
             )
 
             return
 
         # Duplicate check  (case-sensitive)
         existing = [
-            self.label_list.item(i).text().strip().lower()
-            for i in range(self.label_list.count())
+            self.label_list.item(i).text().strip().lower() for i in range(self.label_list.count())
         ]
 
         if text.lower() in existing:
             QMessageBox.warning(
-                self, "Etiqueta duplicada",
-                f'Ya existe la etiqueta con el nombre {text}'
+                self, "Etiqueta duplicada", f"Ya existe la etiqueta con el nombre {text}"
             )
             return
 
@@ -246,12 +252,13 @@ class LabelConfigDialog(QDialog):
 
         if self.label_list.count() <= LABELS_MIN_COUNT:
             QMessageBox.warning(
-                self, "Mínimo requerido",
-                f"El proyecto debe tener al menos {LABELS_MIN_COUNT} etiquetas."
+                self,
+                "Mínimo requerido",
+                f"El proyecto debe tener al menos {LABELS_MIN_COUNT} etiquetas.",
             )
             return
 
-        label_name = self.label_list.item(row).text()
+        # label_name = self.label_list.item(row).text()
         self.label_list.takeItem(row)
 
         # Keep selection near the deleted row
@@ -289,16 +296,16 @@ class LabelConfigDialog(QDialog):
 
         if not labels:
             QMessageBox.warning(
-                self, "Sin etiquetas",
-                "Debes definir al menos una etiqueta antes de guardar."
+                self, "Sin etiquetas", "Debes definir al menos una etiqueta antes de guardar."
             )
             return
 
         orphaned = self._find_orphaned_labels(labels)
         if orphaned:
-            names = ", ".join(f'"{l}"' for l in sorted(orphaned))
+            names = ", ".join(f'"{label}"' for label in sorted(orphaned))
             reply = QMessageBox.question(
-                self, "Etiquetas en uso",
+                self,
+                "Etiquetas en uso",
                 f"Las siguientes etiquetas ya fueron asignadas a fragmentos "
                 f"pero no están en la nueva lista:\n\n{names}\n\n"
                 f"Los fragmentos conservarán su etiqueta actual, pero no "
@@ -327,17 +334,12 @@ class LabelConfigDialog(QDialog):
 
     def _find_orphaned_labels(self, new_labels: list[str]) -> set[str]:
         """Labels currently assigned to fragments that won't be in the new set."""
-        new_set = {l.lower() for l in new_labels}
-        return {
-            lbl for lbl in self._assigned_labels
-            if lbl.lower() not in new_set
-        }
+        new_set = {label.lower() for label in new_labels}
+        return {lbl for lbl in self._assigned_labels if lbl.lower() not in new_set}
 
     def _refresh_counter(self):
         count = self.label_list.count()
-        self.counter_label.setText(
-            f"{count} / {LABELS_MAX_COUNT} etiquetas"
-        )
+        self.counter_label.setText(f"{count} / {LABELS_MAX_COUNT} etiquetas")
 
     def _update_button_states(self):
         row = self.label_list.currentRow()
