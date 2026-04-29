@@ -4,8 +4,8 @@ import copy
 import os
 from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
 
 from src.application.services.labeling_service import LabelingService
 from src.application.services.project_service import MediaTypeFactory, ProjectService
@@ -27,7 +27,6 @@ from src.infrastructure.scanners import (
     VideoScanner,
 )
 from src.infrastructure.validators import SimpleLabelValidator
-
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 

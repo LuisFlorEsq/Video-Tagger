@@ -207,7 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Project specific test files
-tests/*
+tests/
 tests/data
 tests/json/*.json
 tests/export/*.csv

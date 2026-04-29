@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QDialog,
@@ -30,6 +30,7 @@ from src.ui.styles import (
 )
 from src.ui.widgets.dialogs.label_config_dialog import LabelConfigDialog
 from src.ui.widgets.dialogs.media_type_dialog import MediaTypeDialog
+from src.ui.widgets.dialogs.project_creation_dialog import ProjectCreationDialog
 
 from ._fragment_list import MediaListPanel
 from ._sidebar import SidebarPanel
@@ -45,6 +46,7 @@ class ProjectBrowser(QWidget):
     item_selected = Signal(MediaItem)
     project_closed = Signal()
     labels_changed = Signal(list)
+    status_message = Signal(str)
 
     def __init__(
         self,
@@ -52,10 +54,17 @@ class ProjectBrowser(QWidget):
         export_service: ExportService,
         parent=None,
     ):
+        # Dependency injection
         super().__init__(parent)
         self._project_service = project_service
         self._export_service = export_service
         self._current_project: Project = None
+
+        # Project creation background thread
+        self._creation_thread: QThread | None = None
+        self._creation_worker = None
+        self._creation_dialog: ProjectCreationDialog | None = None
+        self._pending_save_after_creation = False
 
         self._init_ui()
         self._connect_signals()
@@ -185,6 +194,9 @@ class ProjectBrowser(QWidget):
     # ----- Command handlers -----
 
     def _on_new_project_clicked(self):
+        if self._creation_thread is not None:
+            # Job creation is already running
+            return
 
         # Ask for media type
         dlg = MediaTypeDialog(parent=self)
@@ -196,18 +208,99 @@ class ProjectBrowser(QWidget):
         folder_path = self._select_folder()
         if not folder_path:
             return
+
+        # Delegate project creation to worker
+        self._start_project_creation(folder_path=folder_path, media_type=media_type)
+
+    def _start_project_creation(self, folder_path: Path, media_type: str) -> None:
+        """
+        Kick off project creation on a dedicated QThread
+
+        Args:
+            folder_path (Path): Root project folder
+            media_type (str): Media type for media item creation
+        """
         try:
-            project = self._project_service.create_project_from_folder(
+            worker = self._project_service.create_project_creation_worker(
                 folder_path=folder_path,
                 media_type=media_type,
             )
-            self._load_project(project)
-            self._prompt_initial_save(project)
-            self.project_loaded.emit(project)
-        except ValueError as exc:
+        except RuntimeError as exc:
             self._show_error("Error al crear proyecto", str(exc))
-        except Exception as exc:
-            self._show_error("Error inesperado", f"No se pudo crear el proyecto:\n{str(exc)}")
+            return
+
+        thread = QThread(self)
+        worker.moveToThread(thread)
+
+        dialog = ProjectCreationDialog(total_files=1, parent=self)
+        dialog.cancel_requested.connect(self._on_creation_cancel_requested)
+
+        worker.progress.connect(self._on_creation_progress)
+        worker.finished.connect(self._on_creation_finished)
+        worker.failed.connect(self._on_creation_failed)
+        worker.cancelled.connect(self._on_creation_cancelled)
+
+        thread.started.connect(worker.run)
+
+        self._creation_thread = thread
+        self._creation_worker = worker
+        self._creation_dialog = dialog
+
+        thread.start()
+        dialog.show()
+
+    def _on_creation_progress(self, current: int, total: int, filename: str) -> None:
+        if self._creation_dialog:
+            self._creation_dialog.set_progress(current, total, filename)
+
+    def _on_creation_cancel_requested(self) -> None:
+        if self._creation_worker:
+            self._creation_worker.request_cancel()
+
+    def _on_creation_finished(self, project: Project) -> None:
+        self._teardown_creation_thread()
+        self._load_project(project)
+        self._prompt_initial_save(project)
+        self.project_loaded.emit(project)
+
+    def _on_creation_failed(self, message: str, failed_file_path: str) -> None:
+        self._teardown_creation_thread()
+        detail = f"\n\nArchivo: {failed_file_path}" if failed_file_path else ""
+        self._show_error("Error al crear proyecto", f"{message}{detail}")
+
+    def _on_creation_cancelled(self) -> None:
+        self._teardown_creation_thread()
+        self.status_message.emit("Creación de proyecto cancelada.")
+
+    def _teardown_creation_thread(self) -> None:
+        """
+        Stop and release the background thread/worker/dialog.
+
+        Safe to call multiple times; guards against double-teardown if both
+        a signal-driven path and a defensive cleanup path fire.
+        """
+        if self._creation_dialog is not None:
+            self._creation_dialog.close()
+            self._creation_dialog.deleteLater()
+            self._creation_dialog = None
+
+        if self._creation_thread is not None:
+            self._creation_thread.quit()
+            self._creation_thread.wait()
+            self._creation_thread.deleteLater()
+            self._creation_thread = None
+
+        if self._creation_worker is not None:
+            self._creation_worker.deleteLater()
+            self._creation_worker = None
+
+    def has_active_creation(self) -> bool:
+        """
+        Whether a project-creation job is currently running on a background
+        thread. MainWindow should consult this before allowing the app to
+        close, to avoid killing a worker thread mid-file.
+        """
+        return self._creation_thread is not None
 
     def _on_load_project_clicked(self):
         file_path = self._select_project_file()
