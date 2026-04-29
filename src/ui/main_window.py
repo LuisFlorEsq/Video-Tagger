@@ -50,7 +50,6 @@ class MainWindow(QMainWindow):
 
         # Apply global design system to the whole application
         QApplication.instance().setStyleSheet(app_stylesheet())
-        # print(resource_path("ui/resources/icons/icon_cic.png"))
         self.setWindowIcon(icon("icon_cic.png"))
 
         self._init_ui()
@@ -61,9 +60,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Herramienta de etiquetado - CIC IPN")
         self.resize(1400, 800)
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # UI construction
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def _init_ui(self):
 
@@ -144,6 +143,7 @@ class MainWindow(QMainWindow):
         self._project_browser.item_selected.connect(self._on_item_selected)
         self._project_browser.project_closed.connect(self._on_project_closed)
         self._project_browser.labels_changed.connect(self._on_labels_changed)
+        self._project_browser.status_message.connect(self._update_status)
 
         # Fragment viewer signals
         self._viewer_stack.item_labeled.connect(self._on_item_labeled)
@@ -152,9 +152,9 @@ class MainWindow(QMainWindow):
         self._viewer_stack.back_requested.connect(self._show_browser)
         self._viewer_stack.auto_saved.connect(self._on_auto_saved)
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # Event handlers
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def _on_project_loaded(self, project: Project):
         self._reset_project_state()
@@ -234,9 +234,9 @@ class MainWindow(QMainWindow):
             self._end_of_list_dialog(start=False)
             self._show_browser()
 
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
     # Private handlers/helpers
-    # ─────────────────────────────────────────────
+    # ---------------------------------------------
 
     def _reset_project_state(self):
         self._current_project = None
@@ -318,6 +318,16 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(message)
 
     def closeEvent(self, event):  # noqa: N802
+        if self._project_browser and self._project_browser.has_active_creation():
+            QMessageBox.information(
+                self,
+                "Creación de proyecto en curso",
+                "Hay un proyecto creándose en segundo plano.\n\n"
+                "Cancela la creación antes de cerrar la aplicación.",
+            )
+            event.ignore()
+            return
+
         if self._current_project:
             unlabeled = self._current_project.get_unlabeled_count()
             if unlabeled > 0:

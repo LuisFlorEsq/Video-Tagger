@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Iterable, Optional
 
+from src.application.services.project_creation_workwer import ProjectCreationWorker
 from src.application.services.project_factory import MediaTypeFactory
 from src.domain.interfaces import IProjectRepository
 from src.domain.models.media import MediaType
@@ -51,6 +52,38 @@ class ProjectService:
             )
 
         return self._media_factory.create_project_from_paths(
+            folder_path=folder_path,
+            media_type=media_type,
+            paths=paths,
+        )
+
+    def create_project_creation_worker(
+        self,
+        folder_path: Path,
+        media_type: MediaType,
+        paths: Optional[Iterable[Path]] = None,
+    ) -> ProjectCreationWorker:
+        """
+        Build a ProjectCreationWorker to this service's MediaTypeFactory,
+        for off-main project creation
+
+        Args:
+            folder_path (Path): Root project folder
+            media_type (MediaType): Media type for media item creation
+            paths (Optional[Iterable[Path]], optional): Project items path. Defaults to None.
+
+        Returns:
+            ProjectCreationWorker: Object to call during Thread processing
+        """
+
+        if self._media_factory is None:
+            raise RuntimeError(
+                "MediaTypeFactory is required for project creation"
+                "Register it in the service container"
+            )
+
+        return ProjectCreationWorker(
+            media_factory=self._media_factory,
             folder_path=folder_path,
             media_type=media_type,
             paths=paths,

@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from src.domain.models.media import MediaItem, MediaType
+from .media_item import MediaItem, MediaType
 
 
 @dataclass
