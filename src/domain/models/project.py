@@ -1,42 +1,53 @@
-from typing import Optional, List, Dict
 from datetime import datetime
+from os import PathLike
 from pathlib import Path
+from typing import Optional, List, Dict
 
-from src.domain.models.fragment import Fragment
+from src.domain.models.media.media_item import MediaItem, MediaType
 from src.core.config import DEFAULT_LABELS
 
+
 class Project:
-    """Represents a video annotation project"""
-    
+    """Represents a labeling project for any media type"""
+
     def __init__(
-        self, 
-        name: str, 
+        self,
+        name: str,
         folder_path: str,
         save_path: Optional[str] = None,
+        media_type: MediaType = None,
         created_at: Optional[datetime] = None,
         modified_at: Optional[datetime] = None,
         custom_labels: Optional[List[str]] = None
     ):
         if not name or not name.strip():
             raise ValueError("Project name cannot be empty")
-        
+
         self.name = name.strip()
-        self.folder_path = folder_path
-        self.save_path = save_path
-        
+        self.folder_path = self._normalize_path(folder_path)
+        self.save_path = self._normalize_path(save_path)
+        self.media_type = media_type
+
         self.custom_labels: List[str] = (
             list(custom_labels) if custom_labels else list(DEFAULT_LABELS)
         )
-        
-        self._fragments: List[Fragment] = []
-        self._fragment_index: Dict[str, int] = {}
+
+        self._items: List[MediaItem] = []
+        self._item_index: Dict[str, int] = {}
+
         self.created_at = created_at or datetime.now()
         self.modified_at = modified_at or datetime.now()
-        
-    # ─────────────────────────────────────────────
+
+    @staticmethod
+    def _normalize_path(path: Optional[str | PathLike[str]]) -> Optional[str]:
+        if path is None:
+            return None
+        return str(path)
+
+    # ---------------------------------------------
     # Label management
-    # ─────────────────────────────────────────────
-    
+    # ---------------------------------------------
+
     def set_labels(self, labels: List[str]) -> None:
         """Replace the label set for this project"""
         cleaned = [lbl.strip() for lbl in labels if lbl.strip()]
@@ -44,118 +55,105 @@ class Project:
             raise ValueError("El proyecto debe tener al menos una etiqueta.")
         self.custom_labels = cleaned
         self.modified_at = datetime.now()
-        
+
     def get_labels(self) -> List[str]:
         return list(self.custom_labels)
-    
-    # ─────────────────────────────────────────────
-    # Fragment management
-    # ─────────────────────────────────────────────
-    
+
+    # ---------------------------------------------
+    # Item management - generic API
+    # ---------------------------------------------
+
     @property
-    def fragments(self) -> List[Fragment]:
-        """Get read-only access to fragments."""
-        return self._fragments
-    
-    def add_fragment(self, fragment: Fragment) -> None:
-        """Add a fragment to the project."""
-        if fragment.fragment_id in self._fragment_index:  # O(1) instead of O(n)
-            raise ValueError(f"Fragment with ID '{fragment.fragment_id}' already exists")
-        
-        self._fragment_index[fragment.fragment_id] = len(self._fragments)
-        self._fragments.append(fragment)
+    def items(self) -> List[MediaItem]:
+        """Get read-only access to all media items."""
+        return list(self._items)
+
+    def add_item(self, item: MediaItem) -> None:
+        """Add a media item to the project."""
+        if item.item_id in self._item_index:
+            raise ValueError(f"Item with ID '{item.item_id}' already exists")
+        self._item_index[item.item_id] = len(self._items)
+        self._items.append(item)
         self.modified_at = datetime.now()
-    
-    def remove_fragment(self, fragment_id: str) -> bool:
-        """Remove a fragment from the project"""
-        if fragment_id not in self._fragment_index:
+
+    def remove_item(self, item_id: str) -> bool:
+        """Remove a media item from the project"""
+        if item_id not in self._item_index:
             return False
-        
-        idx = self._fragment_index[fragment_id]
-        self._fragments.pop(idx)
-        
-        # Rebuild index — indices after the removed position shifted by -1
-        self._fragment_index = {
-            f.fragment_id: i for i, f in enumerate(self._fragments)
+
+        idx = self._item_index[item_id]
+        self.items.pop(idx)
+        self._item_index = {
+            it.item_id: i for i, it in enumerate(self._items)
         }
         self.modified_at = datetime.now()
         return True
-    
-    def get_fragment(self, fragment_id: str) -> Optional[Fragment]:
-        """Get a fragment by ID."""
-        idx = self._fragment_index.get(fragment_id)
-        if idx is None:
+
+    def get_item(self, item_id: str) -> Optional[MediaItem]:
+        idx = self.get_item_index(item_id)
+        return self._items[idx] if idx is not None else None
+
+    def get_item_index(self, item_id: str) -> Optional[int]:
+        return self._item_index.get(item_id)
+
+    def get_next_item(self, current_item_id: str) -> Optional[MediaItem]:
+        idx = self._item_index.get(current_item_id)
+        if idx is None or idx >= len(self._items) - 1:
             return None
-        return self._fragments[idx]
-    
-    def get_fragment_index(self, fragment_id: str) -> Optional[int]:
-        """Get the 0-based position of a fragment by ID."""
-        return self._fragment_index.get(fragment_id)
-    
-    def get_fragments_by_label(self, label: str) -> List[Fragment]:
-        """Get all fragments with a specific label."""
-        return [f for f in self._fragments if f.label == label]
-    
-    def get_labeled_fragments(self) -> List[Fragment]:
-        """Get all labeled fragments."""
-        return [f for f in self._fragments if f.is_labeled()]
-    
-    def get_unlabeled_fragments(self) -> List[Fragment]:
-        """Get all unlabeled fragments."""
-        return [f for f in self._fragments if not f.is_labeled()]
-    
-    def get_total_count(self) -> int:
-        """Get total fragment count."""
-        return len(self._fragments)
-    
-    def get_labeled_count(self) -> int:
-        """Get count of labeled fragments."""
-        return len(self.get_labeled_fragments())
-    
-    def get_unlabeled_count(self) -> int:
-        """Get count of unlabeled fragments."""
-        return len(self.get_unlabeled_fragments())
-    
-    def get_progress_percentage(self) -> float:
-        """Get labeling progress as percentage."""
-        if not self._fragments:
-            return 0.0
-        return (self.get_labeled_count() / self.get_total_count()) * 100
-    
-    def get_label_statistics(self) -> dict:
-        """Get count of each label."""
-        stats = {}
-        for fragment in self._fragments:
-            if fragment.is_labeled():
-                label = fragment.label
-                stats[label] = stats.get(label, 0) + 1
-        return stats
-    
-    def clear_all_labels(self) -> None:
-        """Remove all labels from all fragments."""
-        for fragment in self._fragments:
-            fragment.clear_label()
-        self.modified_at = datetime.now()
-    
-    def get_next_fragment(self, current_fragment_id: str) -> Optional[Fragment]:
-        """Get the next fragment after the given one."""
-        idx = self._fragment_index.get(current_fragment_id)
-        if idx is None or idx >= len(self._fragments) - 1:
-            return None
-        return self._fragments[idx + 1]
-    
-    def get_previous_fragment(self, current_fragment_id: str) -> Optional[Fragment]:
-        """Get the previous fragment before the given one."""
-        idx = self._fragment_index.get(current_fragment_id)
+        return self._items[idx + 1]
+
+    def get_previous_item(self, current_item_id: str) -> Optional[MediaItem]:
+        idx = self._item_index.get(current_item_id)
         if idx is None or idx == 0:
             return None
-        return self._fragments[idx - 1]
-    
-    def set_save_path(self, save_path: Path) -> None:
-        """Set the save path for this project."""
-        self.save_path = str(save_path)
+        return self._items[idx - 1]
+
+    def get_item_by_label(self, label: str) -> List[MediaItem]:
+        return [it for it in self._items if it.label == label]
+
+    # ---------------------------------------------
+    # Statistics - general
+    # ---------------------------------------------
+
+    def get_labeled_items(self) -> List[MediaItem]:
+        return [it for it in self._items if it.is_labeled()]
+
+    def get_unlabeled_items(self) -> List[MediaItem]:
+        return [it for it in self._items if not it.is_labeled()]
+
+    def get_total_count(self) -> int:
+        return len(self._items)
+
+    def get_labeled_count(self) -> int:
+        return len(self.get_labeled_items())
+
+    def get_unlabeled_count(self) -> int:
+        return len(self.get_unlabeled_items())
+
+    def get_progress_percentage(self) -> float:
+        if not self._items:
+            return 0.0
+        return (self.get_labeled_count() / self.get_total_count()) * 100
+
+    def get_label_statistics(self) -> dict:
+        stats: Dict[str, int] = {}
+        for item in self._items:
+            if item.is_labeled():
+                stats[item.label] = stats.get(item.label, 0) + 1
+        return stats
+
+    def clear_all_labels(self) -> None:
+        for item in self._items:
+            item.clear_label()
         self.modified_at = datetime.now()
-    
-    def get_save_path(self) -> Optional[Path]:
-        """Get the save path if set."""
+
+    # ---------------------------------------------
+    # Save path helpers
+    # ---------------------------------------------
+
+    def set_save_path(self, save_path: Path | PathLike[str] | str) -> None:
+        self.save_path = self._normalize_path(save_path)
+        self.modified_at = datetime.now()
+
+    def get_save_path(self) -> Optional[str]:
         return Path(self.save_path) if self.save_path else None

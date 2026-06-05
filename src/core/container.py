@@ -1,18 +1,34 @@
 from typing import Dict, Any, Callable, TypeVar, Type
 
 from src.domain.interfaces import (
-    IProjectRepository, IExporter, IVideoSource,
-    IFragmentScanner, ILabelValidator
+    ILabelValidator,
+    IMediaPreviewSource,
+    IMediaScanner,
+    IProjectRepository,
 )
+
 from src.infrastructure.repositories import JsonProjectRepository
 from src.infrastructure.exporters import CsvExporter, JsonExporter
-from src.infrastructure.video import QtVideoSource
-from src.infrastructure.scanners import FileSystemFragmentScanner
 from src.infrastructure.validators import SimpleLabelValidator
-from src.application.services.project_service import ProjectService
+
+from src.infrastructure.scanners import (
+    VideoScanner,
+    AudioScanner,
+    ImageScanner,
+    SignalScanner,
+    TextScanner
+)
+from src.infrastructure.preview_sources import (
+    VideoPreviewSource,
+    AudioPreviewSource,
+    ImagePreviewSource,
+    SignalPreviewSource,
+    TextPreviewSource
+)
+
+from src.application.services.project_service import MediaTypeFactory, ProjectService
 from src.application.services.labeling_service import LabelingService
 from src.application.services.export_service import ExportService
-from src.application.services.navigation_service import NavigationService
 
 
 T = TypeVar('T')
@@ -20,57 +36,84 @@ T = TypeVar('T')
 
 class ServiceContainer:
     """Simple service container for dependency injection."""
-    
+
     def __init__(self):
-        self._services: Dict[Type, Any] = {}
-        self._factories: Dict[Type, Callable] = {}
         self._singletons: Dict[Type, Any] = {}
-    
+        self._factories: Dict[Type, Callable] = {}
+
     def register_singleton(self, interface: Type[T], implementation: T) -> None:
         """Register a singleton instance."""
         self._singletons[interface] = implementation
-    
+
     def register_transient(self, interface: Type[T], factory: Callable[[], T]) -> None:
         """Register a factory for creating new instances."""
         self._factories[interface] = factory
-    
+
     def resolve(self, interface: Type[T]) -> T:
         """Resolve a service by its interface."""
         # Check singletons first
         if interface in self._singletons:
             return self._singletons[interface]
-        
+
         # Check factories
         if interface in self._factories:
             return self._factories[interface]()
-        
+
         raise ValueError(f"Service not registered: {interface}")
-    
+
     def register_default_services(self) -> None:
         """Register default implementations."""
-        # Infrastructure layer - singletons
+        # ------ Infrastructure layer - singletons ---------
         self.register_singleton(IProjectRepository, JsonProjectRepository())
-        self.register_singleton(IVideoSource, QtVideoSource())
-        self.register_singleton(IFragmentScanner, FileSystemFragmentScanner())
         self.register_singleton(ILabelValidator, SimpleLabelValidator())
-        
-        # Application layer - factories
+
+        # ---- Initiate infrastructure components ----
+        scanners: list[IMediaScanner] = [
+            VideoScanner(),
+            ImageScanner(),
+            AudioScanner(),
+            SignalScanner(),
+            TextScanner()
+        ]
+
+        preview_sources: list[IMediaPreviewSource] = [
+            VideoPreviewSource(),
+            ImagePreviewSource(),
+            AudioPreviewSource(),
+            SignalPreviewSource(),
+            TextPreviewSource()
+        ]
+
+        # ------ MediaTypeFactory ---------
+        media_factory = MediaTypeFactory()
+
+        # Register scanners
+        for scanner in scanners:
+            media_factory.register_scanner(scanner=scanner)
+
+        # Register previews
+        for preview in preview_sources:
+            media_factory.register_preview_source(preview_source=preview)
+
+        # Register as a singleton
+        self.register_singleton(MediaTypeFactory, media_factory)
+
+        # ------ Application services ---------
         self.register_transient(
             ProjectService,
             lambda: ProjectService(
                 repository=self.resolve(IProjectRepository),
-                scanner=self.resolve(IFragmentScanner),
-                video_source=self.resolve(IVideoSource)
+                media_factory=self.resolve(MediaTypeFactory)
             )
         )
-        
+
         self.register_transient(
             LabelingService,
             lambda: LabelingService(
                 validator=self.resolve(ILabelValidator)
             )
         )
-        
+
         # Export service with registered exporters
         export_service = ExportService()
         export_service.register_exporter('csv', CsvExporter())

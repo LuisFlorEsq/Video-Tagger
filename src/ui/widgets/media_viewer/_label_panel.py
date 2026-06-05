@@ -9,6 +9,7 @@ from src.ui.styles import (
     chip_labeled, chip_unlabeled,
 )
 
+
 class LabelPanel(QWidget):
     """
     Label picker panel.
@@ -47,8 +48,9 @@ class LabelPanel(QWidget):
         self.label_list.setStyleSheet(label_list())
         self.label_list.setMouseTracking(True)
         self.label_list.viewport().setCursor(Qt.PointingHandCursor)
+        self.label_list.itemClicked.connect(self._on_label_selected)
         self.label_list.itemActivated.connect(self._on_label_selected)
-        
+
         layout.addWidget(self.label_list)
 
         # Current label chip
@@ -65,11 +67,11 @@ class LabelPanel(QWidget):
     def _on_label_selected(self, item: QListWidgetItem):
         if not self._enabled:
             return
-        
+
         label_text = item.data(Qt.UserRole)
         if not label_text:
             return
-        
+
         self._current_label = label_text
         self.label_assigned.emit(label_text)
 
@@ -80,23 +82,23 @@ class LabelPanel(QWidget):
     def set_enabled(self, enabled: bool):
         self._enabled = enabled
         self.label_list.setEnabled(enabled)
-        
+
         if enabled:
             self.label_list.setFocus()
 
     def set_current_label(self, label: str):
         """Reflect the fragment's current label in the chip and list selection."""
         self._current_label = label
-        
+
         if label:
             self.current_label_chip.setText(f"✓  {label}")
             self.current_label_chip.setStyleSheet(chip_labeled())
-            
+
             # Highlight matching row in the list
             for i in range(self.label_list.count()):
                 item = self.label_list.item(i)
                 if item.data(Qt.UserRole) == label:
-                    self.label_list.setCurrentRow(i)
+                    self.label_list.setCurrentItem(item)
                     return
         else:
             self.current_label_chip.setText("Sin etiqueta asignada")
@@ -123,13 +125,13 @@ class LabelPanel(QWidget):
         self.label_list.clear()
         font = QFont()
         font.setPointSize(10)
-        
+
         for idx, label in enumerate(self.labels):
             prefix = f"[{idx+1}] " if idx < 9 else ""
             display_text = f" {prefix}{label}"
-            
+
             item = QListWidgetItem(display_text)
             item.setFont(font)
-            
+
             item.setData(Qt.UserRole, label)
             self.label_list.addItem(item)

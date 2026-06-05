@@ -1,13 +1,14 @@
 import sys
 from pathlib import Path
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from src.core.config import ICONS_PATH
 
 
 def base_dir() -> Path:
     if hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)
-    return Path(__file__).resolve().parents[1] # Up to src/
+    return Path(__file__).resolve().parents[1]  # Up to src/
+
 
 def resource_path(relative: str) -> str:
     """
@@ -23,5 +24,11 @@ def resource_path(relative: str) -> str:
     return str(base_dir() / relative)
 
 # Elements specific methods
+
+
 def icon(name: str) -> QIcon:
     return QIcon(resource_path(str(ICONS_PATH / name)))
+
+
+def image(name: str) -> QPixmap:
+    return QPixmap(resource_path(str(ICONS_PATH / name)))

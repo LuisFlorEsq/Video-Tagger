@@ -32,12 +32,15 @@ The workflow is intentionally linear: open a folder → review each fragment →
 | Python | 3.10 or later |
 | PySide6 | 6.x |
 | pandas | 2.x |
+| pydub | 0.25.x |
 
 Install all dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+Compressed audio waveform previews also require FFmpeg to be available on the system path.
 
 ---
 
@@ -199,6 +202,14 @@ Both lowercase and uppercase extensions are detected.
 
 ---
 
+## Extended media formats
+
+- Image arrays: `.npy` and `.npz`
+- Signal projects: `.npy` and `.npz`
+- Audio viewer: waveform preview is rendered for WAV, MP3, AAC, M4A, OGG, FLAC, and WMA when FFmpeg is available
+
+---
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -225,20 +236,69 @@ Centro de Investigación en Computación — IPN. All rights reserved.
 
 ---
 
-### TODO LIST
+### CURRENT ITERATION
+- [x] Implement the media sync feature for all Media Types (image, audio, text)
+  - [x] Change project service sync logic for all Media Types
+  - [x] Implement the changes on browser methods
+  - [x] Update current UI on sidebar file
+- [x] Refactor scanners and interfaces to adopt media type factory (delete video specific code)
+- [x] Bugfix: Video and Audio duration doesnt update/displayed properly
+- [x] Project saving when user creates a new project from folder and after sync
+- [x] Numpy arrays (images and audio)
+  - [x] Show Audio (waveform)
+  - [x] Add signal UI components
+- [ ] Cloud connection for dataset and project loading (creation)
 
-- [X] Add synchronized file updates linked to the project (partial progress saving).
-- [X] Add an option to **update an existing project** instead of forcing the user to save it again.
-- [X] Ensure the project is saved even if the **“Save Project”** button is not explicitly pressed.
-- [X] Save the project when the `_on_back()` method is executed, when the application is closed, or prompt the user asking whether they want to save changes.
-- [X] Add a button to return to the previous fragment, remove the current tag, and adjust the layout and size of the buttons.
-- [X] Implement Fragment Viewer shortcuts
-- [X] Ensure that every project related variable is cleaned when the user clicks on "Cerrar Proyecto"
-- [X] Fix label panel not displaying selected label properly on label panel
-- [X] Implement label configuration/management panel
-- [X] Update current list of fragments view to display properly the label assigned and their ID on fragment list component(table or qtreewidget)
-- [X] Search and filter of labels by sections (labeled, unlabeled, new, etc.) on project browser view
-- [X] Bug: Fix current label assignation, when user clicks on a label and then want to switch the label using enter shortcut and up and down the system dont allow them
-- [X] Bug: The first time the user enter to the fragment viewer if he tries to navigate to the next fragment the app crashes but if before navigating the user play the video, returns to the fragment list view and then return to the fragment viewer the app works as expected
-- [X] Bug: When the user clicks twice on a label the second time the app back to the first fragment of the fragment list
-- [] Create a PyInstaller file and test the installation on other devices
+
+### RELEASE HISTORY
+
+<details>
+<summary><b>Release v2.0 - Multimodal Labeling & Media Viewer</b></summary>
+
+#### Core Features (Multimodal Support)
+- [x] Implement **Media Item** base class and specialized classes (Image, Audio, Text).
+- [x] Update Project and Fragment models for **MediaItem** integration.
+- [x] Update Interfaces, Repositories, and Scanners to support multimodal labeling.
+- [x] Update Project Service and Container for multimodal labeling logic.
+- [x] Add **MediaType** selection dialog for project creation.
+
+#### UI & Component Updates
+- [x] Add **Viewer Stack** dispatch widget and Base Viewer construction code.
+- [x] Add specialized viewers: **Video, Image, Audio, and Text**.
+- [x] Implement keyboard shortcuts and command handlers on Base Viewer.
+- [x] Integrate **AudioPlayer** and utility helpers for Image/Audio viewers.
+- [x] Update **navigation_service** and exporters for Media Item types.
+- [x] Refine UI layouts for `TextViewer`, `AudioViewer`, and `FragmentList`.
+
+#### BugFixes and Maintenance
+- [x] **Audio:** Fix crash/freeze in `AudioViewer` and update icon buttons.
+- [x] **Image:** Fix rendering issues in `ImageViewer` and cleanup `FragmentViewer` legacy code.
+- [x] **Data:** Fix `media_type` saving error (list vs str) and project creation bugs.
+- [x] **UI:** Fix `LabelPanel` updating and Project Browser typos.
+- [x] **Chore:** Add logger statements and auto-format code with `autopep8`.
+</details>
+
+<details>
+<summary><b>Release v1.1 - Project Management & ShortCuts</b></summary>
+
+- [x] Add synchronized file updates linked to the project (partial progress saving).
+- [x] Add an option to **update an existing project** instead of forcing the user to save it again.
+- [x] Ensure the project is saved even if the **“Save Project”** button is not explicitly pressed.
+- [x] Save the project when the `_on_back()` method is executed, when the application is closed, or prompt the user asking whether they want to save changes.
+- [x] Add a button to return to the previous fragment, remove the current tag, and adjust the layout and size of the buttons.
+- [x] Implement Fragment Viewer shortcuts.
+- [x] Ensure that every project related variable is cleaned when the user clicks on "Cerrar Proyecto".
+</details>
+
+<details>
+<summary><b>Release v1.0 - Labeling System & Bug Fixes</b></summary>
+
+- [x] Fix label panel not displaying selected label properly on label panel.
+- [x] Implement label configuration/management panel.
+- [x] Update current list of fragments view to display properly the label assigned and their ID.
+- [x] Search and filter of labels by sections (labeled, unlabeled, new, etc.) on project browser view.
+- [x] **Bug:** Fix current label assignation, when user clicks on a label and then want to switch the label using enter shortcut and up and down the system dont allow them.
+- [x] **Bug:** The first time the user enter to the fragment viewer if he tries to navigate to the next fragment the app crashes but if before navigating the user play the video, returns to the fragment list view and then return to the fragment viewer the app works as expected.
+- [x] **Bug:** When the user clicks twice on a label the second time the app back to the first fragment of the fragment list.
+- [x] Create a PyInstaller file and test the installation on other devices.
+</details>

@@ -96,8 +96,8 @@ class SidebarPanel(QWidget):
         sync_header.setStyleSheet(sidebar_section_label())
         ps.addWidget(sync_header)
 
-        self.sync_btn = QPushButton("Sincronizar videos")
-        self.sync_btn.setIcon(icon("sync_videos.png"))
+        self.sync_btn = QPushButton("Sincronizar archivos")
+        self.sync_btn.setIcon(icon("sync_content.png"))
         self.sync_btn.setIconSize(QSize(*ICON_SIZE))
         self.sync_btn.setStyleSheet(sidebar_btn_warning())
         self.sync_btn.setMinimumHeight(34)
@@ -132,11 +132,11 @@ class SidebarPanel(QWidget):
         self.project_section.setVisible(False)
 
     def set_sync_pending(self, count: int):
-        """Update sync button to show pending video count."""
+        """Update sync button to show pending file count."""
         self.sync_btn.setEnabled(True)
         self.sync_btn.setText(f"  Sincronizar ({count} nuevos)")
 
     def set_sync_idle(self):
         """Reset sync button to default idle state."""
         self.sync_btn.setEnabled(False)
-        self.sync_btn.setText("Sincronizar videos")
+        self.sync_btn.setText("Sincronizar archivos")

@@ -1,17 +1,21 @@
 from pathlib import Path
+import numpy as np
 
-# ─────────────────────────────────────────────
+# --------------------------------------------------------------------
 # View indices (QStackedWidget slots on MainWindow and Project browser)
-# ─────────────────────────────────────────────
+# --------------------------------------------------------------------
 
+# MainWindow Stack
 VIEW_PROJECT = 0
 VIEW_FRAGMENT = 1
+
+# Project Browser Stack
 VIEW_WELCOME = 0
 VIEW_LIST = 1
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Label configuration
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 DEFAULT_LABELS: list[str] = [
     "Etiqueta 1",
@@ -26,22 +30,41 @@ LABELS_MIN_COUNT = 1
 LABELS_MAX_COUNT = 20
 LABEL_MAX_LENGTH = 60
 
-# ─────────────────────────────────────────────
-# Fragment filter options
-# ─────────────────────────────────────────────
+# ---------------------------------------------
+# Items filter options
+# ---------------------------------------------
 FILTER_ALL = "all"
 FILTER_LABELED = "labeled"
 FILTER_UNLABELED = "unlabeled"
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 # Icons and assets configuration
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 
 ICONS_PATH = Path("ui/resources/icons")
 ICON_SIZE = (16, 16)
 
-# ─────────────────────────────────────────────
-# Video metadata timeout
-# ─────────────────────────────────────────────
+# ---------------------------------------------
+# Video and Audio metadata timeout
+# ---------------------------------------------
 
 METADATA_TIMEOUT_MS = 5_000
+
+# ---------------------------------------------
+# Waveform audio Cache Limits
+# ---------------------------------------------
+
+WAVEFORM_CACHE_MAX_ITEMS = 64
+
+# ---------------------------------------------
+# Scanner available extensions (Optimized to Sets)
+# ---------------------------------------------
+
+VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png",
+                    ".bmp", ".gif", ".tiff", ".tif", ".webp"}
+IMAGE_ARRAY_EXTENSIONS = {".npy", ".npz"}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac",
+                    ".ogg", ".aac", ".m4a", ".wma", ".opus"}
+TEXT_EXTENSIONS = {".txt", ".csv", ".json", ".xml", ".md", ".rst", ".log"}
+SIGNAL_EXTENSIONS = {".npy", ".npz"}

@@ -6,7 +6,7 @@ from PySide6.QtCore import qInstallMessageHandler, QtMsgType
 
 def suppress_qt_warnings():
     """Suppress Qt multimedia and style warnings."""
-    
+
     # Suppress Qt multimedia FFmpeg warnings via environment variable
     os.environ['QT_LOGGING_RULES'] = (
         'qt.multimedia.ffmpeg*=false;'
@@ -14,7 +14,7 @@ def suppress_qt_warnings():
         'qt.pointer.dispatch=false;'
         'ffmpeg*=false'
     )
-    
+
     # Suppress Python logging from Qt
     logging.getLogger('qt').setLevel(logging.ERROR)
     logging.getLogger('qt.multimedia').setLevel(logging.ERROR)
@@ -23,11 +23,11 @@ def suppress_qt_warnings():
 def install_qt_message_handler(verbose: bool = False):
     """
     Install custom Qt message handler to filter warnings.
-    
+
     Args:
         verbose: If True, show all messages. If False, filter common warnings.
     """
-    
+
     # Messages to suppress (common, non-critical warnings)
     SUPPRESSED_MESSAGES = [
         'AVStream duration',
@@ -41,16 +41,16 @@ def install_qt_message_handler(verbose: bool = False):
         'analyzeduration',
         'probesize',
     ]
-    
+
     def message_handler(msg_type: QtMsgType, context, message: str):
         """Custom message handler to filter Qt warnings."""
-        
+
         # Skip if verbose mode is off and message should be suppressed
         if not verbose:
             for suppressed in SUPPRESSED_MESSAGES:
                 if suppressed.lower() in message.lower():
-                    return  # Don't print this message
-        
+                    return
+
         # Print important messages
         if msg_type == QtMsgType.QtDebugMsg:
             if verbose:
@@ -63,30 +63,30 @@ def install_qt_message_handler(verbose: bool = False):
             if verbose:
                 print(f"[Qt Warning] {message}")
         elif msg_type == QtMsgType.QtCriticalMsg:
-            print(f"❌ [Qt Critical] {message}", file=sys.stderr)
+            print(f"[Qt Critical] {message}", file=sys.stderr)
         elif msg_type == QtMsgType.QtFatalMsg:
-            print(f"💀 [Qt Fatal] {message}", file=sys.stderr)
-    
+            print(f"[Qt Fatal] {message}", file=sys.stderr)
+
     qInstallMessageHandler(message_handler)
 
 
 def configure_qt_application(verbose: bool = False):
     """
     Configure Qt application settings.
-    
+
     Args:
         verbose: If True, show all Qt messages. If False, suppress common warnings.
     """
-    
+
     # Suppress warnings via environment
     suppress_qt_warnings()
-    
+
     # Install custom message handler
     install_qt_message_handler(verbose=verbose)
-    
+
     # Additional Qt settings
     os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
-    
+
     # Disable Qt's default warning output on Windows
     if sys.platform == 'win32':
         os.environ['QT_ENABLE_REGEXP_JIT'] = '0'
